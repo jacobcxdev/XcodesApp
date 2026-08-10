@@ -239,6 +239,7 @@ class AppState: ObservableObject {
     var downloadableRuntimesTaskID: UUID?
     var installedRuntimesTask: Task<Void, Never>?
     var installedRuntimesTaskID: UUID?
+    var installedRuntimesRefreshID: UUID?
     internal var installationTasks: [XcodeID: Task<Void, Never>] = [:]
     internal var installationTaskIDs: [XcodeID: UUID] = [:]
     internal var runtimeTasks: [String: Task<Void, Never>] = [:]
@@ -350,9 +351,13 @@ class AppState: ObservableObject {
         ).validateADCSession(path: path)
     }
 
-    func validateSessionAsync() async throws {
+    func validateSessionAsync(
+        authenticationRequestPolicy: AuthenticationRequestPolicy = AuthenticationRequestPolicy()
+    ) async throws {
         do {
-            try await Current.network.validateSessionAsync()
+            try await authenticationRequestPolicy.perform {
+                try await Current.network.validateSessionAsync()
+            }
         } catch {
             throw AuthenticationRequestPolicy.mapSessionValidationError(error)
         }

@@ -94,6 +94,27 @@ class AppStateTests: XCTestCase {
             )
         )
     }
+
+    func test_ValidateSession_RetriesTransientServiceFailure() async {
+        let attempts = TestLockedBox(0)
+        Current.network.validateSessionAsync = {
+            attempts.withValue { $0 += 1 }
+            throw NetworkError.non200StatusCode(statusCode: 503, data: nil)
+        }
+
+        do {
+            try await subject.validateSessionAsync(
+                authenticationRequestPolicy: AuthenticationRequestPolicy(delayBeforeRetry: .zero)
+            )
+            XCTFail("Expected temporary service error")
+        } catch {
+            XCTAssertEqual(
+                error as? AuthenticationRequestError,
+                .serviceTemporarilyUnavailable(statusCode: 503)
+            )
+            XCTAssertEqual(attempts.read { $0 }, 3)
+        }
+    }
     
     func test_ParseCertificateInfo_Succeeds() throws {
         let sampleRawInfo = """
@@ -508,6 +529,60 @@ class AppStateTests: XCTestCase {
         )
     }
 
+    func test_RefreshInstalledRuntimes_OlderRequestCannotOverwriteNewerState() async throws {
+        let staleJSON = """
+        {
+          "97772E90-7BD1-4882-9C51-782E62E0AF4F": {
+            "build": "23F72",
+            "deletable": true,
+            "identifier": "97772E90-7BD1-4882-9C51-782E62E0AF4F",
+            "kind": "Disk Image",
+            "lastUsedAt": null,
+            "path": "/Library/Developer/CoreSimulator/Images/iOS_26_5.dmg",
+            "platformIdentifier": "com.apple.platform.iphonesimulator",
+            "runtimeBundlePath": "/Library/Developer/CoreSimulator/Volumes/iOS_23F72/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime",
+            "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-5",
+            "signatureState": "Verified",
+            "state": "Ready",
+            "version": "26.5",
+            "sizeBytes": 9148280348,
+            "supportedArchitectures": ["arm64"]
+          }
+        }
+        """
+        let continuations = TestLockedBox<[CheckedContinuation<ProcessOutput, Error>]>([])
+        subject.runtimeService = Self.runtimeService(installedRuntimesOutput: {
+            try await withCheckedThrowingContinuation { continuation in
+                continuations.withValue { $0.append(continuation) }
+            }
+        })
+
+        let staleRefresh = Task { @MainActor in
+            try await self.subject.refreshInstalledRuntimes()
+        }
+        for _ in 0..<100 where continuations.read({ $0.count }) < 1 {
+            await Task.yield()
+        }
+
+        let currentRefresh = Task { @MainActor in
+            try await self.subject.refreshInstalledRuntimes()
+        }
+        for _ in 0..<100 where continuations.read({ $0.count }) < 2 {
+            await Task.yield()
+        }
+
+        continuations.read { $0[1] }.resume(
+            returning: ProcessOutput(status: 0, out: "{}", err: "")
+        )
+        try await currentRefresh.value
+        continuations.read { $0[0] }.resume(
+            returning: ProcessOutput(status: 0, out: staleJSON, err: "")
+        )
+        try await staleRefresh.value
+
+        XCTAssertTrue(subject.installedRuntimes.isEmpty)
+    }
+
     func test_InstalledPlatformRuntimes_RejectsArchitectureMismatch() throws {
         let armRuntime = try Self.downloadableRuntime(architectures: [.arm64])
         let x86Runtime = try Self.downloadableRuntime(architectures: [.x86_64])
@@ -591,12 +666,12 @@ class AppStateTests: XCTestCase {
         let deletedIdentifiers = TestLockedBox<[String]>([])
         let continuations = TestLockedBox<[CheckedContinuation<ProcessOutput, Error>]>([])
         subject = AppState(
-            runtimeService: Self.runtimeService { identifier in
+            runtimeService: Self.runtimeService(deleteRuntimeOutput: { identifier in
                 deletedIdentifiers.withValue { $0.append(identifier) }
                 return try await withCheckedThrowingContinuation { continuation in
                     continuations.withValue { $0.append(continuation) }
                 }
-            }
+            })
         )
         subject.installedRuntimes = [installedRuntime]
 
@@ -663,9 +738,9 @@ class AppStateTests: XCTestCase {
             runtimeInfo: CoreSimulatorRuntimeInfo(build: runtime.simulatorVersion.buildUpdate)
         )
         subject = AppState(
-            runtimeService: Self.runtimeService { _ in
+            runtimeService: Self.runtimeService(deleteRuntimeOutput: { _ in
                 throw XcodesKitError("No matching images found to delete")
-            }
+            })
         )
         subject.installedRuntimes = [installedRuntime]
 
@@ -949,6 +1024,7 @@ class AppStateTests: XCTestCase {
 
     private static func runtimeService(
         installedRuntimesJSON: String = "{}",
+        installedRuntimesOutput: (@Sendable () async throws -> ProcessOutput)? = nil,
         deleteRuntimeOutput: @escaping @Sendable (String) async throws -> ProcessOutput = { _ in
             ProcessOutput(status: 0, out: "", err: "")
         }
@@ -970,7 +1046,10 @@ class AppStateTests: XCTestCase {
                 """.utf8)
             },
             installedRuntimesOutput: {
-                ProcessOutput(status: 0, out: installedRuntimesJSON, err: "")
+                if let installedRuntimesOutput {
+                    return try await installedRuntimesOutput()
+                }
+                return ProcessOutput(status: 0, out: installedRuntimesJSON, err: "")
             },
             installRuntimeImageOutput: { _ in
                 ProcessOutput(status: 0, out: "", err: "")

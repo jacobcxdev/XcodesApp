@@ -53,8 +53,17 @@ extension AppState {
     }
 
     func refreshInstalledRuntimes() async throws {
+        let refreshID = UUID()
+        installedRuntimesRefreshID = refreshID
+        defer {
+            if installedRuntimesRefreshID == refreshID {
+                installedRuntimesRefreshID = nil
+            }
+        }
+
         let runtimes = try await runtimeService.installedRuntimes()
         try Task.checkCancellation()
+        guard installedRuntimesRefreshID == refreshID else { return }
         installedRuntimes = runtimes.map(CoreSimulatorImage.init)
     }
 
