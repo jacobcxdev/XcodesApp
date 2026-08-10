@@ -624,15 +624,15 @@ class AppStateTests: XCTestCase {
         XCTAssertNil(subject.deleteRuntimeTaskID)
     }
 
-    func test_ConfirmDeleteRuntime_PresentsPreferenceAlertOnError() async throws {
+    func test_ConfirmDeleteRuntime_PresentsPlatformAlertOnError() async throws {
         let runtime = try Self.downloadableRuntime()
 
         subject.confirmDeleteRuntime(runtime: runtime)
         let task = try XCTUnwrap(subject.deleteRuntimeTask)
         await task.value
 
-        guard case let .generic(title, message) = subject.presentedPreferenceAlert else {
-            return XCTFail("Expected generic preference alert")
+        guard case let .generic(title, message) = subject.presentedPlatformAlert else {
+            return XCTFail("Expected generic platform alert")
         }
         XCTAssertEqual(title, "Error")
         XCTAssertEqual(message, "No simulator found with \(runtime.identifier)")
@@ -674,8 +674,8 @@ class AppStateTests: XCTestCase {
         await task.value
 
         XCTAssertTrue(subject.installedRuntimes.isEmpty)
-        guard case let .generic(title, message) = subject.presentedPreferenceAlert else {
-            return XCTFail("Expected generic preference alert")
+        guard case let .generic(title, message) = subject.presentedPlatformAlert else {
+            return XCTFail("Expected generic platform alert")
         }
         XCTAssertEqual(title, "Error")
         XCTAssertEqual(message, "No matching images found to delete")

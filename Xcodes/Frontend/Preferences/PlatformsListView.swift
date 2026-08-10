@@ -66,7 +66,7 @@ struct PlatformsListView: View {
     }
     
     func deleteRuntime(runtime: DownloadableRuntime) {
-        appState.presentedPreferenceAlert = .deletePlatform(runtime: runtime)
+        appState.presentedPlatformAlert = .deletePlatform(runtime: runtime)
     }
 }
 

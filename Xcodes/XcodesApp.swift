@@ -74,22 +74,19 @@ struct XcodesApp: App {
         PreferencesView()
           .environmentObject(appState)
           .environmentObject(updater)
-          .alert(item: $appState.presentedPreferenceAlert, content: { presentedAlert in
-              alert(for: presentedAlert)
-          })
       }
         
         Window("Platforms", id: "platforms") {
             PlatformsListView()
                 .environmentObject(appState)
-                .alert(item: $appState.presentedPreferenceAlert, content: { presentedAlert in
+                .alert(item: $appState.presentedPlatformAlert, content: { presentedAlert in
                     alert(for: presentedAlert)
                 })
         }
 #endif
     }
     
-    private func alert(for alertType: XcodesPreferencesAlert) -> Alert {
+    private func alert(for alertType: XcodesPlatformAlert) -> Alert {
         switch alertType {
         case let .deletePlatform(runtime):
             return Alert(
@@ -108,7 +105,7 @@ struct XcodesApp: App {
                 message: Text(message),
                 dismissButton: .default(
                     Text("OK"),
-                    action: { appState.presentedAlert = nil }
+                    action: { appState.presentedPlatformAlert = nil }
                 )
             )
         }

@@ -315,7 +315,7 @@ extension AppState {
                     Logger.appState.error("Error refreshing installed runtimes: \(error.localizedDescription)")
                 }
                 guard self.deleteRuntimeTaskID == taskID else { return }
-                self.presentedPreferenceAlert = .generic(
+                self.presentedPlatformAlert = .generic(
                     title: "Error",
                     message: self.runtimeDeletionErrorMessage(deletionError)
                 )
