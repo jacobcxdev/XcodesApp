@@ -5669,6 +5669,26 @@
         }
       }
     },
+    "AutomaticallyCreateBetaSymbolicLink" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatically create symbolic link to Xcode-Beta.app"
+          }
+        }
+      }
+    },
+    "AutomaticallyCreateBetaSymbolicLinkDescription" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When making a prerelease Xcode version Active/Selected, try and create a symbolic link named Xcode-Beta.app in the installation directory"
+          }
+        }
+      }
+    },
     "AutomaticInstallNewVersion" : {
       "localizations" : {
         "ar" : {

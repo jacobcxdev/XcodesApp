@@ -77,6 +77,7 @@ enum PreferenceKey: String {
     case localPath
     case unxipExperiment
     case createSymLinkOnSelect
+    case createBetaSymLinkOnSelect
     case onSelectActionType
     case showOpenInRosettaOption
     case autoInstallation
@@ -186,12 +187,23 @@ class AppState: ObservableObject {
         return onSelectActionType == .rename || PreferenceKey.createSymLinkOnSelect.isManaged()
     }
 
+    @Published var createBetaSymLinkOnSelect = false {
+        didSet {
+            Current.defaults.set(createBetaSymLinkOnSelect, forKey: "createBetaSymLinkOnSelect")
+        }
+    }
+
+    var createBetaSymLinkOnSelectDisabled: Bool {
+        return onSelectActionType == .rename || PreferenceKey.createBetaSymLinkOnSelect.isManaged()
+    }
+
     @Published var onSelectActionType = SelectedActionType.none {
         didSet {
             Current.defaults.set(onSelectActionType.rawValue, forKey: "onSelectActionType")
 
             if onSelectActionType == .rename {
                 createSymLinkOnSelect = false
+                createBetaSymLinkOnSelect = false
             }
         }
     }
@@ -306,6 +318,7 @@ class AppState: ObservableObject {
         localPath = Current.defaults.string(forKey: "localPath") ?? Path.defaultXcodesApplicationSupport.string
         unxipExperiment = Current.defaults.bool(forKey: "unxipExperiment") ?? false
         createSymLinkOnSelect = Current.defaults.bool(forKey: "createSymLinkOnSelect") ?? false
+        createBetaSymLinkOnSelect = Current.defaults.bool(forKey: "createBetaSymLinkOnSelect") ?? false
         onSelectActionType = SelectedActionType(rawValue: Current.defaults.string(forKey: "onSelectActionType") ?? "none") ?? .none
         installPath = Current.defaults.string(forKey: "installPath") ?? Path.defaultInstallDirectory.string
         showOpenInRosettaOption = Current.defaults.bool(forKey: "showOpenInRosettaOption") ?? false
@@ -820,8 +833,11 @@ class AppState: ObservableObject {
                 try await Current.helper.switchXcodePathAsync(installedXcodePath.string)
                 try Task.checkCancellation()
                 await updateSelectedXcodePathAsync()
-                if createSymLinkOnSelect && onSelectActionType != .rename {
-                    createSymbolicLink(to: installedXcodePath)
+                if
+                    onSelectActionType != .rename,
+                    let isBeta = automaticSymbolicLinkIsBeta(for: xcode)
+                {
+                    createSymbolicLink(to: installedXcodePath, isBeta: isBeta)
                 }
             } catch is CancellationError {
             } catch {
@@ -866,11 +882,21 @@ class AppState: ObservableObject {
         createSymbolicLink(to: installedXcodePath, isBeta: isBeta)
     }
 
+    func automaticSymbolicLinkIsBeta(for xcode: Xcode) -> Bool? {
+        if xcode.version.isPrerelease {
+            return createBetaSymLinkOnSelect ? true : nil
+        }
+        return createSymLinkOnSelect ? false : nil
+    }
+
     func createSymbolicLink(to installedXcodePath: Path, isBeta: Bool = false) {
         let destinationPath = Path.installDirectory/"Xcode\(isBeta ? "-Beta" : "").app"
 
         do {
             let service = XcodeSelectionFilesystemService(
+                fileExists: { path in
+                    (try? FileManager.default.attributesOfItem(atPath: path)) != nil
+                },
                 installedXcode: { Current.files.installedXcode(destination: $0) }
             )
             let result = try service.createSymbolicLink(

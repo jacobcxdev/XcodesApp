@@ -196,6 +196,82 @@ class AppStateTests: XCTestCase {
         XCTAssertEqual(destination, installedXcodePath.string)
     }
 
+    func test_CreateSymbolicLink_ReplacesBrokenStableLink() throws {
+        let installDirectory = try XCTUnwrap(Path(
+            NSTemporaryDirectory()
+                .appending("XcodesAppStateTests-")
+                .appending(UUID().uuidString)
+        ))
+        let installedXcodePath = installDirectory/"Xcode-16.4.app"
+        let symlinkPath = installDirectory/"Xcode.app"
+        try FileManager.default.createDirectory(at: installedXcodePath.url, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            atPath: symlinkPath.string,
+            withDestinationPath: (installDirectory/"Missing-Xcode.app").string
+        )
+        defer { try? FileManager.default.removeItem(at: installDirectory.url) }
+
+        Current.defaults.string = { key in
+            key == "installPath" ? installDirectory.string : nil
+        }
+
+        subject.createSymbolicLink(to: installedXcodePath)
+
+        let destination = try FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath.string)
+        XCTAssertEqual(destination, installedXcodePath.string)
+    }
+
+    func test_CreateSymbolicLink_ReplacesBrokenBetaLink() throws {
+        let installDirectory = try XCTUnwrap(Path(
+            NSTemporaryDirectory()
+                .appending("XcodesAppStateTests-")
+                .appending(UUID().uuidString)
+        ))
+        let installedXcodePath = installDirectory/"Xcode-27.0-Beta.5.app"
+        let symlinkPath = installDirectory/"Xcode-Beta.app"
+        try FileManager.default.createDirectory(at: installedXcodePath.url, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            atPath: symlinkPath.string,
+            withDestinationPath: (installDirectory/"Missing-Xcode-Beta.app").string
+        )
+        defer { try? FileManager.default.removeItem(at: installDirectory.url) }
+
+        Current.defaults.string = { key in
+            key == "installPath" ? installDirectory.string : nil
+        }
+
+        subject.createSymbolicLink(to: installedXcodePath, isBeta: true)
+
+        let destination = try FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath.string)
+        XCTAssertEqual(destination, installedXcodePath.string)
+    }
+
+    func test_AutomaticSymbolicLink_ReleaseUsesStableLinkOnly() {
+        subject.createSymLinkOnSelect = true
+        subject.createBetaSymLinkOnSelect = true
+        let xcode = Xcode(
+            version: Version("16.4.0")!,
+            installState: .notInstalled,
+            selected: false,
+            icon: nil
+        )
+
+        XCTAssertEqual(subject.automaticSymbolicLinkIsBeta(for: xcode), false)
+    }
+
+    func test_AutomaticSymbolicLink_PrereleaseUsesBetaLinkOnly() {
+        subject.createSymLinkOnSelect = true
+        subject.createBetaSymLinkOnSelect = true
+        let xcode = Xcode(
+            version: Version("27.0.0-Beta.5")!,
+            installState: .notInstalled,
+            selected: false,
+            icon: nil
+        )
+
+        XCTAssertEqual(subject.automaticSymbolicLinkIsBeta(for: xcode), true)
+    }
+
     func test_InstallHelperIfNecessary_OldTaskDoesNotClearReplacementTask() async throws {
         subject.helperInstallState = .notInstalled
         let continuations = TestLockedBox<[CheckedContinuation<Bool, Error>]>([])
