@@ -26,7 +26,7 @@ struct BottomStatusModifier: ViewModifier {
                     Spacer()
                     if !hideSupportXcodes {
                         Button(action: {
-                            openURL(URL(string: "https://opencollective.com/xcodesapp")!)
+                            openURL(URL(string: "https://github.com/jacobcxdev/XcodesApp/issues")!)
                         }) {
                             HStack {
                                 Image(systemName: "heart.circle")

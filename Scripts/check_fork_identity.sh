@@ -12,6 +12,17 @@ readonly launchd_plist="$helper_dir/launchd.plist"
 readonly uninstall_script="$repo_root/Scripts/uninstall_privileged_helper.sh"
 readonly app_info_plist="$repo_root/Xcodes/Resources/Info.plist"
 readonly helper_scheme="$project/xcshareddata/xcschemes/dev.jacobcx.Xcodes.Helper.xcscheme"
+readonly readme="$repo_root/README.md"
+readonly contributing="$repo_root/CONTRIBUTING.md"
+readonly license="$repo_root/LICENSE"
+readonly forking="$repo_root/FORKING.md"
+readonly codeowners="$repo_root/.github/CODEOWNERS"
+readonly bug_template="$repo_root/.github/ISSUE_TEMPLATE/bug_report.md"
+readonly feature_template="$repo_root/.github/ISSUE_TEMPLATE/feature_request.md"
+readonly release_drafter="$repo_root/.github/release-drafter.yml"
+readonly app_source="$repo_root/Xcodes/XcodesApp.swift"
+readonly about_source="$repo_root/Xcodes/Frontend/About/AboutView.swift"
+readonly bottom_status_source="$repo_root/Xcodes/Frontend/XcodeList/BottomStatusBar.swift"
 
 readonly app_id="dev.jacobcx.Xcodes"
 readonly tests_id="dev.jacobcx.Xcodes.Tests"
@@ -49,6 +60,19 @@ require_only_line() {
     fi
 }
 
+require_literal() {
+    local literal="$1"
+    local file="$2"
+
+    if [[ ! -f "$file" ]]; then
+        return
+    fi
+
+    if ! grep -Fq -- "$literal" "$file"; then
+        fail "Missing fork ownership text '$literal' in ${file#"$repo_root/"}"
+    fi
+}
+
 for required_file in \
     "$project_file" \
     "$shared_constants" \
@@ -66,6 +90,69 @@ fi
 
 if [[ "$status" -ne 0 ]]; then
     exit "$status"
+fi
+
+for ownership_file in \
+    "$readme" \
+    "$contributing" \
+    "$license" \
+    "$forking" \
+    "$codeowners" \
+    "$bug_template" \
+    "$feature_template" \
+    "$release_drafter" \
+    "$app_source" \
+    "$about_source" \
+    "$bottom_status_source"; do
+    require_file "$ownership_file"
+done
+
+require_literal "maintained fork" "$readme"
+require_literal "https://github.com/XcodesOrg/XcodesApp" "$readme"
+require_literal "git clone https://github.com/jacobcxdev/XcodesApp.git" "$readme"
+require_literal "https://github.com/jacobcxdev/XcodesApp/releases/latest" "$readme"
+require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$contributing"
+require_literal "upstream/<topic>" "$contributing"
+require_literal "jacobcxdev/<topic>" "$contributing"
+require_literal "https://github.com/jacobcxdev/XcodesApp/" "$app_source"
+require_literal "https://github.com/jacobcxdev/XcodesApp/" "$about_source"
+require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$bottom_status_source"
+require_literal "https://github.com/jacobcxdev/XcodesApp#installation" "$release_drafter"
+require_literal "https://github.com/jacobcxdev/XcodesApp/releases/latest" "$bug_template"
+require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$feature_template"
+require_literal "*   @jacobcxdev" "$codeowners"
+require_literal "Copyright (c) 2026 Jacob Clayden" "$license"
+
+if [[ -f "$forking" ]]; then
+    for command in \
+        'git remote add upstream https://github.com/XcodesOrg/XcodesApp.git' \
+        'git remote set-url --push upstream DISABLED' \
+        'git fetch upstream' \
+        'git switch --create upstream/<topic> upstream/main' \
+        'git push --set-upstream origin upstream/<topic>' \
+        'git switch --create sync/upstream-YYYYMMDD origin/main' \
+        'git merge --no-ff upstream/main'; do
+        require_literal "$command" "$forking"
+    done
+fi
+
+if grep -R -n -i -E -- \
+    'github\.com/(XcodesOrg|RobotsAndPencils)/XcodesApp|github\.com/robotsandpencils/xcodesapp|opencollective\.com/xcodesapp' \
+    "$codeowners" "$bug_template" "$feature_template" \
+    "$release_drafter" "$app_source" "$about_source" "$bottom_status_source"; then
+    fail "Upstream-owned operational link remains in fork-facing metadata"
+fi
+
+if grep -n -i -E -- \
+    'github\.com/XcodesOrg/XcodesApp/(issues|pulls|releases)|github\.com/robotsandpencils/xcodesapp|opencollective\.com/xcodesapp' \
+    "$contributing"; then
+    fail "Upstream-owned fork support link remains in CONTRIBUTING.md"
+fi
+
+if grep -n -i -E -- \
+    'github\.com/XcodesOrg/XcodesApp/(releases|workflows|issues)|XcodesOrg/homebrew-cask|opencollective\.com/xcodesapp|twitter\.com/xcodesApp|iosdev\.space/@XcodesApp' \
+    "$readme"; then
+    fail "Unsupported upstream release, package, collective, or social claim remains in README.md"
 fi
 
 require_only_line 'let machServiceName = ' "let machServiceName = \"$helper_id\"" "$shared_constants"
@@ -137,6 +224,11 @@ if ! app_info=$(plutil -convert json -o - "$app_info_plist"); then
 elif ! jq -e --arg helper_id "$helper_id" --arg requirement "$helper_requirement" \
     '.SMPrivilegedExecutables == {($helper_id): $requirement}' <<< "$app_info" >/dev/null; then
     fail "Unexpected app privileged-helper requirement"
+fi
+
+if ! jq -e '.NSHumanReadableCopyright == "Copyright © 2026 Jacob Clayden"' \
+    <<< "$app_info" >/dev/null; then
+    fail "Unexpected app copyright"
 fi
 
 if ! launchd_info=$(plutil -convert json -o - "$launchd_plist"); then

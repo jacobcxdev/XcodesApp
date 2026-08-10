@@ -52,19 +52,19 @@ struct XcodesApp: App {
 
             CommandGroup(replacing: CommandGroupPlacement.help) {
                 Button("Menu.GitHubRepo") {
-                    let xcodesRepoURL = URL(string: "https://github.com/XcodesOrg/XcodesApp/")!
+                    let xcodesRepoURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/")!
                     openURL(xcodesRepoURL)
                 }
 
                 Divider()
 
                 Button("Menu.ReportABug") {
-                    let bugReportURL = URL(string: "https://github.com/XcodesOrg/XcodesApp/issues/new?assignees=&labels=bug&template=bug_report.md&title=")!
+                    let bugReportURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/issues/new?assignees=&labels=bug&template=bug_report.md&title=")!
                     openURL(bugReportURL)
                 }
 
                 Button("Menu.RequestNewFeature") {
-                    let featureRequestURL = URL(string: "https://github.com/XcodesOrg/XcodesApp/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=")!
+                    let featureRequestURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=")!
                     openURL(featureRequestURL)
                 }
             }

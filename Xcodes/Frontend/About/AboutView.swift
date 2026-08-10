@@ -16,7 +16,7 @@ struct AboutView: View {
                 
                 HStack(spacing: 32) {
                     Button(action: {
-                        openURL(URL(string: "https://github.com/RobotsAndPencils/XcodesApp/")!)
+                        openURL(URL(string: "https://github.com/jacobcxdev/XcodesApp/")!)
                     }) {
                         Label("GithubRepo", systemImage: "link")
                     }
@@ -49,7 +49,7 @@ struct AboutView: View {
                     Text(Bundle.main.humanReadableCopyright!)
                         .font(.footnote)
                     Button(action: {
-                        openURL(URL(string: "https://opencollective.com/xcodesapp")!)
+                        openURL(URL(string: "https://github.com/jacobcxdev/XcodesApp/issues")!)
                     }) {
                         HStack {
                             Image(systemName: "heart.circle")
