@@ -73,6 +73,17 @@ require_literal() {
     fi
 }
 
+require_trimmed_line() {
+    local expected="$1"
+    local file="$2"
+    local count
+
+    count=$(sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' "$file" | grep -Fxc -- "$expected" || true)
+    if [[ "$count" -ne 1 ]]; then
+        fail "Expected one exact fork ownership line '$expected' in ${file#"$repo_root/"}"
+    fi
+}
+
 for required_file in \
     "$project_file" \
     "$shared_constants" \
@@ -114,9 +125,10 @@ require_literal "https://github.com/jacobcxdev/XcodesApp/releases/latest" "$read
 require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$contributing"
 require_literal "upstream/<topic>" "$contributing"
 require_literal "jacobcxdev/<topic>" "$contributing"
-require_literal "https://github.com/jacobcxdev/XcodesApp/" "$app_source"
-require_literal "https://github.com/jacobcxdev/XcodesApp/" "$about_source"
-require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$bottom_status_source"
+require_trimmed_line 'let xcodesRepoURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/")!' "$app_source"
+require_trimmed_line 'let bugReportURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/issues/new?assignees=&labels=bug&template=bug_report.md&title=")!' "$app_source"
+require_trimmed_line 'let featureRequestURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=")!' "$app_source"
+require_trimmed_line 'openURL(URL(string: "https://github.com/jacobcxdev/XcodesApp/")!)' "$about_source"
 require_literal "https://github.com/jacobcxdev/XcodesApp#installation" "$release_drafter"
 require_literal "https://github.com/jacobcxdev/XcodesApp/releases/latest" "$bug_template"
 require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$feature_template"
@@ -164,6 +176,11 @@ if grep -R -n -i -E -- \
     "$codeowners" "$bug_template" "$feature_template" \
     "$release_drafter" "$app_source" "$about_source" "$bottom_status_source"; then
     fail "Upstream-owned operational link remains in fork-facing metadata"
+fi
+
+if grep -n -E -- 'Support\.Xcodes|heart\.circle|opencollective\.com/xcodesapp|github\.com/jacobcxdev/XcodesApp/issues' \
+    "$about_source" "$bottom_status_source"; then
+    fail "Donation-labelled support control remains without a fork donation destination"
 fi
 
 if grep -n -i -E -- \

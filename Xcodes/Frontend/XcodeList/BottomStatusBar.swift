@@ -11,9 +11,6 @@ import SwiftUI
 
 struct BottomStatusModifier: ViewModifier {
     @EnvironmentObject var appState: AppState
-    @AppStorage(PreferenceKey.hideSupportXcodes.rawValue) var hideSupportXcodes = false
-
-    @SwiftUI.Environment(\.openURL) var openURL: OpenURLAction
     
     func body(content: Content) -> some View {
         VStack(spacing: 0) {
@@ -24,16 +21,6 @@ struct BottomStatusModifier: ViewModifier {
                     Text(appState.bottomStatusBarMessage)
                             .font(.subheadline)
                     Spacer()
-                    if !hideSupportXcodes {
-                        Button(action: {
-                            openURL(URL(string: "https://github.com/jacobcxdev/XcodesApp/issues")!)
-                        }) {
-                            HStack {
-                                Image(systemName: "heart.circle")
-                                Text("Support.Xcodes")
-                            }
-                        }
-                    }
                     Text(verbatim: "\(Bundle.main.shortVersion!) (\(Bundle.main.version!))")
                         .font(.subheadline)
                 }
@@ -56,34 +43,13 @@ extension View {
 struct Previews_BottomStatusBar_Previews: PreviewProvider {
     @MainActor
     static var previews: some View {
-        Group {
-            HStack {
+        HStack {
 
-            }
-            .bottomStatusBar()
-            .environmentObject({ () -> AppState in
-                let a = AppState()
-                return a }()
-            )
-            .defaultAppStorage({ () -> UserDefaults in
-                let d = UserDefaults(suiteName: "hide_support")!
-                d.set(true, forKey: PreferenceKey.hideSupportXcodes.rawValue)
-                return d
-            }())
-
-            HStack {
-
-            }
-            .bottomStatusBar()
-            .environmentObject({ () -> AppState in
-                let a = AppState()
-                return a }()
-            )
-            .defaultAppStorage({ () -> UserDefaults in
-                let d = UserDefaults(suiteName: "show_support")!
-                d.set(false, forKey: PreferenceKey.hideSupportXcodes.rawValue)
-                return d
-            }())
         }
+        .bottomStatusBar()
+        .environmentObject({ () -> AppState in
+            let a = AppState()
+            return a }()
+        )
     }
 }

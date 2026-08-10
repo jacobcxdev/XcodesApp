@@ -45,18 +45,8 @@ struct AboutView: View {
                     }
                     .buttonStyle(LinkButtonStyle())
                 }
-                HStack {
-                    Text(Bundle.main.humanReadableCopyright!)
-                        .font(.footnote)
-                    Button(action: {
-                        openURL(URL(string: "https://github.com/jacobcxdev/XcodesApp/issues")!)
-                    }) {
-                        HStack {
-                            Image(systemName: "heart.circle")
-                            Text("Support.Xcodes")
-                        }
-                    }
-                }
+                Text(Bundle.main.humanReadableCopyright!)
+                    .font(.footnote)
             }
         }
         .padding()
