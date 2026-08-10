@@ -1,4 +1,5 @@
 import Combine
+import AsyncNetworkService
 @preconcurrency import Path
 import Version
 import XCTest
@@ -32,6 +33,66 @@ class AppStateTests: XCTestCase {
         Current = .mock
         syncXcodesKitMocks()
         subject = AppState()
+    }
+
+    func test_AuthenticationPolicy_MapsSession401ToNotAuthorized() {
+        let error = AuthenticationRequestPolicy.mapSessionValidationError(
+            NetworkError.non200StatusCode(statusCode: 401, data: Data())
+        )
+
+        XCTAssertEqual(error as? AuthenticationError, .notAuthorized)
+    }
+
+    func test_AuthenticationPolicy_Retries503UntilSuccess() async throws {
+        let attempts = TestLockedBox(0)
+
+        let result = try await AuthenticationRequestPolicy(delayBeforeRetry: .zero).perform {
+            let attempt = attempts.withValue { value in
+                value += 1
+                return value
+            }
+            if attempt < 3 {
+                throw NetworkError.non200StatusCode(statusCode: 503, data: nil)
+            }
+            return "authenticated"
+        }
+
+        XCTAssertEqual(result, "authenticated")
+        XCTAssertEqual(attempts.read { $0 }, 3)
+    }
+
+    func test_AuthenticationPolicy_StopsAfterThird503() async {
+        let attempts = TestLockedBox(0)
+
+        do {
+            let _: String = try await AuthenticationRequestPolicy(delayBeforeRetry: .zero).perform {
+                attempts.withValue { $0 += 1 }
+                throw NetworkError.non200StatusCode(statusCode: 503, data: nil)
+            }
+            XCTFail("Expected temporary service error")
+        } catch {
+            XCTAssertEqual(
+                error as? AuthenticationRequestError,
+                .serviceTemporarilyUnavailable(statusCode: 503)
+            )
+            XCTAssertEqual(attempts.read { $0 }, 3)
+        }
+    }
+
+    func test_AuthenticationPolicy_DoesNotClearCredentialsFor503() {
+        XCTAssertFalse(
+            AuthenticationRequestPolicy.shouldClearCredentials(
+                after: NetworkError.non200StatusCode(statusCode: 503, data: nil)
+            )
+        )
+    }
+
+    func test_AuthenticationPolicy_ClearsCredentialsForInvalidPassword() {
+        XCTAssertTrue(
+            AuthenticationRequestPolicy.shouldClearCredentials(
+                after: AuthenticationError.invalidUsernameOrPassword(username: "user@example.com")
+            )
+        )
     }
     
     func test_ParseCertificateInfo_Succeeds() throws {

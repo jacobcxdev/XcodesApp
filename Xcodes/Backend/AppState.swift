@@ -1,4 +1,5 @@
 import AppKit
+import AsyncNetworkService
 import XcodesLoginKit
 import XcodesLoginKitSecurityKey
 import Path
@@ -9,6 +10,67 @@ import Version
 import os.log
 import DockProgress
 import XcodesKit
+
+enum AuthenticationRequestError: LocalizedError, Equatable {
+    case serviceTemporarilyUnavailable(statusCode: Int)
+
+    var errorDescription: String? {
+        switch self {
+        case let .serviceTemporarilyUnavailable(statusCode):
+            return "Apple's authentication service is temporarily unavailable (HTTP \(statusCode)). Try again shortly."
+        }
+    }
+}
+
+struct AuthenticationRequestPolicy: Sendable {
+    let maximumAttemptCount: Int
+    let delayBeforeRetry: Duration
+
+    init(maximumAttemptCount: Int = 3, delayBeforeRetry: Duration = .seconds(2)) {
+        self.maximumAttemptCount = maximumAttemptCount
+        self.delayBeforeRetry = delayBeforeRetry
+    }
+
+    func perform<T>(_ operation: @escaping @Sendable () async throws -> T) async throws -> T {
+        do {
+            return try await attemptRetryableTask(
+                maximumRetryCount: maximumAttemptCount,
+                delayBeforeRetry: delayBeforeRetry,
+                shouldRetry: Self.isTransient,
+                operation
+            )
+        } catch let NetworkError.non200StatusCode(statusCode, _)
+            where [502, 503, 504].contains(statusCode) {
+            throw AuthenticationRequestError.serviceTemporarilyUnavailable(statusCode: statusCode)
+        }
+    }
+
+    static func mapSessionValidationError(_ error: Error) -> Error {
+        guard
+            let networkError = error as? NetworkError,
+            case .non200StatusCode(statusCode: 401, data: _) = networkError
+        else {
+            return error
+        }
+        return AuthenticationError.notAuthorized
+    }
+
+    static func shouldClearCredentials(after error: Error) -> Bool {
+        guard let authenticationError = error as? AuthenticationError else { return false }
+        if case .invalidUsernameOrPassword = authenticationError { return true }
+        return false
+    }
+
+    private static func isTransient(_ error: Error) -> Bool {
+        guard
+            let networkError = error as? NetworkError,
+            case let .non200StatusCode(statusCode, _) = networkError
+        else {
+            return false
+        }
+        return [502, 503, 504].contains(statusCode)
+    }
+}
 
 enum PreferenceKey: String {
     case installPath
@@ -276,7 +338,11 @@ class AppState: ObservableObject {
     }
 
     func validateSessionAsync() async throws {
-        try await Current.network.validateSessionAsync()
+        do {
+            try await Current.network.validateSessionAsync()
+        } catch {
+            throw AuthenticationRequestPolicy.mapSessionValidationError(error)
+        }
     }
 
     func signInIfNeededAsync() async throws {
@@ -308,7 +374,9 @@ class AppState: ObservableObject {
         Current.defaults.set(username, forKey: "username")
 
         return try await performAuthenticationRequest {
-            try await client.authenticationState(accountName: username, password: password)
+            try await AuthenticationRequestPolicy().perform {
+                try await self.client.authenticationState(accountName: username, password: password)
+            }
         }
     }
 
@@ -386,8 +454,9 @@ class AppState: ObservableObject {
     }
 
     private func handleAuthenticationFlowFailure(_ error: Error) {
-        // remove saved username and any stored keychain password if authentication fails so it doesn't try again.
-        clearLoginCredentials()
+        if AuthenticationRequestPolicy.shouldClearCredentials(after: error) {
+            clearLoginCredentials()
+        }
         Logger.appState.error("Authentication error: \(error.legibleDescription)")
         self.authError = error
     }
