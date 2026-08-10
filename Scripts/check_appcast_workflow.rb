@@ -61,23 +61,6 @@ check.call(deploy["runs-on"] == "ubuntu-latest", "Deploy job runner changed")
 
 build_steps = build.fetch("steps", [])
 deploy_steps = deploy.fetch("steps", [])
-check.call(
-  build_steps.map { |step| step["name"] } == [
-    "Checkout",
-    "Setup Ruby",
-    "Install pinned Bundler",
-    "Install dependencies",
-    "Test appcast generation",
-    "Build appcasts",
-    "Validate rendered appcasts",
-    "Upload verified appcasts",
-  ],
-  "Build job must contain only audited appcast steps"
-)
-check.call(
-  deploy_steps.map { |step| step["name"] } == ["Download verified appcasts", "Publish GitHub Pages branch"],
-  "Deploy job must only download and publish verified appcasts"
-)
 
 checkout_sha = "11bd71901bbe5b1630ceea73d27597364c9af683"
 ruby_sha = "7bae1d00b5db9166f4f0fc47985a3a5702cb58f0"
@@ -94,6 +77,74 @@ expected_deploy_uses = [
   "actions/download-artifact@#{download_sha}",
   "JamesIves/github-pages-deploy-action@#{deploy_sha}",
 ]
+
+expected_build_steps = [
+  {
+    "name" => "Checkout",
+    "uses" => "actions/checkout@#{checkout_sha}",
+    "with" => { "persist-credentials" => false },
+  },
+  {
+    "name" => "Setup Ruby",
+    "uses" => "ruby/setup-ruby@#{ruby_sha}",
+    "with" => { "ruby-version" => "3.3" },
+  },
+  {
+    "name" => "Install pinned Bundler",
+    "run" => 'gem install bundler --version "$BUNDLER_VERSION" --no-document',
+  },
+  {
+    "name" => "Install dependencies",
+    "working-directory" => "AppCast",
+    "run" => 'bundle "_${BUNDLER_VERSION}_" install --jobs 4 --retry 3',
+  },
+  {
+    "name" => "Test appcast generation",
+    "working-directory" => "AppCast",
+    "run" => 'bundle "_${BUNDLER_VERSION}_" exec ruby test_appcast.rb',
+  },
+  {
+    "name" => "Build appcasts",
+    "working-directory" => "AppCast",
+    "env" => { "JEKYLL_GITHUB_TOKEN" => "${{ github.token }}" },
+    "run" => 'bundle "_${BUNDLER_VERSION}_" exec jekyll build',
+  },
+  {
+    "name" => "Validate rendered appcasts",
+    "run" => "xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml",
+  },
+  {
+    "name" => "Upload verified appcasts",
+    "uses" => "actions/upload-artifact@#{upload_sha}",
+    "with" => {
+      "name" => "appcast-site",
+      "path" => "AppCast/_site",
+      "if-no-files-found" => "error",
+      "retention-days" => 1,
+    },
+  },
+]
+expected_deploy_steps = [
+  {
+    "name" => "Download verified appcasts",
+    "uses" => "actions/download-artifact@#{download_sha}",
+    "with" => { "name" => "appcast-site", "path" => "AppCast/_site" },
+  },
+  {
+    "name" => "Publish GitHub Pages branch",
+    "uses" => "JamesIves/github-pages-deploy-action@#{deploy_sha}",
+    "with" => {
+      "token" => "${{ github.token }}",
+      "branch" => "gh-pages",
+      "folder" => "AppCast/_site",
+      "clean" => true,
+      "single-commit" => true,
+    },
+  },
+]
+
+check.call(build_steps == expected_build_steps, "Build steps must exactly match audited controls")
+check.call(deploy_steps == expected_deploy_steps, "Deploy steps must exactly match audited controls")
 
 build_uses = build_steps.filter_map { |step| step["uses"] }
 deploy_uses = deploy_steps.filter_map { |step| step["uses"] }

@@ -55,6 +55,14 @@ mutate_workflow action_pin_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["uses"]&.start_with?("actions/checkout@") }["uses"] = "actions/checkout@v4"; File.write(path, YAML.dump(data) + "# actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683\n")'
 mutate_workflow validation_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |item| item["name"] == "Validate rendered appcasts" }; File.write(path, YAML.dump(data) + "# xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml\n")'
+mutate_workflow validation_continue_on_error \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate rendered appcasts" }["continue-on-error"] = true; File.write(path, YAML.dump(data))'
+mutate_workflow validation_if_false \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate rendered appcasts" }["if"] = false; File.write(path, YAML.dump(data))'
+mutate_workflow fixture_continue_on_error \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Test appcast generation" }["continue-on-error"] = true; File.write(path, YAML.dump(data))'
+mutate_workflow upload_if_false \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Upload verified appcasts" }["if"] = false; File.write(path, YAML.dump(data))'
 
 identity_fixture="$test_root/identity"
 mkdir -p \
