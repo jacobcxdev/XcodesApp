@@ -166,6 +166,133 @@ class AppStateTests: XCTestCase {
         XCTAssertFalse(subject.enableGroupedXcodeList)
     }
 
+    func test_ForkPreferenceMigration_CopiesAllowlistedValues() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferenceKeys = [
+            PreferenceKey.installPath,
+            PreferenceKey.localPath,
+            PreferenceKey.unxipExperiment,
+            PreferenceKey.createSymLinkOnSelect,
+            PreferenceKey.createBetaSymLinkOnSelect,
+            PreferenceKey.onSelectActionType,
+            PreferenceKey.showOpenInRosettaOption,
+            PreferenceKey.autoInstallation,
+            PreferenceKey.SUEnableAutomaticChecks,
+            PreferenceKey.includePrereleaseVersions,
+            PreferenceKey.downloader,
+            PreferenceKey.dataSource,
+            PreferenceKey.xcodeListCategory,
+            PreferenceKey.allowedMajorVersions,
+            PreferenceKey.hideSupportXcodes,
+            PreferenceKey.xcodeListArchitectures,
+            PreferenceKey.enableGroupedXcodeList,
+            PreferenceKey.expandedMajorXcodeVersions,
+            PreferenceKey.expandedMinorXcodeVersions,
+        ]
+        let keys = preferenceKeys.map(\.rawValue) + ["terminateAfterLastWindowClosed"]
+        let legacyValues = Dictionary(uniqueKeysWithValues: keys.map { ($0, "legacy-\($0)") })
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: legacyValues,
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+
+        for key in keys {
+            XCTAssertEqual(defaults.string(forKey: key), "legacy-\(key)")
+        }
+    }
+
+    func test_ForkPreferenceMigration_DoesNotCopySensitiveOrUnknownValues() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let excludedKeys = [
+            "username",
+            "password",
+            "cookies",
+            "sessionCookies",
+            "credentials",
+            "SULastCheckTime",
+            "SUSkippedVersion",
+            "lastUpdated",
+            "arbitraryKey",
+        ]
+        let legacyValues = Dictionary(uniqueKeysWithValues: excludedKeys.map { ($0, "legacy-value") })
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: legacyValues,
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+
+        for key in excludedKeys {
+            XCTAssertNil(defaults.object(forKey: key))
+        }
+    }
+
+    func test_ForkPreferenceMigration_PreservesExistingForkValues() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set("fork-value", forKey: PreferenceKey.downloader.rawValue)
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: [PreferenceKey.downloader.rawValue: "legacy-value"],
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+
+        XCTAssertEqual(defaults.string(forKey: PreferenceKey.downloader.rawValue), "fork-value")
+    }
+
+    func test_ForkPreferenceMigration_UsesLegacySupportWhenLocalPathIsAbsent() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: [:],
+            into: defaults,
+            legacyApplicationSupportExists: true
+        )
+
+        XCTAssertEqual(
+            defaults.string(forKey: PreferenceKey.localPath.rawValue),
+            (Path.applicationSupport/"com.robotsandpencils.XcodesApp").string
+        )
+    }
+
+    func test_ForkPreferenceMigration_MarkerMakesMigrationIdempotent() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: [PreferenceKey.installPath.rawValue: "/Applications/Legacy"],
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+        ForkPreferenceMigration.migrate(
+            legacyValues: [PreferenceKey.downloader.rawValue: "aria2"],
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+
+        XCTAssertEqual(defaults.integer(forKey: ForkPreferenceMigration.markerKey), 1)
+        XCTAssertNil(defaults.object(forKey: PreferenceKey.downloader.rawValue))
+    }
+
+    func test_ForkPaths_UseForkApplicationSupportAndCaches() {
+        let expectedApplicationSupport = Path.applicationSupport/"dev.jacobcx.Xcodes"
+
+        XCTAssertEqual(Path.defaultXcodesApplicationSupport, expectedApplicationSupport)
+        XCTAssertEqual(Path.xcodesApplicationSupport, expectedApplicationSupport)
+        XCTAssertEqual(Path.xcodesCaches, Path.caches/"dev.jacobcx.Xcodes")
+
+        Current.defaults.string = { key in
+            key == PreferenceKey.localPath.rawValue ? "/tmp/dev.jacobcx.Xcodes" : nil
+        }
+        XCTAssertEqual(Path.xcodesApplicationSupport.string, "/tmp/dev.jacobcx.Xcodes")
+    }
+
     func test_PrepareForHelperAction_StaleActionDoesNotClearReplacementAction() {
         var responses = [Bool]()
         subject.prepareForHelperAction { responses.append($0) }
@@ -182,6 +309,13 @@ class AppStateTests: XCTestCase {
         XCTAssertEqual(responses, [false])
         XCTAssertNil(subject.isPreparingUserForActionRequiringHelper)
         XCTAssertNil(subject.helperActionPreparationID)
+    }
+
+    private func makeIsolatedDefaults() -> (defaults: UserDefaults, suiteName: String) {
+        let suiteName = "dev.jacobcx.Xcodes.AppStateTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        return (defaults, suiteName)
     }
 
     func test_RespondToPreparedHelperAction_RunsActionAndClearsAlert() {

@@ -96,6 +96,70 @@ enum PreferenceKey: String {
     func isManaged() -> Bool { UserDefaults.standard.objectIsForced(forKey: self.rawValue) }
 }
 
+struct ForkPreferenceMigration {
+    static let markerKey = "dev.jacobcx.Xcodes.preferenceMigrationVersion"
+
+    private static let version = 1
+    private static let legacyDefaultsDomain = "com.xcodesorg.xcodesapp"
+    private static var legacyApplicationSupport: Path {
+        Path.applicationSupport/"com.robotsandpencils.XcodesApp"
+    }
+    private static let allowlistedKeys = [
+        PreferenceKey.installPath.rawValue,
+        PreferenceKey.localPath.rawValue,
+        PreferenceKey.unxipExperiment.rawValue,
+        PreferenceKey.createSymLinkOnSelect.rawValue,
+        PreferenceKey.createBetaSymLinkOnSelect.rawValue,
+        PreferenceKey.onSelectActionType.rawValue,
+        PreferenceKey.showOpenInRosettaOption.rawValue,
+        PreferenceKey.autoInstallation.rawValue,
+        PreferenceKey.SUEnableAutomaticChecks.rawValue,
+        PreferenceKey.includePrereleaseVersions.rawValue,
+        PreferenceKey.downloader.rawValue,
+        PreferenceKey.dataSource.rawValue,
+        PreferenceKey.xcodeListCategory.rawValue,
+        PreferenceKey.allowedMajorVersions.rawValue,
+        PreferenceKey.hideSupportXcodes.rawValue,
+        PreferenceKey.xcodeListArchitectures.rawValue,
+        PreferenceKey.enableGroupedXcodeList.rawValue,
+        PreferenceKey.expandedMajorXcodeVersions.rawValue,
+        PreferenceKey.expandedMinorXcodeVersions.rawValue,
+        "terminateAfterLastWindowClosed",
+    ]
+
+    static func migrate() {
+        let defaults = UserDefaults.standard
+        migrate(
+            legacyValues: defaults.persistentDomain(forName: legacyDefaultsDomain) ?? [:],
+            into: defaults,
+            legacyApplicationSupportExists: FileManager.default.fileExists(
+                atPath: legacyApplicationSupport.string
+            )
+        )
+    }
+
+    static func migrate(
+        legacyValues: [String: Any],
+        into defaults: UserDefaults,
+        legacyApplicationSupportExists: Bool
+    ) {
+        guard defaults.integer(forKey: markerKey) < version else { return }
+
+        for key in allowlistedKeys where defaults.object(forKey: key) == nil {
+            if let value = legacyValues[key] {
+                defaults.set(value, forKey: key)
+            }
+        }
+
+        if defaults.object(forKey: PreferenceKey.localPath.rawValue) == nil,
+           legacyApplicationSupportExists {
+            defaults.set(legacyApplicationSupport.string, forKey: PreferenceKey.localPath.rawValue)
+        }
+
+        defaults.set(version, forKey: markerKey)
+    }
+}
+
 @MainActor
 class AppState: ObservableObject {
     private var client: XcodesLoginKit.Client { Current.network.loginClient }
@@ -302,6 +366,7 @@ class AppState: ObservableObject {
     init(runtimeService: RuntimeService = RuntimeService()) {
         self.runtimeService = runtimeService
         guard !isTesting else { return }
+        ForkPreferenceMigration.migrate()
         try? loadCachedAvailableXcodes()
         try? loadCacheDownloadableRuntimes()
         Task { @MainActor in
