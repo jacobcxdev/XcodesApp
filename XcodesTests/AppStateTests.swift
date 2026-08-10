@@ -473,6 +473,62 @@ class AppStateTests: XCTestCase {
         XCTAssertTrue(Current.network.loginClient.urlSession === replacementSession)
     }
 
+    func test_RefreshInstalledRuntimes_UsesLiveSimctlOutput() async throws {
+        let identifier = "97772E90-7BD1-4882-9C51-782E62E0AF4F"
+        let json = """
+        {
+          "\(identifier)": {
+            "build": "23F72",
+            "deletable": true,
+            "identifier": "\(identifier)",
+            "kind": "Disk Image",
+            "lastUsedAt": null,
+            "path": "/Library/Developer/CoreSimulator/Images/iOS_26_5.dmg",
+            "platformIdentifier": "com.apple.platform.iphonesimulator",
+            "runtimeBundlePath": "/Library/Developer/CoreSimulator/Volumes/iOS_23F72/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime",
+            "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-5",
+            "signatureState": "Verified",
+            "state": "Ready",
+            "version": "26.5",
+            "sizeBytes": 9148280348,
+            "supportedArchitectures": ["arm64"]
+          }
+        }
+        """
+        subject.runtimeService = Self.runtimeService(installedRuntimesJSON: json)
+
+        try await subject.refreshInstalledRuntimes()
+
+        XCTAssertEqual(subject.installedRuntimes.map(\.uuid), [identifier])
+        XCTAssertEqual(subject.installedRuntimes.first?.runtimeInfo.build, "23F72")
+        XCTAssertEqual(subject.installedRuntimes.first?.runtimeInfo.supportedArchitectures, [.arm64])
+        XCTAssertEqual(
+            subject.installedRuntimes.first?.path["relative"],
+            "/Library/Developer/CoreSimulator/Images/iOS_26_5.dmg"
+        )
+    }
+
+    func test_InstalledPlatformRuntimes_RejectsArchitectureMismatch() throws {
+        let armRuntime = try Self.downloadableRuntime(architectures: [.arm64])
+        let x86Runtime = try Self.downloadableRuntime(architectures: [.x86_64])
+        subject.downloadableRuntimes = [x86Runtime, armRuntime]
+        subject.installedRuntimes = [
+            CoreSimulatorImage(
+                uuid: "runtime-uuid",
+                path: ["relative": "/Library/Developer/CoreSimulator/Images/runtime.dmg"],
+                runtimeInfo: CoreSimulatorRuntimeInfo(
+                    build: armRuntime.simulatorVersion.buildUpdate,
+                    supportedArchitectures: [.arm64]
+                )
+            )
+        ]
+
+        let runtimes = subject.installedPlatformRuntimes()
+
+        XCTAssertEqual(runtimes.count, 1)
+        XCTAssertEqual(runtimes.first?.architectures, [.arm64])
+    }
+
     func test_DownloadRuntimeViaXcodeBuild_ClearsRuntimeTaskWhenComplete() async throws {
         let runtime = try Self.downloadableRuntime()
         subject.downloadableRuntimes = [runtime]
@@ -582,6 +638,47 @@ class AppStateTests: XCTestCase {
         XCTAssertEqual(message, "No simulator found with \(runtime.identifier)")
         XCTAssertNil(subject.deleteRuntimeTask)
         XCTAssertNil(subject.deleteRuntimeTaskID)
+    }
+
+    func test_DeleteRuntime_RefreshesInstalledRuntimesAfterSuccess() async throws {
+        let runtime = try Self.downloadableRuntime()
+        let installedRuntime = CoreSimulatorImage(
+            uuid: "runtime-uuid",
+            path: ["relative": "/Library/Developer/CoreSimulator/Images/runtime.dmg"],
+            runtimeInfo: CoreSimulatorRuntimeInfo(build: runtime.simulatorVersion.buildUpdate)
+        )
+        subject = AppState(runtimeService: Self.runtimeService())
+        subject.installedRuntimes = [installedRuntime]
+
+        try await subject.deleteRuntime(runtime: runtime)
+
+        XCTAssertTrue(subject.installedRuntimes.isEmpty)
+    }
+
+    func test_ConfirmDeleteRuntime_RefreshesStaleStateOnError() async throws {
+        let runtime = try Self.downloadableRuntime()
+        let installedRuntime = CoreSimulatorImage(
+            uuid: "runtime-uuid",
+            path: ["relative": "/Library/Developer/CoreSimulator/Images/runtime.dmg"],
+            runtimeInfo: CoreSimulatorRuntimeInfo(build: runtime.simulatorVersion.buildUpdate)
+        )
+        subject = AppState(
+            runtimeService: Self.runtimeService { _ in
+                throw XcodesKitError("No matching images found to delete")
+            }
+        )
+        subject.installedRuntimes = [installedRuntime]
+
+        subject.confirmDeleteRuntime(runtime: runtime)
+        let task = try XCTUnwrap(subject.deleteRuntimeTask)
+        await task.value
+
+        XCTAssertTrue(subject.installedRuntimes.isEmpty)
+        guard case let .generic(title, message) = subject.presentedPreferenceAlert else {
+            return XCTFail("Expected generic preference alert")
+        }
+        XCTAssertEqual(title, "Error")
+        XCTAssertEqual(message, "No matching images found to delete")
     }
 
     func test_InstallWithoutLogin_OldTaskDoesNotClearReplacementTask() async throws {
@@ -811,7 +908,15 @@ class AppStateTests: XCTestCase {
         )
     }
 
-    private static func downloadableRuntime() throws -> DownloadableRuntime {
+    private static func downloadableRuntime(
+        architectures: [Architecture]? = nil
+    ) throws -> DownloadableRuntime {
+        let encodedArchitectures: String
+        if let architectures {
+            encodedArchitectures = "[\(architectures.map { "\"\($0.rawValue)\"" }.joined(separator: ","))]"
+        } else {
+            encodedArchitectures = "null"
+        }
         let json = """
         {
           "category": "simulator",
@@ -820,7 +925,7 @@ class AppStateTests: XCTestCase {
             "version": "16.0"
           },
           "source": "https://example.com/iOS_16_Runtime.dmg",
-          "architectures": null,
+          "architectures": \(encodedArchitectures),
           "dictionaryVersion": 1,
           "contentType": "diskImage",
           "platform": "com.apple.platform.iphoneos",
@@ -843,7 +948,10 @@ class AppStateTests: XCTestCase {
     }
 
     private static func runtimeService(
-        deleteRuntimeOutput: @escaping @Sendable (String) async throws -> ProcessOutput
+        installedRuntimesJSON: String = "{}",
+        deleteRuntimeOutput: @escaping @Sendable (String) async throws -> ProcessOutput = { _ in
+            ProcessOutput(status: 0, out: "", err: "")
+        }
     ) -> RuntimeService {
         RuntimeService(
             loadData: { request in
@@ -862,7 +970,7 @@ class AppStateTests: XCTestCase {
                 """.utf8)
             },
             installedRuntimesOutput: {
-                ProcessOutput(status: 0, out: "{}", err: "")
+                ProcessOutput(status: 0, out: installedRuntimesJSON, err: "")
             },
             installRuntimeImageOutput: { _ in
                 ProcessOutput(status: 0, out: "", err: "")
