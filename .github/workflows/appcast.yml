@@ -3,29 +3,29 @@ name: Build and publish a new appcast file
 on:
   workflow_dispatch:
   release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: appcast-${{ github.repository }}
+  cancel-in-progress: false
 
 jobs:
   jekyll:
+    if: github.repository == 'jacobcxdev/XcodesApp'
     runs-on: ubuntu-latest
     steps:
     - name: Checkout 🛎
       uses: actions/checkout@v4
       with:
-        # If you're using actions/checkout@v4 you must set persist-credentials to false in most cases for the deployment to work correctly.
         persist-credentials: false
 
-#    - name: Cache 📦
-#      uses: actions/cache@v4.1.1
-#      with:
-#        path: AppCast/vendor/bundle
-#        key: ${{ runner.os }}-gems-v1.0-${{ hashFiles('AppCast/Gemfile') }}
-#        restore-keys: |
-#          ${{ runner.os }}-gems-
-          
-    - name: Setup Ruby, JRuby and TruffleRuby
+    - name: Setup Ruby
       uses: ruby/setup-ruby@v1.197.0
       with:
-        ruby-version: '3.0'
+        ruby-version: '3.3'
 
     - name: Bundler 💎
       working-directory: AppCast
@@ -41,7 +41,7 @@ jobs:
         BUNDLE_PATH: vendor/bundle
         JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: bundle exec jekyll build
-      
+
     - name: Publish 🚀
       uses: JamesIves/github-pages-deploy-action@releases/v4
       with:

@@ -23,11 +23,18 @@ readonly release_drafter="$repo_root/.github/release-drafter.yml"
 readonly app_source="$repo_root/Xcodes/XcodesApp.swift"
 readonly about_source="$repo_root/Xcodes/Frontend/About/AboutView.swift"
 readonly bottom_status_source="$repo_root/Xcodes/Frontend/XcodeList/BottomStatusBar.swift"
+readonly updates_source="$repo_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift"
+readonly appcast_config="$repo_root/AppCast/_config.yml"
+readonly appcast_template="$repo_root/AppCast/_includes/appcast.inc"
+readonly appcast_workflow="$repo_root/.github/workflows/appcast.yml"
 
 readonly app_id="dev.jacobcx.Xcodes"
 readonly tests_id="dev.jacobcx.Xcodes.Tests"
 readonly helper_id="dev.jacobcx.Xcodes.Helper"
 readonly team_id="K2648T24P4"
+readonly stable_feed="https://jacobcxdev.github.io/XcodesApp/appcast.xml"
+readonly prerelease_feed="https://jacobcxdev.github.io/XcodesApp/appcast_pre.xml"
+readonly sparkle_public_key="CbToeJaT+HbP9oQAtNtKtBABQhYYisM4Y/fI8q2gcF8="
 readonly app_requirement='identifier "dev.jacobcx.Xcodes" and info [CFBundleShortVersionString] >= "1.0.0" and anchor apple generic and certificate leaf[subject.OU] = "$(CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT)"'
 readonly helper_requirement='identifier "dev.jacobcx.Xcodes.Helper" and info [CFBundleShortVersionString] >= "1.0.0" and anchor apple generic and certificate leaf[subject.OU] = "$(CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT)"'
 
@@ -91,7 +98,11 @@ for required_file in \
     "$launchd_plist" \
     "$uninstall_script" \
     "$app_info_plist" \
-    "$helper_scheme"; do
+    "$helper_scheme" \
+    "$updates_source" \
+    "$appcast_config" \
+    "$appcast_template" \
+    "$appcast_workflow"; do
     require_file "$required_file"
 done
 
@@ -134,6 +145,21 @@ require_literal "https://github.com/jacobcxdev/XcodesApp/releases/latest" "$bug_
 require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$feature_template"
 require_literal "*   @jacobcxdev" "$codeowners"
 require_literal "Copyright (c) 2026 Jacob Clayden" "$license"
+require_trimmed_line "static let appcast = \"$stable_feed\"" "$updates_source"
+require_trimmed_line "static let prereleaseAppcast = \"$prerelease_feed\"" "$updates_source"
+require_literal "repository: jacobcxdev/XcodesApp" "$appcast_config"
+require_literal "url: \"https://jacobcxdev.github.io\"" "$appcast_config"
+require_literal "baseurl: \"/XcodesApp\"" "$appcast_config"
+require_literal "types: [published]" "$appcast_workflow"
+require_literal "contents: write" "$appcast_workflow"
+require_literal 'group: appcast-${{ github.repository }}' "$appcast_workflow"
+require_literal "cancel-in-progress: false" "$appcast_workflow"
+require_literal "if: github.repository == 'jacobcxdev/XcodesApp'" "$appcast_workflow"
+require_literal "branch: gh-pages" "$appcast_workflow"
+require_literal "folder: AppCast/_site" "$appcast_workflow"
+require_literal "assign zip_asset = nil" "$appcast_template"
+require_literal 'if asset_extension == "zip"' "$appcast_template"
+require_literal "if zip_asset" "$appcast_template"
 
 for contributor in \
     '@dompepin' \
@@ -264,6 +290,27 @@ if ! app_info=$(plutil -convert json -o - "$app_info_plist"); then
 elif ! jq -e --arg helper_id "$helper_id" --arg requirement "$helper_requirement" \
     '.SMPrivilegedExecutables == {($helper_id): $requirement}' <<< "$app_info" >/dev/null; then
     fail "Unexpected app privileged-helper requirement"
+fi
+
+if ! jq -e --arg stable_feed "$stable_feed" --arg sparkle_public_key "$sparkle_public_key" \
+    '.SUFeedURL == $stable_feed and .SUPublicEDKey == $sparkle_public_key' \
+    <<< "$app_info" >/dev/null; then
+    fail "Unexpected Sparkle feed or public key"
+fi
+
+if ! ruby -e 'require "yaml"; YAML.load_file(ARGV.fetch(0), aliases: true)' "$appcast_workflow"; then
+    fail "Unable to parse appcast workflow YAML"
+fi
+
+if grep -R -n -E -- \
+    'www\.xcodes\.app/appcast|SEcz0vgUSeBTOoAXYe\+64zea95G6lIf5NgzFs3InYJQ=|github\.com/XcodesOrg/XcodesApp' \
+    "$app_info_plist" "$updates_source" "$appcast_config" "$appcast_template" "$appcast_workflow"; then
+    fail "Upstream-owned Sparkle feed, key, or repository remains"
+else
+    scan_status=$?
+    if [[ "$scan_status" -ne 1 ]]; then
+        fail "Unable to scan Sparkle ownership scope"
+    fi
 fi
 
 if ! jq -e '.NSHumanReadableCopyright == "Copyright © 2026 Jacob Clayden"' \
