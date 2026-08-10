@@ -18,10 +18,11 @@
 
                     {% if zip_asset %}
                         {% assign signature = release.body | sparkle_signature %}
+                        {% assign description = release.body | markdownify | escape_cdata %}
 
                         <item>
-                            <title>{{ release.name }}</title>
-                            <description><![CDATA[{{ release.body | markdownify }}]]></description>
+                            <title>{{ release.name | xml_escape }}</title>
+                            <description><![CDATA[{{ description }}]]></description>
                             <pubDate>{{ release.published_at | date_to_rfc822 }}</pubDate>
                             {% assign build_nums = release.tag_name | replace_first:'v','' | replace_first:'b',',' | split:',' %}
                             {% if build_nums.size == 2 %}
@@ -29,9 +30,9 @@
                                 {% assign build_number = build_nums[1] %}
 
                                 <enclosure
-                                    url="{{ zip_asset.browser_download_url }}"
-                                    sparkle:version="{{ build_number }}"
-                                    sparkle:shortVersionString="{{ version_number }}"
+                                    url="{{ zip_asset.browser_download_url | xml_escape }}"
+                                    sparkle:version="{{ build_number | xml_escape }}"
+                                    sparkle:shortVersionString="{{ version_number | xml_escape }}"
                                     sparkle:edSignature="{{ signature }}"
                                     length="{{ zip_asset.size }}"
                                     type="application/octet-stream" />
@@ -39,8 +40,8 @@
                                 {% assign version = release.tag_name | remove_first:'v' %}
 
                                 <enclosure
-                                    url="{{ zip_asset.browser_download_url }}"
-                                    sparkle:version="{{ version }}"
+                                    url="{{ zip_asset.browser_download_url | xml_escape }}"
+                                    sparkle:version="{{ version | xml_escape }}"
                                     sparkle:edSignature="{{ signature }}"
                                     length="{{ zip_asset.size }}"
                                     type="application/octet-stream" />

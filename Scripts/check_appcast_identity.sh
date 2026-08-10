@@ -1,0 +1,73 @@
+#!/bin/bash
+
+set -euo pipefail
+
+default_repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly default_repo_root
+readonly repo_root="${1:-$default_repo_root}"
+readonly app_info_plist="$repo_root/Xcodes/Resources/Info.plist"
+readonly updates_source="$repo_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift"
+readonly appcast_config="$repo_root/AppCast/_config.yml"
+readonly appcast_template="$repo_root/AppCast/_includes/appcast.inc"
+readonly appcast_filter="$repo_root/AppCast/_plugins/signature_filter.rb"
+readonly appcast_test="$repo_root/AppCast/test_appcast.rb"
+readonly appcast_workflow="$repo_root/.github/workflows/appcast.yml"
+readonly workflow_check="$repo_root/Scripts/check_appcast_workflow.rb"
+readonly lockfile="$repo_root/AppCast/Gemfile.lock"
+
+readonly stable_feed="https://jacobcxdev.github.io/XcodesApp/appcast.xml"
+readonly prerelease_feed="https://jacobcxdev.github.io/XcodesApp/appcast_pre.xml"
+readonly sparkle_public_key="CbToeJaT+HbP9oQAtNtKtBABQhYYisM4Y/fI8q2gcF8="
+
+for required_file in \
+    "$app_info_plist" \
+    "$updates_source" \
+    "$appcast_config" \
+    "$appcast_template" \
+    "$appcast_filter" \
+    "$appcast_test" \
+    "$appcast_workflow" \
+    "$workflow_check" \
+    "$lockfile"; do
+    if [[ ! -f "$required_file" ]]; then
+        echo "Missing appcast contract file: ${required_file#"$repo_root/"}" >&2
+        exit 1
+    fi
+done
+
+app_info=$(plutil -convert json -o - "$app_info_plist")
+jq -e --arg stable_feed "$stable_feed" --arg sparkle_public_key "$sparkle_public_key" \
+    '.SUFeedURL == $stable_feed and .SUPublicEDKey == $sparkle_public_key' \
+    <<< "$app_info" >/dev/null
+
+for expected_line in \
+    "static let appcast = \"$stable_feed\"" \
+    "static let prereleaseAppcast = \"$prerelease_feed\""; do
+    count=$(sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' "$updates_source" | grep -Fxc -- "$expected_line" || true)
+    if [[ "$count" -ne 1 ]]; then
+        echo "Unexpected updater feed assignment: $expected_line" >&2
+        exit 1
+    fi
+done
+
+config_json=$(ruby -rjson -ryaml -e 'print JSON.generate(YAML.safe_load_file(ARGV.fetch(0), aliases: false))' "$appcast_config")
+jq -e \
+    '.repository == "jacobcxdev/XcodesApp"
+        and .url == "https://jacobcxdev.github.io"
+        and .baseurl == "/XcodesApp"' \
+    <<< "$config_json" >/dev/null
+
+ruby "$workflow_check" "$appcast_workflow" "$lockfile"
+
+if command -v actionlint >/dev/null 2>&1; then
+    actionlint "$appcast_workflow"
+fi
+
+if grep -R -n -E -- \
+    'www\.xcodes\.app/appcast|SEcz0vgUSeBTOoAXYe\+64zea95G6lIf5NgzFs3InYJQ=|github\.com/XcodesOrg/XcodesApp' \
+    "$app_info_plist" "$updates_source" "$appcast_config" "$appcast_template" "$appcast_filter" "$appcast_workflow"; then
+    echo "Upstream-owned Sparkle feed, key, or repository remains" >&2
+    exit 1
+fi
+
+echo "Appcast identity check passed"

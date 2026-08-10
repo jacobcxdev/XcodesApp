@@ -15,6 +15,7 @@ mkdir -p \
     "$fixture_root/.github/ISSUE_TEMPLATE" \
     "$fixture_root/.github/workflows" \
     "$fixture_root/AppCast/_includes" \
+    "$fixture_root/AppCast/_plugins" \
     "$fixture_root/Xcodes/Frontend/About" \
     "$fixture_root/Xcodes/Frontend/Preferences" \
     "$fixture_root/Xcodes/Frontend/XcodeList" \
@@ -26,6 +27,8 @@ cp -R \
     "$repo_root/dev.jacobcx.Xcodes.Helper" \
     "$fixture_root/"
 cp \
+    "$repo_root/Scripts/check_appcast_identity.sh" \
+    "$repo_root/Scripts/check_appcast_workflow.rb" \
     "$repo_root/Scripts/check_fork_identity.sh" \
     "$repo_root/Scripts/uninstall_privileged_helper.sh" \
     "$fixture_root/Scripts/"
@@ -44,8 +47,13 @@ cp \
     "$repo_root/.github/ISSUE_TEMPLATE/feature_request.md" \
     "$fixture_root/.github/ISSUE_TEMPLATE/"
 cp "$repo_root/.github/workflows/appcast.yml" "$fixture_root/.github/workflows/"
-cp "$repo_root/AppCast/_config.yml" "$fixture_root/AppCast/"
+cp \
+    "$repo_root/AppCast/_config.yml" \
+    "$repo_root/AppCast/Gemfile.lock" \
+    "$repo_root/AppCast/test_appcast.rb" \
+    "$fixture_root/AppCast/"
 cp "$repo_root/AppCast/_includes/appcast.inc" "$fixture_root/AppCast/_includes/"
+cp "$repo_root/AppCast/_plugins/signature_filter.rb" "$fixture_root/AppCast/_plugins/"
 cp "$repo_root/Xcodes/XcodesApp.swift" "$fixture_root/Xcodes/"
 cp "$repo_root/Xcodes/Frontend/About/AboutView.swift" "$fixture_root/Xcodes/Frontend/About/"
 cp \

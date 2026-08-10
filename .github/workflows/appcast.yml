@@ -1,50 +1,84 @@
-name: Build and publish a new appcast file
+name: Build and publish appcasts
 
-on:
+'on':
   workflow_dispatch:
   release:
     types: [published]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: appcast-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
-  jekyll:
+  build:
     if: github.repository == 'jacobcxdev/XcodesApp'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BUNDLER_VERSION: '4.0.16'
+      BUNDLE_FROZEN: 'true'
+      BUNDLE_PATH: vendor/bundle
     steps:
-    - name: Checkout 🛎
-      uses: actions/checkout@v4
-      with:
-        persist-credentials: false
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
-    - name: Setup Ruby
-      uses: ruby/setup-ruby@v1.197.0
-      with:
-        ruby-version: '3.3'
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@7bae1d00b5db9166f4f0fc47985a3a5702cb58f0 # v1.197.0
+        with:
+          ruby-version: '3.3'
 
-    - name: Bundler 💎
-      working-directory: AppCast
-      env:
-        BUNDLE_PATH: vendor/bundle
-      run: |
-        gem install bundler
-        bundle install
+      - name: Install pinned Bundler
+        run: gem install bundler --version "$BUNDLER_VERSION" --no-document
 
-    - name: Build 🛠
-      working-directory: AppCast
-      env:
-        BUNDLE_PATH: vendor/bundle
-        JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: bundle exec jekyll build
+      - name: Install dependencies
+        working-directory: AppCast
+        run: bundle "_${BUNDLER_VERSION}_" install --jobs 4 --retry 3
 
-    - name: Publish 🚀
-      uses: JamesIves/github-pages-deploy-action@releases/v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        branch: gh-pages
-        folder: AppCast/_site
+      - name: Test appcast generation
+        working-directory: AppCast
+        run: bundle "_${BUNDLER_VERSION}_" exec ruby test_appcast.rb
+
+      - name: Build appcasts
+        working-directory: AppCast
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ github.token }}
+        run: bundle "_${BUNDLER_VERSION}_" exec jekyll build
+
+      - name: Validate rendered appcasts
+        run: xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml
+
+      - name: Upload verified appcasts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: appcast-site
+          path: AppCast/_site
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    if: github.repository == 'jacobcxdev/XcodesApp'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified appcasts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: appcast-site
+          path: AppCast/_site
+
+      - name: Publish GitHub Pages branch
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
+        with:
+          token: ${{ github.token }}
+          branch: gh-pages
+          folder: AppCast/_site
+          clean: true
+          single-commit: true
