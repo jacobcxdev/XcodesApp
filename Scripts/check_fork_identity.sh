@@ -123,6 +123,29 @@ require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$feature_templ
 require_literal "*   @jacobcxdev" "$codeowners"
 require_literal "Copyright (c) 2026 Jacob Clayden" "$license"
 
+for contributor in \
+    '@dompepin' \
+    '@gualtierofrigerio' \
+    '@cesartru88' \
+    '@ryan-son' \
+    '@alexmazlov' \
+    '@egesucu' \
+    '@KGurpreet' \
+    '@megabitsenmzq' \
+    '@marcusziade' \
+    '@itszero' \
+    '@gelosi' \
+    '@tatsuz0u' \
+    '@drct' \
+    '@jfversluis' \
+    '@brunomunizaf' \
+    '@jakex7' \
+    '@ferranabello' \
+    '@alladinian' \
+    '@neetrath'; do
+    require_literal "$contributor" "$readme"
+done
+
 if [[ -f "$forking" ]]; then
     for command in \
         'git remote add upstream https://github.com/XcodesOrg/XcodesApp.git' \

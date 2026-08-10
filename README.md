@@ -70,6 +70,32 @@ Report fork bugs and request features in [fork issues](https://github.com/jacobc
 
 Normal fork development and portable upstream contributions use separate branch lanes. [FORKING.md](FORKING.md) documents exact remote and branch commands.
 
+## Localisation contributors
+
+The upstream README named these localisation contributors. This fork preserves their credits.
+
+| Language | Contributor |
+| --- | --- |
+| French | [@dompepin](https://github.com/dompepin) |
+| Italian | [@gualtierofrigerio](https://github.com/gualtierofrigerio) |
+| Spanish | [@cesartru88](https://github.com/cesartru88) |
+| Korean | [@ryan-son](https://github.com/ryan-son) |
+| Russian | [@alexmazlov](https://github.com/alexmazlov) |
+| Turkish | [@egesucu](https://github.com/egesucu) |
+| Hindi | [@KGurpreet](https://github.com/KGurpreet) |
+| Simplified Chinese | [@megabitsenmzq](https://github.com/megabitsenmzq) |
+| Finnish | [@marcusziade](https://github.com/marcusziade) |
+| Traditional Chinese | [@itszero](https://github.com/itszero) |
+| Ukrainian | [@gelosi](https://github.com/gelosi) |
+| Japanese | [@tatsuz0u](https://github.com/tatsuz0u) |
+| German | [@drct](https://github.com/drct) |
+| Dutch | [@jfversluis](https://github.com/jfversluis) |
+| Brazilian Portuguese | [@brunomunizaf](https://github.com/brunomunizaf) |
+| Polish | [@jakex7](https://github.com/jakex7) |
+| Catalan | [@ferranabello](https://github.com/ferranabello) |
+| Greek | [@alladinian](https://github.com/alladinian) |
+| Thai | [@neetrath](https://github.com/neetrath) |
+
 ## Upstream and credits
 
 Robots and Pencils, XcodesOrg, Matt Kiazyk, and many community contributors and translators created and maintained Xcodes. Repository history, licence notices, and the app's acknowledgements retain their credits. [Jacob Clayden](https://github.com/jacobcxdev) maintains this fork independently.
