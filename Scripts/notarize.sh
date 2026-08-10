@@ -1,62 +1,64 @@
-#!/bin/sh
-#
-# Notarize
-#
-# Uploads to Apple's notarization service, polls until it completes, staples the ticket to the built app, then creates a new zip.
-#
-# Requires four arguments:
-#   - Apple ID username
-#   - Apple ID app-specific password (store this in your Keychain and use the @keychain:$NAME syntax to prevent your password from being added to your shell history)
-#   - App Store Connect provider name
-#   - Path to .app to upload
-#
-# Assumes that there's a .app beside the .zip with the same name so it can be stapled and re-zipped.
-#
-# E.g. notarize.sh "test@example.com" "@keychain:altool" MyOrg Xcodes.zip
-#
-# https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow
-# Adapted from https://github.com/keybase/client/blob/46f5df0aa64ff19198ba7b044bbb7cd907c0be9f/packaging/desktop/package_darwin.sh
+#!/bin/bash
 
-file="$1"
-team_id="$2"
+set -euo pipefail
 
-echo "Uploading to notarization service"
+fail() {
+    printf 'error: %s\n' "$*" >&2
+    exit 1
+}
 
-result=$(xcrun notarytool submit "$file" \
-    --keychain-profile "AC_PASSWORD" \
-    --team-id "$team_id" \
-    --wait) 
-# echo "done1"
-echo $result
+require_absolute_file() {
+    local name="$1"
+    local path="$2"
 
-# My grep/awk is bad and I can't figure out how to get the UUID out properly
-# uuid=$("$result" | \
-#     grep 'id:' | tail -n1 | \
-#     cut -d":" -f2-)
+    [[ "$path" == /* ]] || fail "$name must be an absolute path"
+    [[ -s "$path" ]] || fail "$name does not exist or is empty: $path"
+}
 
-echo "Successfully uploaded to notarization service, polling for result: $uuid"
+readonly archive_path="${1:-}"
+readonly notary_key_id="${NOTARY_KEY_ID:-}"
+readonly notary_issuer_id="${NOTARY_ISSUER_ID:-}"
+readonly notary_key_path="${NOTARY_KEY_PATH:-}"
+readonly xcrun_tool="${XCRUN_TOOL:-/usr/bin/xcrun}"
+readonly plutil_tool="${PLUTIL_TOOL:-/usr/bin/plutil}"
 
-# we should check here using the info (or notarytool log) to check the results and log
-# 
+[[ -n "$archive_path" ]] || fail "usage: notarize.sh /absolute/path/to/archive.zip"
+require_absolute_file "archive" "$archive_path"
+[[ -n "$notary_key_id" ]] || fail "NOTARY_KEY_ID is required"
+[[ -n "$notary_issuer_id" ]] || fail "NOTARY_ISSUER_ID is required"
+[[ "$notary_key_id" =~ ^[A-Za-z0-9]{10,}$ ]] || fail "NOTARY_KEY_ID must be at least 10 alphanumeric characters"
+[[ "$notary_issuer_id" =~ ^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$ ]] || fail "NOTARY_ISSUER_ID must be a UUID"
+require_absolute_file "NOTARY_KEY_PATH" "$notary_key_path"
+[[ "$xcrun_tool" == /* && -x "$xcrun_tool" ]] || fail "XCRUN_TOOL must be an absolute executable path"
+[[ "$plutil_tool" == /* && -x "$plutil_tool" ]] || fail "PLUTIL_TOOL must be an absolute executable path"
 
-#     fullstatus=$(xcrun notarytool info "$uuid" \
-#         --keychain-profile "AC_PASSWORD" 2>&1)
-#     status=$(echo "$fullstatus" | grep 'status\:' | awk '{ print $2 }')
-#     if [ "$status" = "Accepted" ]; then
-#       echo "Notarization success"
-#       exit 0
-#     else
-#       echo "Notarization failed, full status below"
-#       echo "$fullstatus"
-#       exit 1
-#     fi
+work_dir="$(mktemp -d "${TMPDIR:-/tmp}/xcodes-notary.XXXXXX")"
+readonly work_dir
+cleanup() {
+    case "$work_dir" in
+        "${TMPDIR:-/tmp}"/xcodes-notary.*|/private"${TMPDIR:-/tmp}"/xcodes-notary.*)
+            rm -rf -- "$work_dir"
+            ;;
+        *)
+            printf 'warning: refused unsafe temporary cleanup: %s\n' "$work_dir" >&2
+            ;;
+    esac
+}
+trap cleanup EXIT
 
-# Remove .zip
-rm $file
+readonly result_plist="$work_dir/result.plist"
+"$xcrun_tool" notarytool submit "$archive_path" \
+    --key "$notary_key_path" \
+    --key-id "$notary_key_id" \
+    --issuer "$notary_issuer_id" \
+    --wait \
+    --output-format plist > "$result_plist" || fail "notarytool submission failed"
 
-# Staple ticket to .app
-app_path="$(basename -s ".zip" "$file").app"
-xcrun stapler staple "$app_path"
+notary_status="$("$plutil_tool" -extract status raw "$result_plist" 2>/dev/null || true)"
+readonly notary_status
+[[ "$notary_status" == "Accepted" ]] || fail "notarization status was '${notary_status:-missing}', expected 'Accepted'"
 
-# Zip the stapled app for distribution
-ditto -c -k --sequesterRsrc --keepParent "$app_path" "$file"
+submission_id="$("$plutil_tool" -extract id raw "$result_plist" 2>/dev/null || true)"
+readonly submission_id
+[[ -n "$submission_id" ]] || fail "notarization response did not contain a submission id"
+printf '%s\n' "$submission_id"
