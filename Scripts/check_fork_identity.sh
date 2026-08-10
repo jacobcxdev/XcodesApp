@@ -2,71 +2,178 @@
 
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-project_file="$repo_root/Xcodes.xcodeproj/project.pbxproj"
-shared_constants="$repo_root/HelperXPCShared/HelperXPCShared.swift"
-helper_dir="$repo_root/dev.jacobcx.Xcodes.Helper"
-uninstall_script="$repo_root/Scripts/uninstall_privileged_helper.sh"
-app_info_plist="$repo_root/Xcodes/Resources/Info.plist"
-helper_scheme="$repo_root/Xcodes.xcodeproj/xcshareddata/xcschemes/dev.jacobcx.Xcodes.Helper.xcscheme"
+readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly project="$repo_root/Xcodes.xcodeproj"
+readonly project_file="$project/project.pbxproj"
+readonly shared_constants="$repo_root/HelperXPCShared/HelperXPCShared.swift"
+readonly helper_dir="$repo_root/dev.jacobcx.Xcodes.Helper"
+readonly helper_info_plist="$helper_dir/Info.plist"
+readonly launchd_plist="$helper_dir/launchd.plist"
+readonly uninstall_script="$repo_root/Scripts/uninstall_privileged_helper.sh"
+readonly app_info_plist="$repo_root/Xcodes/Resources/Info.plist"
+readonly helper_scheme="$project/xcshareddata/xcschemes/dev.jacobcx.Xcodes.Helper.xcscheme"
 
-require_literal() {
-    local literal="$1"
-    local file="$2"
-
-    if ! grep -Fq -- "$literal" "$file"; then
-        echo "Missing required identity '$literal' in ${file#"$repo_root/"}" >&2
-        return 1
-    fi
-}
+readonly app_id="dev.jacobcx.Xcodes"
+readonly tests_id="dev.jacobcx.Xcodes.Tests"
+readonly helper_id="dev.jacobcx.Xcodes.Helper"
+readonly team_id="K2648T24P4"
+readonly app_requirement='identifier "dev.jacobcx.Xcodes" and info [CFBundleShortVersionString] >= "1.0.0" and anchor apple generic and certificate leaf[subject.OU] = "$(CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT)"'
+readonly helper_requirement='identifier "dev.jacobcx.Xcodes.Helper" and info [CFBundleShortVersionString] >= "1.0.0" and anchor apple generic and certificate leaf[subject.OU] = "$(CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT)"'
 
 status=0
 
+fail() {
+    echo "$1" >&2
+    status=1
+}
+
+require_file() {
+    local file="$1"
+
+    if [[ ! -f "$file" ]]; then
+        fail "Missing required identity file: ${file#"$repo_root/"}"
+    fi
+}
+
+require_only_line() {
+    local prefix="$1"
+    local expected="$2"
+    local file="$3"
+    local matching_count
+    local expected_count
+
+    matching_count=$(awk -v prefix="$prefix" 'index($0, prefix) == 1 { count++ } END { print count + 0 }' "$file")
+    expected_count=$(grep -Fxc -- "$expected" "$file" || true)
+    if [[ "$matching_count" -ne 1 || "$expected_count" -ne 1 ]]; then
+        fail "Unexpected identity assignment for '$prefix' in ${file#"$repo_root/"}"
+    fi
+}
+
+for required_file in \
+    "$project_file" \
+    "$shared_constants" \
+    "$helper_info_plist" \
+    "$launchd_plist" \
+    "$uninstall_script" \
+    "$app_info_plist" \
+    "$helper_scheme"; do
+    require_file "$required_file"
+done
+
 if [[ ! -d "$helper_dir" ]]; then
-    echo "Missing renamed helper directory: ${helper_dir#"$repo_root/"}" >&2
-    status=1
+    fail "Missing renamed helper directory: ${helper_dir#"$repo_root/"}"
 fi
 
-if [[ ! -f "$helper_scheme" ]]; then
-    echo "Missing renamed helper scheme: ${helper_scheme#"$repo_root/"}" >&2
-    status=1
+if [[ "$status" -ne 0 ]]; then
+    exit "$status"
 fi
 
-require_literal 'PRODUCT_BUNDLE_IDENTIFIER = dev.jacobcx.Xcodes;' "$project_file" || status=1
-require_literal 'PRODUCT_BUNDLE_IDENTIFIER = dev.jacobcx.Xcodes.Helper;' "$project_file" || status=1
-require_literal 'DEVELOPMENT_TEAM = K2648T24P4;' "$project_file" || status=1
-require_literal 'let machServiceName = "dev.jacobcx.Xcodes.Helper"' "$shared_constants" || status=1
-require_literal 'let clientBundleID = "dev.jacobcx.Xcodes"' "$shared_constants" || status=1
+require_only_line 'let machServiceName = ' "let machServiceName = \"$helper_id\"" "$shared_constants"
+require_only_line 'let clientBundleID = ' "let clientBundleID = \"$app_id\"" "$shared_constants"
+require_only_line 'PRIVILEGED_HELPER_LABEL=' "PRIVILEGED_HELPER_LABEL=$helper_id" "$uninstall_script"
+
+if ! project_description=$(xcodebuild -list -json -project "$project"); then
+    fail "Unable to read Xcode project identity"
+elif ! jq -e \
+    --arg app_target "Xcodes" \
+    --arg tests_target "XcodesTests" \
+    --arg helper_target "$helper_id" \
+    '(.project.targets | sort) == ([$app_target, $tests_target, $helper_target] | sort)
+        and (.project.configurations | length > 0)
+        and (.project.schemes | index($app_target) != null)
+        and (.project.schemes | index($helper_target) != null)' \
+    <<< "$project_description" >/dev/null; then
+    fail "Unexpected Xcode project targets, configurations, or schemes"
+fi
+
+if [[ "$status" -eq 0 ]]; then
+    while IFS= read -r configuration; do
+        if ! settings=$(xcodebuild -project "$project" -alltargets -configuration "$configuration" -showBuildSettings -json); then
+            fail "Unable to resolve build settings for configuration '$configuration'"
+            continue
+        fi
+
+        if ! jq -e \
+            --arg app_target "Xcodes" \
+            --arg tests_target "XcodesTests" \
+            --arg helper_target "$helper_id" \
+            --arg app_id "$app_id" \
+            --arg tests_id "$tests_id" \
+            --arg helper_id "$helper_id" \
+            --arg team_id "$team_id" \
+            '([.[].target] | unique | sort) == ([$app_target, $tests_target, $helper_target] | sort)
+                and all(.[].buildSettings; .DEVELOPMENT_TEAM == $team_id
+                    and .CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT == $team_id)
+                and all(.[];
+                    if .target == $app_target then
+                        .buildSettings.PRODUCT_BUNDLE_IDENTIFIER == $app_id
+                            and .buildSettings.FULL_PRODUCT_NAME == "Xcodes.app"
+                    elif .target == $tests_target then
+                        .buildSettings.PRODUCT_BUNDLE_IDENTIFIER == $tests_id
+                            and .buildSettings.FULL_PRODUCT_NAME == "XcodesTests.xctest"
+                    elif .target == $helper_target then
+                        .buildSettings.PRODUCT_BUNDLE_IDENTIFIER == $helper_id
+                            and .buildSettings.FULL_PRODUCT_NAME == $helper_id
+                    else false
+                    end)' <<< "$settings" >/dev/null; then
+            echo "$settings" | jq -r \
+                --arg configuration "$configuration" \
+                '.[] | [$configuration, .target, .buildSettings.PRODUCT_BUNDLE_IDENTIFIER,
+                    (.buildSettings.DEVELOPMENT_TEAM // "<missing>"), .buildSettings.FULL_PRODUCT_NAME] | @tsv' >&2
+            fail "Unexpected resolved identity in configuration '$configuration'"
+        fi
+    done < <(jq -r '.project.configurations[]' <<< "$project_description")
+fi
+
+if ! helper_info=$(plutil -convert json -o - "$helper_info_plist"); then
+    fail "Unable to parse helper Info.plist"
+elif ! jq -e --arg requirement "$app_requirement" \
+    '.SMAuthorizedClients == [$requirement]' <<< "$helper_info" >/dev/null; then
+    fail "Unexpected helper authorised-client requirement"
+fi
+
+if ! app_info=$(plutil -convert json -o - "$app_info_plist"); then
+    fail "Unable to parse app Info.plist"
+elif ! jq -e --arg helper_id "$helper_id" --arg requirement "$helper_requirement" \
+    '.SMPrivilegedExecutables == {($helper_id): $requirement}' <<< "$app_info" >/dev/null; then
+    fail "Unexpected app privileged-helper requirement"
+fi
+
+if ! launchd_info=$(plutil -convert json -o - "$launchd_plist"); then
+    fail "Unable to parse helper launchd plist"
+elif ! jq -e --arg helper_id "$helper_id" \
+    '.Label == $helper_id and .MachServices == {($helper_id): true}' <<< "$launchd_info" >/dev/null; then
+    fail "Unexpected helper launchd identity"
+fi
+
+if [[ "$(xmllint --xpath 'count(//BuildableReference)' "$helper_scheme")" != "3" ]] \
+    || [[ "$(xmllint --xpath "count(//BuildableReference[not(@BuildableName='$helper_id')])" "$helper_scheme")" != "0" ]] \
+    || [[ "$(xmllint --xpath "count(//BuildableReference[not(@BlueprintName='$helper_id')])" "$helper_scheme")" != "0" ]]; then
+    fail "Unexpected helper scheme identity"
+fi
 
 if [[ -d "$repo_root/com.xcodesorg.xcodesapp.Helper" ]]; then
-    echo "Legacy helper directory still exists: com.xcodesorg.xcodesapp.Helper" >&2
-    status=1
+    fail "Legacy helper directory still exists: com.xcodesorg.xcodesapp.Helper"
 fi
 
-if [[ -f "$repo_root/Xcodes.xcodeproj/xcshareddata/xcschemes/com.robotsandpencils.XcodesApp.Helper.xcscheme" ]]; then
-    echo "Legacy helper scheme still exists: com.robotsandpencils.XcodesApp.Helper.xcscheme" >&2
-    status=1
+if [[ -f "$project/xcshareddata/xcschemes/com.robotsandpencils.XcodesApp.Helper.xcscheme" ]]; then
+    fail "Legacy helper scheme still exists: com.robotsandpencils.XcodesApp.Helper.xcscheme"
 fi
 
 identity_scope=(
-    "$repo_root/Xcodes.xcodeproj"
+    "$project"
     "$repo_root/HelperXPCShared"
+    "$helper_dir"
     "$uninstall_script"
     "$app_info_plist"
 )
 
-if [[ -d "$helper_dir" ]]; then
-    identity_scope+=("$helper_dir")
-fi
-
 if grep -R -n -E -- 'com\.xcodesorg\.xcodesapp|com\.robotsandpencils\.XcodesApp|ZU6GR6B2FY' "${identity_scope[@]}"; then
-    echo "Legacy operational identities remain" >&2
-    status=1
+    fail "Legacy operational identities remain"
 else
     scan_status=$?
     if [[ "$scan_status" -ne 1 ]]; then
-        echo "Unable to scan the complete operational identity scope" >&2
-        status=1
+        fail "Unable to scan the complete operational identity scope"
     fi
 fi
 
