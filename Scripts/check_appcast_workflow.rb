@@ -205,6 +205,16 @@ expected_build_steps = [
 ]
 expected_deploy_steps = [
   {
+    "name" => "Initialise deployment repository",
+    "run" => <<~'SHELL'.strip,
+      set -euo pipefail
+      git init --quiet
+      git config user.name "github-actions[bot]"
+      git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      git commit --allow-empty --no-verify --message "Initialise appcast deployment workspace"
+    SHELL
+  },
+  {
     "name" => "Download verified appcasts",
     "uses" => "actions/download-artifact@#{download_sha}",
     "with" => { "name" => "appcast-site", "path" => "AppCast/_site" },
@@ -230,7 +240,7 @@ normalise_steps = lambda do |steps|
   end
 end
 check.call(normalise_steps.call(build_steps) == expected_build_steps, "Build steps must exactly match audited controls")
-check.call(deploy_steps == expected_deploy_steps, "Deploy steps must exactly match audited controls")
+check.call(normalise_steps.call(deploy_steps) == expected_deploy_steps, "Deploy steps must exactly match audited controls")
 
 build_uses = build_steps.filter_map { |step| step["uses"] }
 deploy_uses = deploy_steps.filter_map { |step| step["uses"] }

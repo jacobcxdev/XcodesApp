@@ -97,6 +97,10 @@ mutate_workflow wrong_rendered_release_input \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate rendered appcasts" }; step["run"].sub!("\"$VALIDATED_RELEASES_FILE\"", "raw-releases.json"); File.write(path, YAML.dump(data) + "# sanitized releases exact\n")'
 mutate_workflow deploy_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["deploy"]["steps"].find { |item| item["uses"]&.start_with?("JamesIves/") }; step["with"]["branch"] = "main"; File.write(path, YAML.dump(data) + "# branch: gh-pages\n")'
+mutate_workflow missing_deployment_repository \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["deploy"]["steps"].reject! { |item| item["name"] == "Initialise deployment repository" }; File.write(path, YAML.dump(data) + "# deployment action requires git repository with HEAD\n")'
+mutate_workflow empty_deployment_repository \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["deploy"]["steps"].find { |item| item["name"] == "Initialise deployment repository" }; step["run"].sub!(/^git commit.*\n?/, ""); File.write(path, YAML.dump(data) + "# deployment action requires valid HEAD\n")'
 mutate_workflow action_pin_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["uses"]&.start_with?("actions/checkout@") }["uses"] = "actions/checkout@v7"; File.write(path, YAML.dump(data) + "# actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n")'
 mutate_workflow validation_bypass \
