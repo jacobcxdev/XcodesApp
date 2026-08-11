@@ -98,7 +98,7 @@ mutate_workflow wrong_rendered_release_input \
 mutate_workflow deploy_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["deploy"]["steps"].find { |item| item["uses"]&.start_with?("JamesIves/") }; step["with"]["branch"] = "main"; File.write(path, YAML.dump(data) + "# branch: gh-pages\n")'
 mutate_workflow action_pin_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["uses"]&.start_with?("actions/checkout@") }["uses"] = "actions/checkout@v4"; File.write(path, YAML.dump(data) + "# actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683\n")'
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["uses"]&.start_with?("actions/checkout@") }["uses"] = "actions/checkout@v7"; File.write(path, YAML.dump(data) + "# actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n")'
 mutate_workflow validation_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |item| item["name"] == "Validate rendered appcasts" }; File.write(path, YAML.dump(data) + "# xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml\n")'
 mutate_workflow validation_continue_on_error \
