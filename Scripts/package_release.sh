@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# Usage: package_release.sh vX.Y.Z
+# Usage: package_release.sh vX.Y.ZbN
 # Required environment: NOTARY_KEY_ID, NOTARY_ISSUER_ID, NOTARY_KEY_PATH.
 # Optional Sparkle input: SPARKLE_PRIVATE_KEY_FILE; otherwise dedicated Keychain account is used.
 # Outputs: Product/Xcodes.zip, Product/Xcodes.zip.sha256,
@@ -72,10 +72,11 @@ for tool_spec in \
 done
 
 readonly release_tag="${1:-${RELEASE_TAG:-${GITHUB_REF_NAME:-}}}"
-if [[ ! "$release_tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-    fail "release tag must match vX.Y.Z exactly"
+if [[ ! "$release_tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)b(0|[1-9][0-9]*)$ ]]; then
+    fail "release tag must match vX.Y.ZbN exactly"
 fi
 readonly release_version="${BASH_REMATCH[1]}"
+readonly release_build="${BASH_REMATCH[2]}"
 
 cd "$repository_root"
 [[ -z "$("$git_tool" status --porcelain --untracked-files=no)" ]] || fail "tracked working tree must be clean"
@@ -94,6 +95,7 @@ readonly project_build
 [[ -n "$project_version" ]] || fail "MARKETING_VERSION was missing from build settings"
 [[ -n "$project_build" ]] || fail "CURRENT_PROJECT_VERSION was missing from build settings"
 [[ "$release_version" == "$project_version" ]] || fail "tag version '$release_version' does not match MARKETING_VERSION '$project_version'"
+[[ "$release_build" == "$project_build" ]] || fail "tag build '$release_build' does not match CURRENT_PROJECT_VERSION '$project_build'"
 
 readonly notary_key_id="${NOTARY_KEY_ID:-}"
 readonly notary_issuer_id="${NOTARY_ISSUER_ID:-}"
@@ -184,7 +186,7 @@ readonly app_build
 exported_app_id="$("$plutil_tool" -extract CFBundleIdentifier raw "$app_path/Contents/Info.plist")"
 readonly exported_app_id
 [[ "$app_version" == "$release_version" ]] || fail "exported app version '$app_version' does not match tag '$release_version'"
-[[ "$app_build" == "$project_build" ]] || fail "exported app build '$app_build' does not match project build '$project_build'"
+[[ "$app_build" == "$release_build" ]] || fail "exported app build '$app_build' does not match tag build '$release_build'"
 [[ "$exported_app_id" == "$app_bundle_id" ]] || fail "exported app identifier '$exported_app_id' is not '$app_bundle_id'"
 
 verify_signature() {

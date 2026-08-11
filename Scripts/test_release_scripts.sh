@@ -54,7 +54,7 @@ for script in "$package_script" "$notarize_script"; do
 done
 
 for literal in \
-    "release tag must match vX.Y.Z exactly" \
+    "release tag must match vX.Y.ZbN exactly" \
     "tracked working tree must be clean" \
     "restore_generated_source" \
     "K2648T24P4" \
@@ -120,7 +120,7 @@ case "$tool" in
                 [[ "${FAKE_DIRTY:-0}" == "1" ]] && printf ' M tracked-file\n'
                 ;;
             tag)
-                printf '%s\n' "${FAKE_TAG:-v4.0.4}"
+                printf '%s\n' "${FAKE_TAG:-v4.0.4b39}"
                 ;;
             *) exit 2 ;;
         esac
@@ -262,16 +262,31 @@ run_package() {
 }
 
 fixture="$(make_fixture invalid-tag)"
-expect_failure "release tag must match vX.Y.Z exactly" run_package "$fixture" "4.0.4"
+expect_failure "release tag must match vX.Y.ZbN exactly" run_package "$fixture" "4.0.4b39"
+
+fixture="$(make_fixture missing-build-tag)"
+expect_failure "release tag must match vX.Y.ZbN exactly" run_package "$fixture" "v4.0.4"
+
+fixture="$(make_fixture empty-build-tag)"
+expect_failure "release tag must match vX.Y.ZbN exactly" run_package "$fixture" "v4.0.4b"
 
 fixture="$(make_fixture dirty)"
-expect_failure "tracked working tree must be clean" run_package "$fixture" "v4.0.4" FAKE_DIRTY=1
+expect_failure "tracked working tree must be clean" run_package "$fixture" "v4.0.4b39" FAKE_DIRTY=1
 
 fixture="$(make_fixture wrong-head-tag)"
-expect_failure "must point at HEAD" run_package "$fixture" "v4.0.4" FAKE_TAG=v4.0.3
+expect_failure "must point at HEAD" run_package "$fixture" "v4.0.4b39" FAKE_TAG=v4.0.4b38
 
-fixture="$(make_fixture version-mismatch)"
-expect_failure "does not match MARKETING_VERSION" run_package "$fixture" "v4.0.4" FAKE_VERSION=4.0.3
+fixture="$(make_fixture marketing-version-mismatch)"
+expect_failure "does not match MARKETING_VERSION" run_package "$fixture" "v4.0.4b39" FAKE_VERSION=4.0.3
+
+fixture="$(make_fixture project-build-mismatch)"
+expect_failure "does not match CURRENT_PROJECT_VERSION" run_package "$fixture" "v4.0.4b39" FAKE_BUILD=38
+
+fixture="$(make_fixture exported-version-mismatch)"
+expect_failure "exported app version" run_package "$fixture" "v4.0.4b39" FAKE_EXPORTED_VERSION=4.0.3
+
+fixture="$(make_fixture exported-build-mismatch)"
+expect_failure "exported app build" run_package "$fixture" "v4.0.4b39" FAKE_EXPORTED_BUILD=38
 
 fixture="$(make_fixture missing-credentials)"
 expect_failure "NOTARY_KEY_ID is required" env \
@@ -284,43 +299,43 @@ expect_failure "NOTARY_KEY_ID is required" env \
     XCRUN_TOOL="$fixture/bin/xcrun" \
     SPCTL_TOOL="$fixture/bin/spctl" \
     SHASUM_TOOL=/usr/bin/shasum \
-    bash "$fixture/Scripts/package_release.sh" v4.0.4
+    bash "$fixture/Scripts/package_release.sh" v4.0.4b39
 
 fixture="$(make_fixture relative-key-path)"
-expect_failure "NOTARY_KEY_PATH must be an absolute path" run_package "$fixture" "v4.0.4" NOTARY_KEY_PATH=relative-key.p8
+expect_failure "NOTARY_KEY_PATH must be an absolute path" run_package "$fixture" "v4.0.4b39" NOTARY_KEY_PATH=relative-key.p8
 
 fixture="$(make_fixture missing-certificate)"
-expect_failure "Developer ID Application certificate for team K2648T24P4 is missing" run_package "$fixture" "v4.0.4" FAKE_CERT_MISSING=1
+expect_failure "Developer ID Application certificate for team K2648T24P4 is missing" run_package "$fixture" "v4.0.4b39" FAKE_CERT_MISSING=1
 
 fixture="$(make_fixture relative-sparkle-key-path)"
-expect_failure "SPARKLE_PRIVATE_KEY_FILE must be an absolute path" run_package "$fixture" "v4.0.4" SPARKLE_PRIVATE_KEY_FILE=relative-sparkle-key
+expect_failure "SPARKLE_PRIVATE_KEY_FILE must be an absolute path" run_package "$fixture" "v4.0.4b39" SPARKLE_PRIVATE_KEY_FILE=relative-sparkle-key
 
 fixture="$(make_fixture wrong-app-bundle)"
-expect_failure "exported app identifier" run_package "$fixture" "v4.0.4" FAKE_APP_BUNDLE_ID=example.wrong
+expect_failure "exported app identifier" run_package "$fixture" "v4.0.4b39" FAKE_APP_BUNDLE_ID=example.wrong
 
 fixture="$(make_fixture wrong-helper-signature)"
-expect_failure "wrong signing identifier" run_package "$fixture" "v4.0.4" FAKE_HELPER_IDENTIFIER=example.wrong.Helper
+expect_failure "wrong signing identifier" run_package "$fixture" "v4.0.4b39" FAKE_HELPER_IDENTIFIER=example.wrong.Helper
 
 fixture="$(make_fixture wrong-team)"
-expect_failure "wrong signing team" run_package "$fixture" "v4.0.4" FAKE_SIGN_TEAM=WRONGTEAM
+expect_failure "wrong signing team" run_package "$fixture" "v4.0.4b39" FAKE_SIGN_TEAM=WRONGTEAM
 
 fixture="$(make_fixture wrong-identity)"
-expect_failure "wrong signing identity" run_package "$fixture" "v4.0.4" FAKE_SIGN_AUTHORITY='Apple Development: Test'
+expect_failure "wrong signing identity" run_package "$fixture" "v4.0.4b39" FAKE_SIGN_AUTHORITY='Apple Development: Test'
 
 fixture="$(make_fixture debug-entitlement)"
-expect_failure "release entitlement get-task-allow is forbidden" run_package "$fixture" "v4.0.4" FAKE_DEBUG_ENTITLEMENT=1
+expect_failure "release entitlement get-task-allow is forbidden" run_package "$fixture" "v4.0.4b39" FAKE_DEBUG_ENTITLEMENT=1
 
 fixture="$(make_fixture failed-notary)"
-expect_failure "notarization status was 'Invalid'" run_package "$fixture" "v4.0.4" FAKE_NOTARY_STATUS=Invalid
+expect_failure "notarization status was 'Invalid'" run_package "$fixture" "v4.0.4b39" FAKE_NOTARY_STATUS=Invalid
 
 fixture="$(make_fixture missing-staple)"
-expect_failure "failed to staple notarization ticket" run_package "$fixture" "v4.0.4" FAKE_STAPLE_MISSING=1
+expect_failure "failed to staple notarization ticket" run_package "$fixture" "v4.0.4b39" FAKE_STAPLE_MISSING=1
 
 fixture="$(make_fixture failed-gatekeeper)"
-expect_failure "Gatekeeper assessment failed" run_package "$fixture" "v4.0.4" FAKE_SPCTL_FAIL=1
+expect_failure "Gatekeeper assessment failed" run_package "$fixture" "v4.0.4b39" FAKE_SPCTL_FAIL=1
 
 fixture="$(make_fixture missing-signature)"
-expect_failure "Sparkle signer did not return an Ed25519 signature" run_package "$fixture" "v4.0.4" FAKE_SIGNATURE_MISSING=1
+expect_failure "Sparkle signer did not return an Ed25519 signature" run_package "$fixture" "v4.0.4b39" FAKE_SIGNATURE_MISSING=1
 [[ ! -e "$fixture/Product/Xcodes.zip" ]] || fail "Failed flow published a partial Product/Xcodes.zip"
 [[ "$(<"$fixture/Xcodes/Resources/Licenses.rtf")" == "committed licence" ]] || fail "Failed release did not restore generated licences"
 
@@ -337,13 +352,15 @@ expect_failure "notarization status was 'Invalid'" env \
 [[ -f "$fixture/caller.zip" ]] || fail "notarize.sh deleted caller archive"
 
 fixture="$(make_fixture successful-flow)"
-run_package "$fixture" "v4.0.4" > "$test_root/success.log"
+run_package "$fixture" "v4.0.4b39" > "$test_root/success.log"
 for output in Xcodes.zip Xcodes.zip.sha256 sparkle-signature.txt release-manifest.txt; do
     [[ -s "$fixture/Product/$output" ]] || fail "Successful flow omitted Product/$output"
 done
-grep -Fq 'tag=v4.0.4' "$fixture/Product/release-manifest.txt" || fail "Manifest omitted release tag"
+grep -Fq 'tag=v4.0.4b39' "$fixture/Product/release-manifest.txt" || fail "Manifest omitted release tag"
+grep -Fq 'version=4.0.4' "$fixture/Product/release-manifest.txt" || fail "Manifest omitted marketing version"
+grep -Fq 'build=39' "$fixture/Product/release-manifest.txt" || fail "Manifest omitted build version"
 grep -Fq 'team_id=K2648T24P4' "$fixture/Product/release-manifest.txt" || fail "Manifest omitted release team"
 [[ "$(<"$fixture/Xcodes/Resources/Licenses.rtf")" == "committed licence" ]] || fail "Release build left generated licences in tracked source"
-expect_failure "refusing to overwrite existing release output" run_package "$fixture" "v4.0.4"
+expect_failure "refusing to overwrite existing release output" run_package "$fixture" "v4.0.4b39"
 
 printf 'Release script contracts passed.\n'

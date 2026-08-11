@@ -49,7 +49,7 @@ releases = [
     "name" => "Stable & <One>",
     "body" => "Stable notes with ]]> boundary.\n\n<!-- sparkle:edSignature=#{valid_signature} -->",
     "published_at" => "2026-08-11T00:00:00Z",
-    "tag_name" => "v1.2b34",
+    "tag_name" => "v1.2.3b34",
     "assets" => [
       {
         "name" => "Xcodes.dmg",
@@ -136,7 +136,7 @@ Dir.mktmpdir("xcodes-appcast-test.") do |fixture_root|
   enclosure = stable_items.first.elements["enclosure"]
   assert(enclosure.attributes["url"] == "https://example.invalid/Xcodes.zip?download=1&source=test", "First ZIP selection failed")
   assert(enclosure.attributes["sparkle:version"] == "34", "Build version extraction failed")
-  assert(enclosure.attributes["sparkle:shortVersionString"] == "1.2", "Marketing version extraction failed")
+  assert(enclosure.attributes["sparkle:shortVersionString"] == "1.2.3", "Marketing version extraction failed")
   assert(enclosure.attributes["sparkle:edSignature"] == valid_signature, "Signature output changed")
   prerelease_enclosure = prerelease_items.last.elements["enclosure"]
   assert(
