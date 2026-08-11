@@ -50,7 +50,7 @@ Configure GitHub Actions to allow selected pinned actions. Protect the `v*` tag 
 
 4. Approve the protected `release` environment deployment after confirming the tag and commit.
 5. Confirm the GitHub release contains `Xcodes.zip`, `Xcodes.zip.sha256`, `sparkle-signature.txt`, and `release-manifest.txt`.
-6. Confirm the release workflow's final reusable-appcast job completes and the stable feed references the exact ZIP and Sparkle signature. Releases created with GitHub Actions' `GITHUB_TOKEN` do not emit another workflow-triggering release event, so the release workflow calls the local appcast workflow explicitly and passes the published tag. Before Jekyll or Pages deployment, the appcast workflow downloads exactly the four release assets into a clean temporary directory, verifies the checksum and manifest, requires the release-body signature to equal the signature asset, and verifies the ZIP's Ed25519 signature against the fork-owned `SUPublicEDKey` in the checked-in app `Info.plist`.
+6. Confirm the release workflow's final reusable-appcast job completes and the stable feed references the exact ZIP and Sparkle signature. Releases created with GitHub Actions' `GITHUB_TOKEN` do not emit another workflow-triggering release event, so the release workflow calls the local appcast workflow explicitly and passes the published tag. Reusable workflows receive the caller's `github.ref`; the appcast build requires that ref to equal `refs/tags/<tag>` and verifies the checked-out tag's commit and `main` ancestry before executing repository code. Before Jekyll or Pages deployment, the appcast workflow downloads exactly the four release assets into a clean temporary directory, verifies the checksum and manifest, requires the release-body signature to equal the signature asset, and verifies the ZIP's Ed25519 signature against the fork-owned `SUPublicEDKey` in the checked-in app `Info.plist`.
 
 Tags using this contract are stable releases. The workflow does not infer prerelease status from the build-number suffix. Add an explicit, reviewed tag grammar and matching appcast policy before publishing prereleases.
 
@@ -58,6 +58,12 @@ For a manual rerun, `workflow_dispatch` reruns must use `--ref v4.0.4b39` and th
 
 ```sh
 gh workflow run release.yml --ref v4.0.4b39 -f release_tag=v4.0.4b39
+```
+
+A manual appcast rerun must likewise use the published tag for both the workflow ref and input (`--ref <tag> -f tag=<same tag>`):
+
+```sh
+gh workflow run appcast.yml --ref v4.0.4b39 -f tag=v4.0.4b39
 ```
 
 ## Local packaging dry run

@@ -20,9 +20,10 @@ make_fixture() {
     local name="$1"
     local fixture="$test_root/$name"
 
-    mkdir -p "$fixture/.github/workflows" "$fixture/Scripts"
+    mkdir -p "$fixture/.github/workflows" "$fixture/Scripts" "$fixture/docs"
     cp "$repo_root/.github/workflows/"*.yml "$fixture/.github/workflows/"
     cp "$checker" "$fixture/Scripts/check_ci_release_workflows.rb"
+    cp "$repo_root/docs/RELEASING.md" "$fixture/docs/RELEASING.md"
     printf '%s\n' "$fixture"
 }
 
@@ -79,7 +80,7 @@ mutate_and_reject missing_appcast_call \
 mutate_and_reject appcast_wrong_need \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["needs"] = "package"; File.write(path, YAML.dump(data) + "# needs: publish\n")'
 mutate_and_reject appcast_wrong_tag \
-    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["with"]["expected_release_tag"] = "latest"; File.write(path, YAML.dump(data) + "# exact release tag\n")'
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["with"]["tag"] = "latest"; File.write(path, YAML.dump(data) + "# exact release tag\n")'
 mutate_and_reject appcast_wrong_permissions \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["permissions"]["contents"] = "read"; File.write(path, YAML.dump(data) + "# contents: write\n")'
 mutate_and_reject appcast_secret_inheritance \
@@ -107,7 +108,7 @@ mutate_and_reject publish_tag_checkout \
 mutate_and_reject missing_publish_sha_verification \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["steps"].reject! { |step| step["name"] == "Verify packaged release authority" }; File.write(path, YAML.dump(data) + "# compare tag and package SHA\n")'
 mutate_and_reject missing_publish_toctou_check \
-    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Publish immutable GitHub release" }; step && step["run"].sub!(/^.*git fetch --force.*\n.*Tag moved after.*\n/m, ""); File.write(path, YAML.dump(data) + "# immediate tag recheck\n")'
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Publish immutable GitHub release" }; step && step["run"].sub!(/^.*Release tag moved after validation.*\n/, ""); File.write(path, YAML.dump(data) + "# immediate tag recheck\n")'
 mutate_and_reject inserted_credential_reader \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["package"]["steps"].insert(-2, { "name" => "Read credentials", "run" => "cat $RUNNER_TEMP/sparkle-private-key" }); File.write(path, YAML.dump(data) + "# exact package steps\n")'
 mutate_and_reject inserted_release_publisher \
@@ -118,5 +119,9 @@ mutate_and_reject publish_unexpected_control \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Publish immutable GitHub release" }; step["if"] = false; File.write(path, YAML.dump(data) + "# no disabled publisher\n")'
 mutate_and_reject missing_release_drafter_timeout \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release-drafter.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["update_release_draft"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded timeout\n")'
+mutate_and_reject missing_appcast_dispatch_docs \
+    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("gh workflow run appcast.yml --ref v4.0.4b39 -f tag=v4.0.4b39", "gh workflow run appcast.yml --ref main -f tag=latest"); File.write(path, text)'
+mutate_and_reject missing_reusable_ref_docs \
+    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Reusable workflows receive the caller'\''s `github.ref`; the appcast build requires that ref to equal `refs/tags/<tag>`", "Reusable workflows are called after release publication"); File.write(path, text)'
 
 printf 'CI and release workflow mutation contracts passed.\n'

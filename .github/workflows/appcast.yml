@@ -3,13 +3,13 @@ name: Build and publish appcasts
 'on':
   workflow_call:
     inputs:
-      expected_release_tag:
+      tag:
         description: Published release tag matching vX.Y.ZbN
         required: true
         type: string
   workflow_dispatch:
     inputs:
-      expected_release_tag:
+      tag:
         description: Published release tag matching vX.Y.ZbN
         required: true
         type: string
@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   build:
-    if: github.repository == 'jacobcxdev/XcodesApp'
+    if: github.repository == 'jacobcxdev/XcodesApp' && github.ref == format('refs/tags/{0}', inputs.tag || github.event.release.tag_name)
     runs-on: macos-26
     timeout-minutes: 30
     permissions:
@@ -34,11 +34,27 @@ jobs:
       BUNDLER_VERSION: '4.0.16'
       BUNDLE_FROZEN: 'true'
       BUNDLE_PATH: vendor/bundle
+      EXPECTED_RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
     steps:
-      - name: Checkout
+      - name: Checkout expected release tag
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
+          fetch-depth: 0
           persist-credentials: false
+
+      - name: Verify immutable appcast source
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+b(0|[1-9][0-9]*)$ ]] || { echo "Expected release tag must match vX.Y.ZbN exactly" >&2; exit 1; }
+          [[ "$GITHUB_REF" == "refs/tags/$EXPECTED_RELEASE_TAG" ]] || { echo "Workflow must run from refs/tags/$EXPECTED_RELEASE_TAG" >&2; exit 1; }
+          git fetch --force --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/tags/$EXPECTED_RELEASE_TAG:refs/tags/$EXPECTED_RELEASE_TAG"
+          source_sha="$(git rev-parse 'HEAD^{commit}')"
+          readonly source_sha
+          [[ "$source_sha" == "$(git rev-parse "$EXPECTED_RELEASE_TAG^{commit}")" ]] || { echo "Appcast tag does not point at checked-out commit" >&2; exit 1; }
+          git merge-base --is-ancestor "$source_sha" origin/main || { echo "Appcast source is not on origin/main" >&2; exit 1; }
 
       - name: Verify fork appcast identity
         run: bash Scripts/check_appcast_identity.sh
@@ -46,7 +62,6 @@ jobs:
       - name: Validate expected published release
         env:
           GH_TOKEN: ${{ github.token }}
-          EXPECTED_RELEASE_TAG: ${{ inputs.expected_release_tag || github.event.release.tag_name }}
         run: |
           set -euo pipefail
           [[ "$EXPECTED_RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+b(0|[1-9][0-9]*)$ ]] || { echo "Expected release tag must match vX.Y.ZbN exactly" >&2; exit 1; }
@@ -81,7 +96,6 @@ jobs:
       - name: Download and verify release artifacts
         env:
           GH_TOKEN: ${{ github.token }}
-          EXPECTED_RELEASE_TAG: ${{ inputs.expected_release_tag || github.event.release.tag_name }}
         run: |
           set -euo pipefail
           readonly release_root="$RUNNER_TEMP/appcast-release"

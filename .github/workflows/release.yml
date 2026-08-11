@@ -210,4 +210,4 @@ jobs:
       contents: write
     uses: ./.github/workflows/appcast.yml
     with:
-      expected_release_tag: ${{ needs.publish.outputs.release_tag }}
+      tag: ${{ needs.publish.outputs.release_tag }}

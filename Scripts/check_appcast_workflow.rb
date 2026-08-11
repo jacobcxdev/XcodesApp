@@ -23,7 +23,7 @@ check.call(
   workflow["on"] == {
     "workflow_call" => {
       "inputs" => {
-        "expected_release_tag" => {
+        "tag" => {
           "description" => "Published release tag matching vX.Y.ZbN",
           "required" => true,
           "type" => "string",
@@ -32,7 +32,7 @@ check.call(
     },
     "workflow_dispatch" => {
       "inputs" => {
-        "expected_release_tag" => {
+        "tag" => {
           "description" => "Published release tag matching vX.Y.ZbN",
           "required" => true,
           "type" => "string",
@@ -57,9 +57,11 @@ check.call(jobs.keys.sort == %w[build deploy], "Appcast workflow must contain on
 
 build = jobs.fetch("build", {})
 deploy = jobs.fetch("deploy", {})
+expected_release_tag = "${{ inputs.tag || github.event.release.tag_name }}"
 repository_guard = "github.repository == 'jacobcxdev/XcodesApp'"
+build_guard = "#{repository_guard} && github.ref == format('refs/tags/{0}', inputs.tag || github.event.release.tag_name)"
 
-check.call(build["if"] == repository_guard, "Build job must be restricted to fork repository")
+check.call(build["if"] == build_guard, "Build job must be restricted to fork repository and exact tag ref")
 check.call(build["permissions"] == { "contents" => "read" }, "Build job permissions must be contents: read")
 check.call(build["runs-on"] == "macos-26", "Build job runner changed")
 check.call(build["timeout-minutes"] == 30, "Build timeout must remain bounded")
@@ -69,6 +71,7 @@ check.call(
     "BUNDLER_VERSION" => bundler_version,
     "BUNDLE_FROZEN" => "true",
     "BUNDLE_PATH" => "vendor/bundle",
+    "EXPECTED_RELEASE_TAG" => expected_release_tag,
   },
   "Build environment must contain only pinned Bundler settings"
 )
@@ -101,9 +104,28 @@ expected_deploy_uses = [
 
 expected_build_steps = [
   {
-    "name" => "Checkout",
+    "name" => "Checkout expected release tag",
     "uses" => "actions/checkout@#{checkout_sha}",
-    "with" => { "persist-credentials" => false },
+    "with" => {
+      "ref" => expected_release_tag,
+      "fetch-depth" => 0,
+      "persist-credentials" => false,
+    },
+  },
+  {
+    "name" => "Verify immutable appcast source",
+    "run" => <<~'SHELL'.strip,
+      set -euo pipefail
+      [[ "$EXPECTED_RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+b(0|[1-9][0-9]*)$ ]] || { echo "Expected release tag must match vX.Y.ZbN exactly" >&2; exit 1; }
+      [[ "$GITHUB_REF" == "refs/tags/$EXPECTED_RELEASE_TAG" ]] || { echo "Workflow must run from refs/tags/$EXPECTED_RELEASE_TAG" >&2; exit 1; }
+      git fetch --force --no-tags origin \
+        "+refs/heads/main:refs/remotes/origin/main" \
+        "+refs/tags/$EXPECTED_RELEASE_TAG:refs/tags/$EXPECTED_RELEASE_TAG"
+      source_sha="$(git rev-parse 'HEAD^{commit}')"
+      readonly source_sha
+      [[ "$source_sha" == "$(git rev-parse "$EXPECTED_RELEASE_TAG^{commit}")" ]] || { echo "Appcast tag does not point at checked-out commit" >&2; exit 1; }
+      git merge-base --is-ancestor "$source_sha" origin/main || { echo "Appcast source is not on origin/main" >&2; exit 1; }
+    SHELL
   },
   {
     "name" => "Verify fork appcast identity",
@@ -111,10 +133,7 @@ expected_build_steps = [
   },
   {
     "name" => "Validate expected published release",
-    "env" => {
-      "GH_TOKEN" => "${{ github.token }}",
-      "EXPECTED_RELEASE_TAG" => "${{ inputs.expected_release_tag || github.event.release.tag_name }}",
-    },
+    "env" => { "GH_TOKEN" => "${{ github.token }}" },
     "run" => <<~'SHELL'.strip,
       set -euo pipefail
       [[ "$EXPECTED_RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+b(0|[1-9][0-9]*)$ ]] || { echo "Expected release tag must match vX.Y.ZbN exactly" >&2; exit 1; }
@@ -149,10 +168,7 @@ expected_build_steps = [
   },
   {
     "name" => "Download and verify release artifacts",
-    "env" => {
-      "GH_TOKEN" => "${{ github.token }}",
-      "EXPECTED_RELEASE_TAG" => "${{ inputs.expected_release_tag || github.event.release.tag_name }}",
-    },
+    "env" => { "GH_TOKEN" => "${{ github.token }}" },
     "run" => <<~'SHELL'.strip,
       set -euo pipefail
       readonly release_root="$RUNNER_TEMP/appcast-release"
@@ -254,7 +270,14 @@ check.call(
 )
 
 checkout = build_steps.find { |step| step["uses"]&.start_with?("actions/checkout@") } || {}
-check.call(checkout.fetch("with", {}) == { "persist-credentials" => false }, "Checkout credentials must not persist")
+check.call(
+  checkout.fetch("with", {}) == {
+    "ref" => expected_release_tag,
+    "fetch-depth" => 0,
+    "persist-credentials" => false,
+  },
+  "Checkout must resolve the exact expected tag without persisted credentials"
+)
 
 setup_ruby = build_steps.find { |step| step["uses"]&.start_with?("ruby/setup-ruby@") } || {}
 check.call(setup_ruby.fetch("with", {}) == { "ruby-version" => "3.3" }, "Ruby runtime pin changed")

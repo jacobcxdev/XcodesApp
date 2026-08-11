@@ -46,10 +46,10 @@ mutate_workflow top_permissions_bypass \
 mutate_workflow trigger_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["on"]["release"]["types"] = ["created"]; File.write(path, YAML.dump(data) + "# types: [published]\n")'
 mutate_workflow reusable_input_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["on"]["workflow_call"]["inputs"]["expected_release_tag"]["required"] = false; File.write(path, YAML.dump(data) + "# required: true\n")'
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["on"]["workflow_call"]["inputs"]["tag"]["required"] = false; File.write(path, YAML.dump(data) + "# required: true\n")'
 # shellcheck disable=SC2016 # GitHub expression must remain literal in mutation comment.
 mutate_workflow concurrency_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["group"] = "appcast-${{ inputs.expected_release_tag || github.event.release.tag_name }}"; File.write(path, YAML.dump(data) + "# one repository-wide group\n")'
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["group"] = "appcast-${{ inputs.tag || github.event.release.tag_name }}"; File.write(path, YAML.dump(data) + "# one repository-wide group\n")'
 mutate_workflow cancelling_concurrency \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["cancel-in-progress"] = true; File.write(path, YAML.dump(data) + "# cancel-in-progress: false\n")'
 mutate_workflow missing_build_timeout \
@@ -58,6 +58,26 @@ mutate_workflow missing_deploy_timeout \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["deploy"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded deploy timeout\n")'
 mutate_workflow repository_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["deploy"]["if"] = "always()"; File.write(path, YAML.dump(data) + "# if: github.repository == jacobcxdev/XcodesApp\n")'
+mutate_workflow missing_build_ref_guard \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["if"] = "github.repository == '\''jacobcxdev/XcodesApp'\''"; File.write(path, YAML.dump(data) + "# exact tag ref guard\n")'
+mutate_workflow missing_checkout_ref \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Checkout expected release tag" }; step["with"].delete("ref"); File.write(path, YAML.dump(data) + "# exact expected tag checkout\n")'
+mutate_workflow mutable_checkout_ref \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Checkout expected release tag" }; step["with"]["ref"] = "main"; File.write(path, YAML.dump(data) + "# immutable tag checkout\n")'
+mutate_workflow shallow_checkout \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Checkout expected release tag" }; step["with"]["fetch-depth"] = 1; File.write(path, YAML.dump(data) + "# full tag ancestry\n")'
+mutate_workflow missing_source_verification \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |item| item["name"] == "Verify immutable appcast source" }; File.write(path, YAML.dump(data) + "# source authority step\n")'
+mutate_workflow missing_source_ref_check \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Verify immutable appcast source" }; step["run"].sub!(/^.*GITHUB_REF.*\n/, ""); File.write(path, YAML.dump(data) + "# exact workflow tag ref\n")'
+mutate_workflow missing_source_tag_check \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Verify immutable appcast source" }; step["run"].sub!(/^.*Appcast tag does not point.*\n/, ""); File.write(path, YAML.dump(data) + "# peeled tag commit match\n")'
+mutate_workflow missing_source_ancestry \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Verify immutable appcast source" }; step["run"].sub!(/^.*merge-base --is-ancestor.*\n/, ""); File.write(path, YAML.dump(data) + "# origin main ancestry\n")'
+mutate_workflow source_verification_continue_on_error \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Verify immutable appcast source" }; step["continue-on-error"] = true; File.write(path, YAML.dump(data))'
+mutate_workflow source_verification_if_false \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Verify immutable appcast source" }; step["if"] = false; File.write(path, YAML.dump(data))'
 mutate_workflow release_verification_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |item| item["name"] == "Validate expected published release" }; File.write(path, YAML.dump(data) + "# gh api expected release\n")'
 mutate_workflow release_verification_continue_on_error \

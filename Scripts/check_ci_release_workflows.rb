@@ -234,7 +234,7 @@ check.call(
     "needs" => "publish",
     "permissions" => { "contents" => "write" },
     "uses" => "./.github/workflows/appcast.yml",
-    "with" => { "expected_release_tag" => "${{ needs.publish.outputs.release_tag }}" },
+    "with" => { "tag" => "${{ needs.publish.outputs.release_tag }}" },
   },
   "Release must invoke local appcast workflow after publication with exact tag and no secrets"
 )
@@ -472,6 +472,14 @@ check.call(File.read(release_drafter_path).include?("# v7.7.0"), "Release drafte
 releasing_docs = File.file?(releasing_docs_path) ? File.read(releasing_docs_path) : ""
 check.call(releasing_docs.include?("environment protection rule must allow only protected tags matching `v*`"), "Release guide must require exact environment tag restrictions")
 check.call(releasing_docs.include?("`workflow_dispatch` reruns must use `--ref v4.0.4b39`"), "Release guide must document tag-ref manual dispatch")
+check.call(
+  releasing_docs.include?("gh workflow run appcast.yml --ref v4.0.4b39 -f tag=v4.0.4b39"),
+  "Release guide must document exact tag-bound appcast dispatch"
+)
+check.call(
+  releasing_docs.include?("Reusable workflows receive the caller's `github.ref`; the appcast build requires that ref to equal `refs/tags/<tag>`"),
+  "Release guide must document reusable workflow tag-ref semantics"
+)
 
 unless errors.empty?
   warn errors.map { |error| "- #{error}" }.join("\n")
