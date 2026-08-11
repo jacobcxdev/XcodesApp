@@ -44,8 +44,8 @@ Configure GitHub Actions to allow selected pinned actions. Protect the `v*` tag 
 3. Commit the version change. Create an annotated tag whose values exactly match the project, for example:
 
    ```sh
-   git tag -a v4.0.4b41 -m 'Xcodes 4.0.4 build 41'
-   git push origin v4.0.4b41
+   git tag -a v4.0.4b42 -m 'Xcodes 4.0.4 build 42'
+   git push origin v4.0.4b42
    ```
 
 4. Approve the protected `release` environment deployment after confirming the tag and commit.
@@ -54,16 +54,16 @@ Configure GitHub Actions to allow selected pinned actions. Protect the `v*` tag 
 
 Tags using this contract are stable releases. The workflow does not infer prerelease status from the build-number suffix. Add an explicit, reviewed tag grammar and matching appcast policy before publishing prereleases.
 
-For a manual rerun, `workflow_dispatch` reruns must use `--ref v4.0.4b41` and the same `release_tag`; selecting a branch is rejected before credential files are written:
+For a manual rerun, `workflow_dispatch` reruns must use `--ref v4.0.4b42` and the same `release_tag`; selecting a branch is rejected before credential files are written:
 
 ```sh
-gh workflow run release.yml --ref v4.0.4b41 -f release_tag=v4.0.4b41
+gh workflow run release.yml --ref v4.0.4b42 -f release_tag=v4.0.4b42
 ```
 
 A manual appcast rerun must likewise use the published tag for both the workflow ref and input (`--ref <tag> -f tag=<same tag>`):
 
 ```sh
-gh workflow run appcast.yml --ref v4.0.4b41 -f tag=v4.0.4b41
+gh workflow run appcast.yml --ref v4.0.4b42 -f tag=v4.0.4b42
 ```
 
 ## Local packaging dry run
@@ -75,8 +75,8 @@ export NOTARY_KEY_ID='<key identifier>'
 export NOTARY_ISSUER_ID='<issuer UUID>'
 export NOTARY_KEY_PATH='/absolute/path/AuthKey_ID.p8'
 export SPARKLE_PRIVATE_KEY_FILE='/absolute/path/sparkle-private-key'
-bash Scripts/package_release.sh v4.0.4b41
-bash Scripts/validate_release_artifacts.sh Product/v4.0.4b41 v4.0.4b41
+bash Scripts/package_release.sh v4.0.4b42
+bash Scripts/validate_release_artifacts.sh Product/v4.0.4b42 v4.0.4b42
 ```
 
 Do not paste secret values into shell history on shared machines. Prefer a local secret manager or a short-lived protected shell environment.
