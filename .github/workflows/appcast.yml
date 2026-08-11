@@ -151,6 +151,7 @@ jobs:
           ref: bc53a309ec69ce6e39dc209535ef24732683902e
           path: action-checkout
           persist-credentials: false
+          token: ${{ secrets.INDEX_REPO_TOKEN }}
 
       - name: Publish through central index
         uses: ./action-checkout/actions/publish-appcast

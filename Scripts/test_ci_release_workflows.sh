@@ -135,7 +135,7 @@ mutate_and_reject publish_unexpected_control \
 mutate_and_reject missing_release_drafter_timeout \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release-drafter.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["update_release_draft"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded timeout\n")'
 mutate_and_reject missing_appcast_dispatch_docs \
-    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("gh workflow run appcast.yml --ref v4.0.4b43 -f tag=v4.0.4b43", "gh workflow run appcast.yml --ref main -f tag=latest"); File.write(path, text)'
+    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("gh workflow run appcast.yml --ref v4.0.4b44 -f tag=v4.0.4b44", "gh workflow run appcast.yml --ref main -f tag=latest"); File.write(path, text)'
 # shellcheck disable=SC2016 # Documentation code spans must remain literal in the mutation.
 mutate_and_reject missing_reusable_ref_docs \
     'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Reusable workflows receive the caller'\''s `github.ref`; the appcast build requires that ref to equal `refs/tags/<tag>`", "Reusable workflows are called after release publication"); File.write(path, text)'

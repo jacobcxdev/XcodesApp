@@ -164,7 +164,7 @@ require_literal "*   @jacobcxdev" "$codeowners"
 require_literal "Copyright (c) 2026 Jacob Clayden" "$license"
 require_literal "docs/RELEASING.md" "$readme"
 require_literal "DEVELOPER_ID_APPLICATION_P12_BASE64" "$release_documentation"
-require_literal "v4.0.4b43" "$release_documentation"
+require_literal "v4.0.4b44" "$release_documentation"
 
 for contributor in \
     '@dompepin' \
