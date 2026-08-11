@@ -29,6 +29,12 @@ check.call(
           "type" => "string",
         },
       },
+      "secrets" => {
+        "INDEX_REPO_TOKEN" => {
+          "description" => "Token scoped to write jacobcxdev/jacobcxdev.github.io",
+          "required" => true,
+        },
+      },
     },
     "workflow_dispatch" => {
       "inputs" => {
@@ -53,10 +59,10 @@ check.call(
 )
 
 jobs = workflow.fetch("jobs", {})
-check.call(jobs.keys.sort == %w[build deploy], "Appcast workflow must contain only build and deploy jobs")
+check.call(jobs.keys.sort == %w[build publish], "Appcast workflow must contain only build and publish jobs")
 
 build = jobs.fetch("build", {})
-deploy = jobs.fetch("deploy", {})
+publish_job = jobs.fetch("publish", {})
 expected_release_tag = "${{ inputs.tag || github.event.release.tag_name }}"
 repository_guard = "github.repository == 'jacobcxdev/XcodesApp'"
 build_guard = "#{repository_guard} && github.ref == format('refs/tags/{0}', inputs.tag || github.event.release.tag_name)"
@@ -76,30 +82,33 @@ check.call(
   "Build environment must contain only pinned Bundler settings"
 )
 
-check.call(deploy["if"] == repository_guard, "Deploy job must be restricted to fork repository")
-check.call(deploy["needs"] == "build", "Deploy job must require verified build artifact")
-check.call(deploy["permissions"] == { "contents" => "write" }, "Deploy job alone must have contents: write")
-check.call(deploy["runs-on"] == "ubuntu-latest", "Deploy job runner changed")
-check.call(deploy["timeout-minutes"] == 10, "Deploy timeout must remain bounded")
-check.call(deploy.keys.sort == %w[if needs permissions runs-on steps timeout-minutes], "Unexpected deploy job capability")
+check.call(publish_job["if"] == repository_guard, "Publish job must be restricted to fork repository")
+check.call(publish_job["needs"] == "build", "Publish job must require verified build artifact")
+check.call(publish_job["permissions"] == { "contents" => "read" }, "Publish job permissions must be contents: read")
+check.call(publish_job["runs-on"] == "ubuntu-latest", "Publish job runner changed")
+check.call(publish_job["timeout-minutes"] == 10, "Publish timeout must remain bounded")
+check.call(publish_job.keys.sort == %w[if needs permissions runs-on steps timeout-minutes], "Unexpected publish job capability")
 
 build_steps = build.fetch("steps", [])
-deploy_steps = deploy.fetch("steps", [])
+publish_steps = publish_job.fetch("steps", [])
 
 checkout_sha = "3d3c42e5aac5ba805825da76410c181273ba90b1"
 ruby_sha = "95ef2b042f9d7a56d8268cba8559e2842e2ad01b"
 upload_sha = "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
 download_sha = "3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
-deploy_sha = "fa24774553152dd7873cd16ebd8d959b010c5445"
+setup_node_sha = "249970729cb0ef3589644e2896645e5dc5ba9c38"
+central_action_sha = "bc53a309ec69ce6e39dc209535ef24732683902e"
 
 expected_build_uses = [
   "actions/checkout@#{checkout_sha}",
   "ruby/setup-ruby@#{ruby_sha}",
   "actions/upload-artifact@#{upload_sha}",
 ]
-expected_deploy_uses = [
+expected_publish_uses = [
   "actions/download-artifact@#{download_sha}",
-  "JamesIves/github-pages-deploy-action@#{deploy_sha}",
+  "actions/setup-node@#{setup_node_sha}",
+  "actions/checkout@#{checkout_sha}",
+  "./action-checkout/actions/publish-appcast",
 ]
 
 expected_build_steps = [
@@ -184,10 +193,10 @@ expected_build_steps = [
     "name" => "Validate rendered appcasts",
     "run" => <<~'SHELL'.strip,
       set -euo pipefail
-      xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml
+      xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast-prereleases.xml
       ruby Scripts/validate_rendered_appcast.rb \
         AppCast/_site/appcast.xml \
-        AppCast/_site/appcast_pre.xml \
+        AppCast/_site/appcast-prereleases.xml \
         "$VALIDATED_RELEASES_FILE" \
         "$VALIDATED_RELEASE_SIGNATURES_FILE"
     SHELL
@@ -197,37 +206,39 @@ expected_build_steps = [
     "uses" => "actions/upload-artifact@#{upload_sha}",
     "with" => {
       "name" => "appcast-site",
-      "path" => "AppCast/_site",
+      "path" => "AppCast/_site/appcast*.xml",
       "if-no-files-found" => "error",
       "retention-days" => 1,
     },
   },
 ]
-expected_deploy_steps = [
-  {
-    "name" => "Initialise deployment repository",
-    "run" => <<~'SHELL'.strip,
-      set -euo pipefail
-      git init --quiet
-      git config user.name "github-actions[bot]"
-      git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      git commit --allow-empty --no-verify --message "Initialise appcast deployment workspace"
-    SHELL
-  },
+expected_publish_steps = [
   {
     "name" => "Download verified appcasts",
     "uses" => "actions/download-artifact@#{download_sha}",
     "with" => { "name" => "appcast-site", "path" => "AppCast/_site" },
   },
   {
-    "name" => "Publish GitHub Pages branch",
-    "uses" => "JamesIves/github-pages-deploy-action@#{deploy_sha}",
+    "name" => "Setup Node.js",
+    "uses" => "actions/setup-node@#{setup_node_sha}",
+    "with" => { "node-version" => "25" },
+  },
+  {
+    "name" => "Checkout central publisher",
+    "uses" => "actions/checkout@#{checkout_sha}",
     "with" => {
-      "token" => "${{ github.token }}",
-      "branch" => "gh-pages",
-      "folder" => "AppCast/_site",
-      "clean" => true,
-      "single-commit" => true,
+      "repository" => "jacobcxdev/jacobcxdev.github.io",
+      "ref" => central_action_sha,
+      "path" => "action-checkout",
+      "persist-credentials" => false,
+    },
+  },
+  {
+    "name" => "Publish through central index",
+    "uses" => "./action-checkout/actions/publish-appcast",
+    "with" => {
+      "token" => "${{ secrets.INDEX_REPO_TOKEN }}",
+      "source-dir" => "AppCast/_site",
     },
   },
 ]
@@ -240,16 +251,18 @@ normalise_steps = lambda do |steps|
   end
 end
 check.call(normalise_steps.call(build_steps) == expected_build_steps, "Build steps must exactly match audited controls")
-check.call(normalise_steps.call(deploy_steps) == expected_deploy_steps, "Deploy steps must exactly match audited controls")
+check.call(normalise_steps.call(publish_steps) == expected_publish_steps, "Publish steps must exactly match audited controls")
 
 build_uses = build_steps.filter_map { |step| step["uses"] }
-deploy_uses = deploy_steps.filter_map { |step| step["uses"] }
+publish_uses = publish_steps.filter_map { |step| step["uses"] }
 check.call(build_uses == expected_build_uses, "Build actions must use audited commit pins")
-check.call(deploy_uses == expected_deploy_uses, "Deploy actions must use audited commit pins")
+check.call(publish_uses == expected_publish_uses, "Publish actions must use audited pins and local central action")
 check.call(
-  (build_uses + deploy_uses).all? { |uses| uses.match?(/@[0-9a-f]{40}\z/) },
-  "Every appcast action must be pinned to a full commit SHA"
+  (build_uses + publish_uses).all? { |uses| uses == "./action-checkout/actions/publish-appcast" || uses.match?(/@[0-9a-f]{40}\z/) },
+  "Every external appcast action must be pinned to a full commit SHA"
 )
+check.call(!YAML.dump(build).match?(/INDEX_REPO_TOKEN|secrets\./), "Build job must not receive central publication credentials")
+check.call(!YAML.dump(workflow).match?(/gh-pages|github-pages-deploy-action|contents:\s*write/), "XcodesApp must not publish GitHub Pages")
 
 checkout = build_steps.find { |step| step["uses"]&.start_with?("actions/checkout@") } || {}
 check.call(
@@ -298,10 +311,10 @@ check.call(jekyll_build["env"].nil?, "Jekyll must not receive raw GitHub release
 xml_validation = build_steps.find { |step| step["name"] == "Validate rendered appcasts" } || {}
 expected_xml_validation = <<~'SHELL'.strip
   set -euo pipefail
-  xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml
+  xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast-prereleases.xml
   ruby Scripts/validate_rendered_appcast.rb \
     AppCast/_site/appcast.xml \
-    AppCast/_site/appcast_pre.xml \
+    AppCast/_site/appcast-prereleases.xml \
     "$VALIDATED_RELEASES_FILE" \
     "$VALIDATED_RELEASE_SIGNATURES_FILE"
 SHELL
@@ -311,26 +324,34 @@ upload = build_steps.find { |step| step["uses"]&.start_with?("actions/upload-art
 check.call(
   upload["with"] == {
     "name" => "appcast-site",
-    "path" => "AppCast/_site",
+    "path" => "AppCast/_site/appcast*.xml",
     "if-no-files-found" => "error",
     "retention-days" => 1,
   },
   "Verified appcast artifact contract changed"
 )
 
-download = deploy_steps.find { |step| step["uses"]&.start_with?("actions/download-artifact@") } || {}
-check.call(download["with"] == { "name" => "appcast-site", "path" => "AppCast/_site" }, "Deploy must download verified appcast artifact")
+download = publish_steps.find { |step| step["uses"]&.start_with?("actions/download-artifact@") } || {}
+check.call(download["with"] == { "name" => "appcast-site", "path" => "AppCast/_site" }, "Publish must download verified appcast artifact")
 
-publish = deploy_steps.find { |step| step["uses"]&.start_with?("JamesIves/github-pages-deploy-action@") } || {}
+central_checkout = publish_steps.find { |step| step["name"] == "Checkout central publisher" } || {}
 check.call(
-  publish["with"] == {
-    "token" => "${{ github.token }}",
-    "branch" => "gh-pages",
-    "folder" => "AppCast/_site",
-    "clean" => true,
-    "single-commit" => true,
+  central_checkout["with"] == {
+    "repository" => "jacobcxdev/jacobcxdev.github.io",
+    "ref" => central_action_sha,
+    "path" => "action-checkout",
+    "persist-credentials" => false,
   },
-  "GitHub Pages deployment contract changed"
+  "Central publisher checkout must use exact immutable revision"
+)
+
+central_publish = publish_steps.find { |step| step["uses"] == "./action-checkout/actions/publish-appcast" } || {}
+check.call(
+  central_publish["with"] == {
+    "token" => "${{ secrets.INDEX_REPO_TOKEN }}",
+    "source-dir" => "AppCast/_site",
+  },
+  "Central appcast publication contract changed"
 )
 
 unless errors.empty?

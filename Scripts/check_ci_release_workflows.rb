@@ -48,7 +48,9 @@ end
 workflows.each do |path, workflow|
   all_uses.call(workflow).each do |uses|
     check.call(
-      uses == "./.github/workflows/appcast.yml" || uses.match?(/\A[^@]+@[0-9a-f]{40}\z/),
+      uses == "./.github/workflows/appcast.yml" ||
+        uses == "./action-checkout/actions/publish-appcast" ||
+        uses.match?(/\A[^@]+@[0-9a-f]{40}\z/),
       "Action is not pinned to a full commit SHA in #{path.delete_prefix("#{repo_root}/")}: #{uses}"
     )
   end
@@ -233,13 +235,14 @@ check.call(
   appcast == {
     "if" => repository_guard,
     "needs" => "publish",
-    "permissions" => { "contents" => "write" },
+    "permissions" => { "contents" => "read" },
     "uses" => "./.github/workflows/appcast.yml",
     "with" => { "tag" => "${{ needs.publish.outputs.release_tag }}" },
+    "secrets" => { "INDEX_REPO_TOKEN" => "${{ secrets.INDEX_REPO_TOKEN }}" },
   },
-  "Release must invoke local appcast workflow after publication with exact tag and no secrets"
+  "Release must invoke local appcast workflow with exact tag and central publication token"
 )
-check.call(!YAML.dump(appcast).match?(/secrets|continue-on-error/), "Appcast caller must not inherit secrets or suppress failures")
+check.call(!YAML.dump(appcast).match?(/secrets:\s*inherit|continue-on-error/), "Appcast caller must not inherit all secrets or suppress failures")
 
 expected_secrets = {
   "CERTIFICATE_P12_BASE64" => "${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64 }}",
@@ -472,9 +475,9 @@ check.call(File.read(release_drafter_path).include?("# v7.7.0"), "Release drafte
 
 releasing_docs = File.file?(releasing_docs_path) ? File.read(releasing_docs_path) : ""
 check.call(releasing_docs.include?("environment protection rule must allow only protected tags matching `v*`"), "Release guide must require exact environment tag restrictions")
-check.call(releasing_docs.include?("`workflow_dispatch` reruns must use `--ref v4.0.4b42`"), "Release guide must document tag-ref manual dispatch")
+check.call(releasing_docs.include?("`workflow_dispatch` reruns must use `--ref v4.0.4b43`"), "Release guide must document tag-ref manual dispatch")
 check.call(
-  releasing_docs.include?("gh workflow run appcast.yml --ref v4.0.4b42 -f tag=v4.0.4b42"),
+  releasing_docs.include?("gh workflow run appcast.yml --ref v4.0.4b43 -f tag=v4.0.4b43"),
   "Release guide must document exact tag-bound appcast dispatch"
 )
 check.call(
@@ -482,7 +485,7 @@ check.call(
   "Release guide must document reusable workflow tag-ref semantics"
 )
 check.call(
-  releasing_docs.include?("Rerun the same appcast tag only for transient infrastructure or Pages configuration failures when the tagged source is unchanged."),
+  releasing_docs.include?("Rerun the same appcast tag only for transient infrastructure or central-host configuration failures when tagged source is unchanged."),
   "Release guide must limit same-tag appcast reruns to transient failures"
 )
 check.call(
@@ -490,6 +493,8 @@ check.call(
   "Release guide must require a new release for source fixes"
 )
 check.call(!releasing_docs.include?("after fixing its source"), "Release guide must not permit same-tag source fixes")
+check.call(releasing_docs.include?("XcodesApp must not enable GitHub Pages or maintain a `gh-pages` branch."), "Release guide must forbid app-owned Pages")
+check.call(releasing_docs.include?("https://docs.jacobcx.dev/repo/1330187036/updates/appcast.xml"), "Release guide must document stable-ID central feed")
 
 unless errors.empty?
   warn errors.map { |error| "- #{error}" }.join("\n")

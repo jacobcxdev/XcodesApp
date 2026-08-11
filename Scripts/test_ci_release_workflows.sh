@@ -90,9 +90,14 @@ mutate_and_reject appcast_wrong_need \
 mutate_and_reject appcast_wrong_tag \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["with"]["tag"] = "latest"; File.write(path, YAML.dump(data) + "# exact release tag\n")'
 mutate_and_reject appcast_wrong_permissions \
-    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["permissions"]["contents"] = "read"; File.write(path, YAML.dump(data) + "# contents: write\n")'
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["permissions"]["contents"] = "write"; File.write(path, YAML.dump(data) + "# contents: read\n")'
 mutate_and_reject appcast_secret_inheritance \
-    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["secrets"] = "inherit"; File.write(path, YAML.dump(data) + "# no secrets inherited\n")'
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["secrets"] = "inherit"; File.write(path, YAML.dump(data) + "# only INDEX_REPO_TOKEN\n")'
+mutate_and_reject appcast_missing_central_token \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"].delete("secrets"); File.write(path, YAML.dump(data) + "# INDEX_REPO_TOKEN\n")'
+# shellcheck disable=SC2016 # GitHub expression must remain literal in mutation source.
+mutate_and_reject appcast_wrong_central_token \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["secrets"]["INDEX_REPO_TOKEN"] = "${{ github.token }}"; File.write(path, YAML.dump(data) + "# repository-scoped central token\n")'
 mutate_and_reject appcast_if_false \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["if"] = false; File.write(path, YAML.dump(data) + "# repository guard\n")'
 mutate_and_reject appcast_continue_on_error \
@@ -130,12 +135,15 @@ mutate_and_reject publish_unexpected_control \
 mutate_and_reject missing_release_drafter_timeout \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release-drafter.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["update_release_draft"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded timeout\n")'
 mutate_and_reject missing_appcast_dispatch_docs \
-    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("gh workflow run appcast.yml --ref v4.0.4b42 -f tag=v4.0.4b42", "gh workflow run appcast.yml --ref main -f tag=latest"); File.write(path, text)'
+    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("gh workflow run appcast.yml --ref v4.0.4b43 -f tag=v4.0.4b43", "gh workflow run appcast.yml --ref main -f tag=latest"); File.write(path, text)'
 # shellcheck disable=SC2016 # Documentation code spans must remain literal in the mutation.
 mutate_and_reject missing_reusable_ref_docs \
     'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Reusable workflows receive the caller'\''s `github.ref`; the appcast build requires that ref to equal `refs/tags/<tag>`", "Reusable workflows are called after release publication"); File.write(path, text)'
 mutate_and_reject widened_same_tag_recovery_docs \
-    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Rerun the same appcast tag only for transient infrastructure or Pages configuration failures when the tagged source is unchanged.", "Rerun the same appcast tag after fixing its source or Pages configuration."); File.write(path, text)'
+    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Rerun the same appcast tag only for transient infrastructure or central-host configuration failures when tagged source is unchanged.", "Rerun the same appcast tag after fixing its source or host configuration."); File.write(path, text)'
+# shellcheck disable=SC2016 # Documentation code spans must remain literal in mutation source.
+mutate_and_reject enabled_app_owned_pages_docs \
+    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("XcodesApp must not enable GitHub Pages or maintain a `gh-pages` branch.", "Enable GitHub Pages from `gh-pages`."); File.write(path, text)'
 # shellcheck disable=SC2016 # Documentation code spans must remain literal in the mutation.
 mutate_and_reject missing_new_release_recovery_docs \
     'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Any workflow, validator, or source fix requires an incremented build number, a new immutable `vX.Y.ZbN` tag, and a new release.", "Fix source issues before rerunning."); File.write(path, text)'

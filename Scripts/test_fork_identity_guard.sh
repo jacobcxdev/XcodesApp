@@ -69,6 +69,8 @@ cp \
     "$repo_root/AppCast/_config.yml" \
     "$repo_root/AppCast/Gemfile" \
     "$repo_root/AppCast/Gemfile.lock" \
+    "$repo_root/AppCast/appcast.xml" \
+    "$repo_root/AppCast/appcast-prereleases.xml" \
     "$repo_root/AppCast/test_appcast.rb" \
     "$fixture_root/AppCast/"
 cp "$repo_root/AppCast/_includes/appcast.inc" "$fixture_root/AppCast/_includes/"
@@ -98,7 +100,7 @@ cp \
     "$repo_root/Xcodes.xcodeproj/project.pbxproj" \
     "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
 perl -0pi -e \
-    's#https://jacobcxdev\.github\.io/XcodesApp/appcast\.xml#https://www.xcodes.app/appcast.xml#g' \
+    's#https://docs\.jacobcx\.dev/repo/1330187036/updates/appcast\.xml#https://www.xcodes.app/appcast.xml#g' \
     "$fixture_root/Xcodes/Resources/Info.plist" \
     "$fixture_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift"
 
