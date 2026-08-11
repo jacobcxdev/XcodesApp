@@ -131,7 +131,7 @@ Expected: compile failure because `ForkPreferenceMigration` does not exist.
 
 Add `ForkPreferenceMigration` with marker `dev.jacobcx.Xcodes.preferenceMigrationVersion`, version `1`, and explicit keys from `PreferenceKey` plus `terminateAfterLastWindowClosed`. Exclude `username` and unknown values. Existing destination values win. When no `localPath` exists and legacy support exists, use `~/Library/Application Support/com.robotsandpencils.XcodesApp`.
 
-Call migration at start of production `AppState.init` before loading caches. Change Keychain service to `dev.jacobcx.Xcodes`. Fresh defaults become:
+Call migration at start of production `AppState.init` before loading caches. Change Apple-account Keychain service to `dev.jacobcx.Xcodes.apple-account`. Fresh defaults become:
 
 ```swift
 Path.applicationSupport/"dev.jacobcx.Xcodes"

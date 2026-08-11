@@ -35,6 +35,10 @@ class AppStateTests: XCTestCase {
         subject = AppState()
     }
 
+    func test_KeychainUsesPurposeSpecificAppleAccountService() {
+        XCTAssertEqual(Keychain.service, "dev.jacobcx.Xcodes.apple-account")
+    }
+
     func test_AutoInstallWaitsForInitialInstalledXcodeScan() {
         Current.defaults.get = { key in
             key == "autoInstallation" ? AutoInstallationType.newestBeta.rawValue : nil
