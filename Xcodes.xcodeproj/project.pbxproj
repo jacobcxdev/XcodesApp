@@ -833,7 +833,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/Xcodes/AcknowledgementsGenerator\"\nxcrun -sdk macosx swift run AcknowledgementsGenerator \\\n    -p \"${SRCROOT}/Xcodes.xcodeproj\" \\\n    -o \"${SRCROOT}/Xcodes/Resources/Licenses.rtf\" \\\n    -c \"${BUILD_DIR}/../../SourcePackages/checkouts\"\n";
+			shellScript = "cd \"${SRCROOT}/Xcodes/AcknowledgementsGenerator\"\nxcrun -sdk macosx swift run AcknowledgementsGenerator \\\n    -p \"${SRCROOT}/Xcodes.xcodeproj\" \\\n    -o \"${SRCROOT}/Xcodes/Resources/Licenses.rtf\" \\\n    -b \"${BUILD_DIR}\"\n";
 		};
 		D971F84C2E79102E005F84C9 /* Fix libfido2 structure */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1064,7 +1064,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_ASSET_PATHS = "\"Xcodes/Preview Content\"";
 				DEVELOPMENT_TEAM = K2648T24P4;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -1317,7 +1317,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_ASSET_PATHS = "\"Xcodes/Preview Content\"";
 				DEVELOPMENT_TEAM = K2648T24P4;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1346,7 +1346,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_ASSET_PATHS = "\"Xcodes/Preview Content\"";
 				DEVELOPMENT_TEAM = K2648T24P4;
 				ENABLE_HARDENED_RUNTIME = YES;
