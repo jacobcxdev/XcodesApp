@@ -123,5 +123,9 @@ mutate_and_reject missing_appcast_dispatch_docs \
     'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("gh workflow run appcast.yml --ref v4.0.4b39 -f tag=v4.0.4b39", "gh workflow run appcast.yml --ref main -f tag=latest"); File.write(path, text)'
 mutate_and_reject missing_reusable_ref_docs \
     'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Reusable workflows receive the caller'\''s `github.ref`; the appcast build requires that ref to equal `refs/tags/<tag>`", "Reusable workflows are called after release publication"); File.write(path, text)'
+mutate_and_reject widened_same_tag_recovery_docs \
+    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Rerun the same appcast tag only for transient infrastructure or Pages configuration failures when the tagged source is unchanged.", "Rerun the same appcast tag after fixing its source or Pages configuration."); File.write(path, text)'
+mutate_and_reject missing_new_release_recovery_docs \
+    'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Any workflow, validator, or source fix requires an incremented build number, a new immutable `vX.Y.ZbN` tag, and a new release.", "Fix source issues before rerunning."); File.write(path, text)'
 
 printf 'CI and release workflow mutation contracts passed.\n'

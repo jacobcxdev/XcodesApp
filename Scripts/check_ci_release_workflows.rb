@@ -480,6 +480,15 @@ check.call(
   releasing_docs.include?("Reusable workflows receive the caller's `github.ref`; the appcast build requires that ref to equal `refs/tags/<tag>`"),
   "Release guide must document reusable workflow tag-ref semantics"
 )
+check.call(
+  releasing_docs.include?("Rerun the same appcast tag only for transient infrastructure or Pages configuration failures when the tagged source is unchanged."),
+  "Release guide must limit same-tag appcast reruns to transient failures"
+)
+check.call(
+  releasing_docs.include?("Any workflow, validator, or source fix requires an incremented build number, a new immutable `vX.Y.ZbN` tag, and a new release."),
+  "Release guide must require a new release for source fixes"
+)
+check.call(!releasing_docs.include?("after fixing its source"), "Release guide must not permit same-tag source fixes")
 
 unless errors.empty?
   warn errors.map { |error| "- #{error}" }.join("\n")
