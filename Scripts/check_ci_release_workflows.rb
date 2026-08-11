@@ -475,9 +475,9 @@ check.call(File.read(release_drafter_path).include?("# v7.7.0"), "Release drafte
 
 releasing_docs = File.file?(releasing_docs_path) ? File.read(releasing_docs_path) : ""
 check.call(releasing_docs.include?("environment protection rule must allow only protected tags matching `v*`"), "Release guide must require exact environment tag restrictions")
-check.call(releasing_docs.include?("`workflow_dispatch` reruns must use `--ref v4.0.5b45`"), "Release guide must document tag-ref manual dispatch")
+check.call(releasing_docs.include?("`workflow_dispatch` reruns must use `--ref v4.0.5b46`"), "Release guide must document tag-ref manual dispatch")
 check.call(
-  releasing_docs.include?("gh workflow run appcast.yml --ref v4.0.5b45 -f tag=v4.0.5b45"),
+  releasing_docs.include?("gh workflow run appcast.yml --ref v4.0.5b46 -f tag=v4.0.5b46"),
   "Release guide must document exact tag-bound appcast dispatch"
 )
 check.call(

@@ -21,8 +21,8 @@ mkdir -p \
     "$fixture_root/AppCast/_includes" \
     "$fixture_root/AppCast/_plugins" \
     "$fixture_root/Xcodes/Frontend/About" \
+    "$fixture_root/Xcodes/Backend" \
     "$fixture_root/Xcodes/Frontend/Preferences" \
-    "$fixture_root/Xcodes/Frontend/XcodeList" \
     "$fixture_root/Xcodes/Resources" \
     "$fixture_root/docs" \
     "$fixture_root/Scripts"
@@ -76,13 +76,12 @@ cp \
 cp "$repo_root/AppCast/_includes/appcast.inc" "$fixture_root/AppCast/_includes/"
 cp "$repo_root/AppCast/_plugins/signature_filter.rb" "$fixture_root/AppCast/_plugins/"
 cp "$repo_root/Xcodes/XcodesApp.swift" "$fixture_root/Xcodes/"
+cp "$repo_root/Xcodes/Frontend/MainWindow.swift" "$fixture_root/Xcodes/Frontend/"
 cp "$repo_root/Xcodes/Frontend/About/AboutView.swift" "$fixture_root/Xcodes/Frontend/About/"
 cp \
     "$repo_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift" \
     "$fixture_root/Xcodes/Frontend/Preferences/"
-cp \
-    "$repo_root/Xcodes/Frontend/XcodeList/BottomStatusBar.swift" \
-    "$fixture_root/Xcodes/Frontend/XcodeList/"
+cp "$repo_root/Xcodes/Backend/Environment.swift" "$fixture_root/Xcodes/Backend/"
 cp "$repo_root/Xcodes/Resources/Info.plist" "$fixture_root/Xcodes/Resources/Info.plist"
 
 "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null
@@ -138,6 +137,26 @@ perl -0pi -e \
 
 if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
     echo "Identity guard accepted inconsistent About spacing" >&2
+    exit 1
+fi
+
+cp "$repo_root/Xcodes/Frontend/About/AboutView.swift" "$fixture_root/Xcodes/Frontend/About/"
+perl -0pi -e \
+    's/dev\.jacobcx\.Xcodes\.apple-account/dev.jacobcx.Xcodes/' \
+    "$fixture_root/Xcodes/Backend/Environment.swift"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted generic app Keychain service" >&2
+    exit 1
+fi
+
+cp "$repo_root/Xcodes/Backend/Environment.swift" "$fixture_root/Xcodes/Backend/"
+perl -0pi -e \
+    's/\.padding\(\[\.top\], 0\)/.bottomStatusBar()\n        .padding([.top], 0)/' \
+    "$fixture_root/Xcodes/Frontend/MainWindow.swift"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted obsolete main-window footer" >&2
     exit 1
 fi
 
