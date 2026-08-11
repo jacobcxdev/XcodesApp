@@ -50,7 +50,7 @@ Configure GitHub Actions to allow selected pinned actions. Protect the `v*` tag 
 
 4. Approve the protected `release` environment deployment after confirming the tag and commit.
 5. Confirm the GitHub release contains `Xcodes.zip`, `Xcodes.zip.sha256`, `sparkle-signature.txt`, and `release-manifest.txt`.
-6. Confirm the published-release event completes the appcast workflow and the stable feed references the exact ZIP and Sparkle signature.
+6. Confirm the release workflow's final reusable-appcast job completes and the stable feed references the exact ZIP and Sparkle signature. Releases created with GitHub Actions' `GITHUB_TOKEN` do not emit another workflow-triggering release event, so the release workflow calls the local appcast workflow explicitly and passes the published tag. The appcast workflow verifies that exact non-draft release and its required assets before deployment.
 
 Tags using this contract are stable releases. The workflow does not infer prerelease status from the build-number suffix. Add an explicit, reviewed tag grammar and matching appcast policy before publishing prereleases.
 
@@ -74,5 +74,5 @@ Do not paste secret values into shell history on shared machines. Prefer a local
 - Packaging failure: fix the cause and rerun the same workflow with `workflow_dispatch` and the existing tag. Packaging does not publish partial `Product/<tag>/` output.
 - Publishing failure before a GitHub release exists: rerun the same tag. The publish job revalidates the downloaded artifact before creating the release.
 - GitHub release already exists: the workflow refuses to replace it. Inspect assets and appcast state. Delete a bad release only after preserving evidence and deciding whether the immutable tag can remain valid; otherwise issue a new build number and tag.
-- Appcast failure after a valid release: rerun the appcast workflow manually after fixing its source or Pages configuration. Do not replace signed release assets under an existing tag.
+- Appcast failure after a valid release: rerun the appcast workflow manually with the exact published tag after fixing its source or Pages configuration. Do not replace signed release assets under an existing tag.
 - Suspected key exposure: disable workflows, revoke affected Apple credentials or certificate, rotate the Sparkle key with an app update signed by the still-trusted old key, and document the incident before resuming releases.

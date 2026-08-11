@@ -66,5 +66,23 @@ mutate_and_reject publish_secret_access \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["env"] = { "KEY" => "${{ secrets.SPARKLE_PRIVATE_KEY }}" }; File.write(path, YAML.dump(data) + "# no secrets here\n")'
 mutate_and_reject mutable_checkout \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["package"]["steps"].find { |item| item["name"] == "Checkout immutable release tag" }; step["with"]["ref"] = "main"; File.write(path, YAML.dump(data) + "# ref: exact tag\n")'
+mutate_and_reject missing_appcast_call \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"].delete("appcast"); File.write(path, YAML.dump(data) + "# appcast workflow call\n")'
+mutate_and_reject appcast_wrong_need \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["needs"] = "package"; File.write(path, YAML.dump(data) + "# needs: publish\n")'
+mutate_and_reject appcast_wrong_tag \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["with"]["expected_release_tag"] = "latest"; File.write(path, YAML.dump(data) + "# exact release tag\n")'
+mutate_and_reject appcast_wrong_permissions \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["permissions"]["contents"] = "read"; File.write(path, YAML.dump(data) + "# contents: write\n")'
+mutate_and_reject appcast_secret_inheritance \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["secrets"] = "inherit"; File.write(path, YAML.dump(data) + "# no secrets inherited\n")'
+mutate_and_reject appcast_if_false \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["if"] = false; File.write(path, YAML.dump(data) + "# repository guard\n")'
+mutate_and_reject appcast_continue_on_error \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["continue-on-error"] = true; File.write(path, YAML.dump(data) + "# failures must propagate\n")'
+mutate_and_reject mutable_appcast_indirection \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["uses"] = "jacobcxdev/XcodesApp/.github/workflows/appcast.yml@main"; File.write(path, YAML.dump(data) + "# local reusable workflow\n")'
+mutate_and_reject glob_shell_syntax_bypass \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/ci.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["verify"]["steps"].find { |item| item["name"] == "Validate repository contracts" }; step["run"].sub!(/shopt -s nullglob.*?done/m, "bash -n Scripts/*.sh"); File.write(path, YAML.dump(data) + "# exact script loop\n")'
 
 printf 'CI and release workflow mutation contracts passed.\n'

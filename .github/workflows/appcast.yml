@@ -1,7 +1,18 @@
 name: Build and publish appcasts
 
 'on':
+  workflow_call:
+    inputs:
+      expected_release_tag:
+        description: Published release tag matching vX.Y.ZbN
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      expected_release_tag:
+        description: Published release tag matching vX.Y.ZbN
+        required: true
+        type: string
   release:
     types: [published]
 
@@ -9,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: appcast-${{ github.repository }}
+  group: appcast-${{ inputs.expected_release_tag || github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
@@ -27,6 +38,23 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+
+      - name: Validate expected published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_RELEASE_TAG: ${{ inputs.expected_release_tag || github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+b(0|[1-9][0-9]*)$ ]] || { echo "Expected release tag must match vX.Y.ZbN exactly" >&2; exit 1; }
+          release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$EXPECTED_RELEASE_TAG")"
+          readonly release_json
+          jq -e --arg tag "$EXPECTED_RELEASE_TAG" '
+            (.tag_name == $tag) and
+            (.draft == false) and
+            (.prerelease == false) and
+            ((["Xcodes.zip", "Xcodes.zip.sha256", "sparkle-signature.txt", "release-manifest.txt"] - [.assets[].name]) | length == 0) and
+            ([.assets[] | select(.name == "Xcodes.zip" and .size > 0)] | length == 1)
+          ' <<< "$release_json" >/dev/null
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@7bae1d00b5db9166f4f0fc47985a3a5702cb58f0 # v1.197.0

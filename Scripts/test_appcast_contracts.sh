@@ -44,11 +44,19 @@ mutate_workflow top_permissions_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["permissions"]["contents"] = "write"; File.write(path, YAML.dump(data) + "# contents: read\n")'
 mutate_workflow trigger_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["on"]["release"]["types"] = ["created"]; File.write(path, YAML.dump(data) + "# types: [published]\n")'
+mutate_workflow reusable_input_bypass \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["on"]["workflow_call"]["inputs"]["expected_release_tag"]["required"] = false; File.write(path, YAML.dump(data) + "# required: true\n")'
 # shellcheck disable=SC2016 # GitHub expression must remain literal in mutation comment.
 mutate_workflow concurrency_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["group"] = "appcast-bypass"; File.write(path, YAML.dump(data) + "# group: appcast-${{ github.repository }}\n")'
 mutate_workflow repository_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["deploy"]["if"] = "always()"; File.write(path, YAML.dump(data) + "# if: github.repository == jacobcxdev/XcodesApp\n")'
+mutate_workflow release_verification_bypass \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |item| item["name"] == "Validate expected published release" }; File.write(path, YAML.dump(data) + "# gh api expected release\n")'
+mutate_workflow release_verification_continue_on_error \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }["continue-on-error"] = true; File.write(path, YAML.dump(data))'
+mutate_workflow release_verification_if_false \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }["if"] = false; File.write(path, YAML.dump(data))'
 mutate_workflow deploy_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["deploy"]["steps"].find { |item| item["uses"]&.start_with?("JamesIves/") }; step["with"]["branch"] = "main"; File.write(path, YAML.dump(data) + "# branch: gh-pages\n")'
 mutate_workflow action_pin_bypass \

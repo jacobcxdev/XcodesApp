@@ -50,7 +50,12 @@ jobs:
           bash Scripts/test_ci_release_workflows.sh
           ruby Scripts/check_localizations.rb
           bash Scripts/test_localization_contract.sh
-          bash -n Scripts/*.sh
+          shopt -s nullglob
+          scripts=(Scripts/*.sh)
+          ((${#scripts[@]} > 0)) || { echo "No shell scripts found" >&2; exit 1; }
+          for script in "${scripts[@]}"; do
+            bash -n "$script"
+          done
           plutil -lint Xcodes/Resources/Info.plist dev.jacobcx.Xcodes.Helper/Info.plist dev.jacobcx.Xcodes.Helper/launchd.plist Scripts/export_options.plist
           ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].sort.each { |path| YAML.safe_load_file(path, aliases: false); puts path }'
           if command -v shellcheck >/dev/null 2>&1; then shellcheck --severity=error Scripts/*.sh; fi

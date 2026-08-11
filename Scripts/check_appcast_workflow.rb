@@ -21,15 +21,32 @@ check.call(
 
 check.call(
   workflow["on"] == {
-    "workflow_dispatch" => nil,
+    "workflow_call" => {
+      "inputs" => {
+        "expected_release_tag" => {
+          "description" => "Published release tag matching vX.Y.ZbN",
+          "required" => true,
+          "type" => "string",
+        },
+      },
+    },
+    "workflow_dispatch" => {
+      "inputs" => {
+        "expected_release_tag" => {
+          "description" => "Published release tag matching vX.Y.ZbN",
+          "required" => true,
+          "type" => "string",
+        },
+      },
+    },
     "release" => { "types" => ["published"] },
   },
-  "Appcast workflow trigger must be manual or published release only"
+  "Appcast workflow trigger and reusable input contract changed"
 )
 check.call(workflow["permissions"] == { "contents" => "read" }, "Top-level permissions must be contents: read")
 check.call(
   workflow["concurrency"] == {
-    "group" => "appcast-${{ github.repository }}",
+    "group" => "appcast-${{ inputs.expected_release_tag || github.event.release.tag_name }}",
     "cancel-in-progress" => false,
   },
   "Appcast concurrency contract changed"
@@ -83,6 +100,26 @@ expected_build_steps = [
     "name" => "Checkout",
     "uses" => "actions/checkout@#{checkout_sha}",
     "with" => { "persist-credentials" => false },
+  },
+  {
+    "name" => "Validate expected published release",
+    "env" => {
+      "GH_TOKEN" => "${{ github.token }}",
+      "EXPECTED_RELEASE_TAG" => "${{ inputs.expected_release_tag || github.event.release.tag_name }}",
+    },
+    "run" => <<~'SHELL'.strip,
+      set -euo pipefail
+      [[ "$EXPECTED_RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+b(0|[1-9][0-9]*)$ ]] || { echo "Expected release tag must match vX.Y.ZbN exactly" >&2; exit 1; }
+      release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$EXPECTED_RELEASE_TAG")"
+      readonly release_json
+      jq -e --arg tag "$EXPECTED_RELEASE_TAG" '
+        (.tag_name == $tag) and
+        (.draft == false) and
+        (.prerelease == false) and
+        ((["Xcodes.zip", "Xcodes.zip.sha256", "sparkle-signature.txt", "release-manifest.txt"] - [.assets[].name]) | length == 0) and
+        ([.assets[] | select(.name == "Xcodes.zip" and .size > 0)] | length == 1)
+      ' <<< "$release_json" >/dev/null
+    SHELL
   },
   {
     "name" => "Setup Ruby",
@@ -143,7 +180,14 @@ expected_deploy_steps = [
   },
 ]
 
-check.call(build_steps == expected_build_steps, "Build steps must exactly match audited controls")
+normalise_steps = lambda do |steps|
+  steps.map do |step|
+    step = step.dup
+    step["run"] = step["run"].strip if step["run"]
+    step
+  end
+end
+check.call(normalise_steps.call(build_steps) == expected_build_steps, "Build steps must exactly match audited controls")
 check.call(deploy_steps == expected_deploy_steps, "Deploy steps must exactly match audited controls")
 
 build_uses = build_steps.filter_map { |step| step["uses"] }

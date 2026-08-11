@@ -43,7 +43,7 @@ end
 workflows.each do |path, workflow|
   all_uses.call(workflow).each do |uses|
     check.call(
-      uses.match?(/\A[^@]+@[0-9a-f]{40}\z/),
+      uses == "./.github/workflows/appcast.yml" || uses.match?(/\A[^@]+@[0-9a-f]{40}\z/),
       "Action is not pinned to a full commit SHA in #{path.delete_prefix("#{repo_root}/")}: #{uses}"
     )
   end
@@ -113,7 +113,12 @@ expected_ci_steps = [
       bash Scripts/test_ci_release_workflows.sh
       ruby Scripts/check_localizations.rb
       bash Scripts/test_localization_contract.sh
-      bash -n Scripts/*.sh
+      shopt -s nullglob
+      scripts=(Scripts/*.sh)
+      ((${#scripts[@]} > 0)) || { echo "No shell scripts found" >&2; exit 1; }
+      for script in "${scripts[@]}"; do
+        bash -n "$script"
+      done
       plutil -lint Xcodes/Resources/Info.plist dev.jacobcx.Xcodes.Helper/Info.plist dev.jacobcx.Xcodes.Helper/launchd.plist Scripts/export_options.plist
       ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].sort.each { |path| YAML.safe_load_file(path, aliases: false); puts path }'
       if command -v shellcheck >/dev/null 2>&1; then shellcheck --severity=error Scripts/*.sh; fi
@@ -176,9 +181,10 @@ check.call(
 )
 
 release_jobs = release.fetch("jobs", {})
-check.call(release_jobs.keys == %w[package publish], "Release workflow must contain only package and publish jobs")
+check.call(release_jobs.keys == %w[package publish appcast], "Release workflow must contain only package, publish, and appcast jobs")
 package = release_jobs.fetch("package", {})
 publish = release_jobs.fetch("publish", {})
+appcast = release_jobs.fetch("appcast", {})
 
 check.call(package["if"] == repository_guard, "Package job must be restricted to fork repository")
 check.call(package["runs-on"] == "macos-26", "Package runner must be macos-26")
@@ -194,6 +200,19 @@ check.call(publish["timeout-minutes"] == 15, "Publish timeout must remain bounde
 check.call(publish["permissions"] == { "contents" => "write" }, "Publish alone must receive contents: write")
 check.call(publish["environment"].nil?, "Publish job must not inherit release environment secrets")
 check.call(!YAML.dump(publish).match?(/secrets\.|DEVELOPER_ID|APP_STORE_CONNECT|SPARKLE_PRIVATE|RELEASE_KEYCHAIN/), "Publish job must not access release secrets")
+check.call(publish["outputs"] == { "release_tag" => "${{ needs.package.outputs.release_tag }}" }, "Publish tag output changed")
+
+check.call(
+  appcast == {
+    "if" => repository_guard,
+    "needs" => "publish",
+    "permissions" => { "contents" => "write" },
+    "uses" => "./.github/workflows/appcast.yml",
+    "with" => { "expected_release_tag" => "${{ needs.publish.outputs.release_tag }}" },
+  },
+  "Release must invoke local appcast workflow after publication with exact tag and no secrets"
+)
+check.call(!YAML.dump(appcast).match?(/secrets|continue-on-error/), "Appcast caller must not inherit secrets or suppress failures")
 
 package_steps = package.fetch("steps", [])
 publish_steps = publish.fetch("steps", [])
