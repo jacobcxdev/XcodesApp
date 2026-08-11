@@ -109,4 +109,36 @@ if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
     exit 1
 fi
 
+cp \
+    "$repo_root/Xcodes.xcodeproj/project.pbxproj" \
+    "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
+perl -0pi -e \
+    's/MARKETING_VERSION = 4\.0\.5;/MARKETING_VERSION = 4.0.4;/g' \
+    "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted a stale marketing version" >&2
+    exit 1
+fi
+
+cp "$repo_root/Xcodes.xcodeproj/project.pbxproj" "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
+perl -0pi -e \
+    's/Fork contributions © 2026 JacobCXDev\. Upstream contributors retain their copyrights\./Copyright © 2026 Jacob Clayden/' \
+    "$fixture_root/Xcodes/Resources/Info.plist"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted public legal-name branding" >&2
+    exit 1
+fi
+
+cp "$repo_root/Xcodes/Resources/Info.plist" "$fixture_root/Xcodes/Resources/Info.plist"
+perl -0pi -e \
+    's/VStack\(alignment: \.leading, spacing: 16\)/VStack(alignment: .leading)/' \
+    "$fixture_root/Xcodes/Frontend/About/AboutView.swift"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted inconsistent About spacing" >&2
+    exit 1
+fi
+
 echo "Fork identity guard mutation test passed"

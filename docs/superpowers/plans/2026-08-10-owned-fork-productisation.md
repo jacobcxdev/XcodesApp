@@ -182,7 +182,7 @@ Expected: non-zero with current ownership links.
 
 - [ ] **Step 2: Rewrite fork-facing metadata**
 
-Keep product description and contributor credits. Add maintained-fork notice, upstream acknowledgement, fork release installation, signing/notarization statement, development requirements, and release workflow. Remove unsupported fork claims for XcodesOrg Homebrew, OpenCollective, and upstream social accounts. Set owner to Jacob Clayden and CODEOWNERS to `@jacobcxdev`.
+Keep product description and contributor credits. Add maintained-fork notice, upstream acknowledgement, fork release installation, signing/notarization statement, development requirements, and release workflow. Remove unsupported fork claims for XcodesOrg Homebrew, OpenCollective, and upstream social accounts. Use JacobCXDev for public ownership branding and CODEOWNERS `@jacobcxdev`; retain legal identity only where licensing or signing requires it.
 
 Append fork copyright to `LICENSE` without removing original copyright.
 

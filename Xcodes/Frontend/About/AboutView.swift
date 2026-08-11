@@ -5,16 +5,23 @@ struct AboutView: View {
     @SwiftUI.Environment(\.openURL) var openURL: OpenURLAction
     
     var body: some View {
-        HStack {
+        HStack(alignment: .top, spacing: 24) {
             Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 96, height: 96)
+                .accessibilityHidden(true)
             
-            VStack(alignment: .leading) {
-                Text(Bundle.main.bundleName!)
-                    .font(.largeTitle)
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(Bundle.main.bundleName!)
+                        .font(.largeTitle)
+
+                    Text(String(format: localizeString("VersionWithBuild"), Bundle.main.shortVersion!, Bundle.main.version!))
+                        .foregroundStyle(.secondary)
+                }
                 
-                Text(String(format: localizeString("VersionWithBuild"), Bundle.main.shortVersion!, Bundle.main.version!))
-                
-                HStack(spacing: 32) {
+                HStack(spacing: 16) {
                     Button(action: {
                         openURL(URL(string: "https://github.com/jacobcxdev/XcodesApp/")!)
                     }) {
@@ -27,29 +34,39 @@ struct AboutView: View {
                     }
                     .buttonStyle(LinkButtonStyle())
                 }
-                Color.clear
-                    .frame(width: 300, height: 0)
-                Label("UnxipExperiment", systemImage: "lightbulb")
-                HStack(spacing: 32) {
-                    Button(action: {
-                        openURL(URL(string: "https://github.com/saagarjha/unxip/")!)
-                    }) {
-                        Label("GithubRepo", systemImage: "link")
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("UnxipExperiment", systemImage: "lightbulb")
+
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            openURL(URL(string: "https://github.com/saagarjha/unxip/")!)
+                        }) {
+                            Label("GithubRepo", systemImage: "link")
+                        }
+                        .buttonStyle(LinkButtonStyle())
+
+                        Button(action: {
+                            openURL(URL(string: "https://github.com/saagarjha/unxip/blob/main/LICENSE")!)
+                        }) {
+                            Label("License", systemImage: "link")
+                        }
+                        .buttonStyle(LinkButtonStyle())
                     }
-                    .buttonStyle(LinkButtonStyle())
-                    
-                    Button(action: {
-                        openURL(URL(string: "https://github.com/saagarjha/unxip/blob/main/LICENSE")!)
-                    }) {
-                        Label("License", systemImage: "link")
-                    }
-                    .buttonStyle(LinkButtonStyle())
                 }
+
+                Divider()
+
                 Text(Bundle.main.humanReadableCopyright!)
                     .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(width: 320, alignment: .leading)
         }
-        .padding()
+        .padding(24)
     }
 }
 

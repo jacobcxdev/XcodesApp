@@ -2,7 +2,7 @@
 
 ## Goal
 
-Turn `jacobcxdev/XcodesApp` into Jacob Clayden's maintained, signed, independently releasable Xcodes distribution while preserving `Xcodes.app` as a user-facing drop-in replacement and keeping clean routes for upstream contributions.
+Turn `jacobcxdev/XcodesApp` into JacobCXDev's maintained, signed, independently releasable Xcodes distribution while preserving `Xcodes.app` as a user-facing drop-in replacement and keeping clean routes for upstream contributions.
 
 ## Source-Control Model
 
@@ -24,7 +24,7 @@ Visible product remains `Xcodes` and installs as `/Applications/Xcodes.app`. For
 - application-support directory: `~/Library/Application Support/dev.jacobcx.Xcodes`
 - cache directory: `~/Library/Caches/dev.jacobcx.Xcodes`
 - Apple Developer Team ID: `K2648T24P4`
-- copyright: original MIT copyright remains, with `Copyright © 2026 Jacob Clayden` added for fork work
+- copyright: original MIT copyright remains; public app branding credits JacobCXDev fork contributions without claiming upstream work
 
 All helper code requirements use fork bundle IDs and the signing certificate organisational unit supplied by Xcode. Existing upstream helper is never silently deleted.
 
