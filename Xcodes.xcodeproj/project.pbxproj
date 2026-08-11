@@ -833,7 +833,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/Xcodes/AcknowledgementsGenerator\"\nxcrun -sdk macosx swift run AcknowledgementsGenerator \\\n    -p \"${SRCROOT}/Xcodes.xcodeproj\" \\\n    -o \"${SRCROOT}/Xcodes/Resources/Licenses.rtf\"\n";
+			shellScript = "cd \"${SRCROOT}/Xcodes/AcknowledgementsGenerator\"\nxcrun -sdk macosx swift run AcknowledgementsGenerator \\\n    -p \"${SRCROOT}/Xcodes.xcodeproj\" \\\n    -o \"${SRCROOT}/Xcodes/Resources/Licenses.rtf\" \\\n    -c \"${BUILD_DIR}/../../SourcePackages/checkouts\"\n";
 		};
 		D971F84C2E79102E005F84C9 /* Fix libfido2 structure */ = {
 			isa = PBXShellScriptBuildPhase;

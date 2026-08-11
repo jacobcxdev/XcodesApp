@@ -55,6 +55,7 @@ jobs:
           bash Scripts/test_fork_identity_guard.sh
           bash Scripts/check_appcast_identity.sh
           bash Scripts/test_appcast_contracts.sh
+          bash Scripts/test_acknowledgements_generator.sh
           bash Scripts/test_sparkle_signature_verifier.sh
           bash Scripts/test_release_scripts.sh
           bash Scripts/test_release_artifacts.sh
