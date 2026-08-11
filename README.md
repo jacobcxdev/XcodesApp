@@ -62,7 +62,7 @@ Run the test suite with:
 xcodebuild test -project Xcodes.xcodeproj -scheme Xcodes -configuration Test CODE_SIGNING_ALLOWED=NO
 ```
 
-The repository release workflow automates packaging and notarization. `Scripts` and the workflow files document local and CI release requirements.
+The repository release workflow automates packaging and notarization. [Release documentation](docs/RELEASING.md) defines protected-environment setup, secret formats, local verification, immutable tag format, and recovery procedures.
 
 ## Contributing
 

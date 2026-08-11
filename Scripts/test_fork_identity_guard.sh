@@ -20,6 +20,7 @@ mkdir -p \
     "$fixture_root/Xcodes/Frontend/Preferences" \
     "$fixture_root/Xcodes/Frontend/XcodeList" \
     "$fixture_root/Xcodes/Resources" \
+    "$fixture_root/docs" \
     "$fixture_root/Scripts"
 cp -R \
     "$repo_root/Xcodes.xcodeproj" \
@@ -29,6 +30,7 @@ cp -R \
 cp \
     "$repo_root/Scripts/check_appcast_identity.sh" \
     "$repo_root/Scripts/check_appcast_workflow.rb" \
+    "$repo_root/Scripts/check_ci_release_workflows.rb" \
     "$repo_root/Scripts/check_fork_identity.sh" \
     "$repo_root/Scripts/uninstall_privileged_helper.sh" \
     "$fixture_root/Scripts/"
@@ -47,6 +49,11 @@ cp \
     "$repo_root/.github/ISSUE_TEMPLATE/feature_request.md" \
     "$fixture_root/.github/ISSUE_TEMPLATE/"
 cp "$repo_root/.github/workflows/appcast.yml" "$fixture_root/.github/workflows/"
+cp \
+    "$repo_root/.github/workflows/ci.yml" \
+    "$repo_root/.github/workflows/release.yml" \
+    "$fixture_root/.github/workflows/"
+cp "$repo_root/docs/RELEASING.md" "$fixture_root/docs/"
 cp \
     "$repo_root/AppCast/_config.yml" \
     "$repo_root/AppCast/Gemfile.lock" \

@@ -31,6 +31,10 @@ readonly appcast_test="$repo_root/AppCast/test_appcast.rb"
 readonly appcast_workflow="$repo_root/.github/workflows/appcast.yml"
 readonly appcast_identity_check="$repo_root/Scripts/check_appcast_identity.sh"
 readonly appcast_workflow_check="$repo_root/Scripts/check_appcast_workflow.rb"
+readonly ci_workflow="$repo_root/.github/workflows/ci.yml"
+readonly release_workflow="$repo_root/.github/workflows/release.yml"
+readonly ci_release_workflow_check="$repo_root/Scripts/check_ci_release_workflows.rb"
+readonly release_documentation="$repo_root/docs/RELEASING.md"
 
 readonly app_id="dev.jacobcx.Xcodes"
 readonly tests_id="dev.jacobcx.Xcodes.Tests"
@@ -107,7 +111,11 @@ for required_file in \
     "$appcast_test" \
     "$appcast_workflow" \
     "$appcast_identity_check" \
-    "$appcast_workflow_check"; do
+    "$appcast_workflow_check" \
+    "$ci_workflow" \
+    "$release_workflow" \
+    "$ci_release_workflow_check" \
+    "$release_documentation"; do
     require_file "$required_file"
 done
 
@@ -150,6 +158,9 @@ require_literal "https://github.com/jacobcxdev/XcodesApp/releases/latest" "$bug_
 require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$feature_template"
 require_literal "*   @jacobcxdev" "$codeowners"
 require_literal "Copyright (c) 2026 Jacob Clayden" "$license"
+require_literal "docs/RELEASING.md" "$readme"
+require_literal "DEVELOPER_ID_APPLICATION_P12_BASE64" "$release_documentation"
+require_literal "v4.0.4b39" "$release_documentation"
 
 for contributor in \
     '@dompepin' \
@@ -327,6 +338,14 @@ else
     if [[ "$scan_status" -ne 1 ]]; then
         fail "Unable to scan the complete operational identity scope"
     fi
+fi
+
+if [[ "$status" -ne 0 ]]; then
+    exit "$status"
+fi
+
+if ! ruby "$ci_release_workflow_check"; then
+    fail "CI and release workflow identity check failed"
 fi
 
 if [[ "$status" -ne 0 ]]; then

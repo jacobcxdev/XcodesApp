@@ -72,3 +72,7 @@ git push --set-upstream origin sync/upstream-YYYYMMDD
 ```
 
 When you resolve conflicts, retain fork identity, migration, packaging, update, and release contracts. Before you merge the sync pull request into `origin/main`, run the full test suite and identity check.
+
+## Release-only changes
+
+Release identity and automation belong only on owned fork branches. Never copy fork signing, notarization, Sparkle, GitHub environment, or publishing configuration into an `upstream/<topic>` branch. See [docs/RELEASING.md](docs/RELEASING.md) for protected release setup and tag procedure.
