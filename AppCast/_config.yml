@@ -21,8 +21,7 @@ repository: jacobcxdev/XcodesApp
 
 # Build settings
 markdown: kramdown
-plugins:
-  - "jekyll-github-metadata"
+plugins: []
 
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list

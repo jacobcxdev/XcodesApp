@@ -36,7 +36,7 @@ mutate_workflow() {
 }
 
 "$repo_root/Scripts/check_appcast_identity.sh"
-ruby "$repo_root/Scripts/test_appcast_release_validation.rb"
+bash "$repo_root/Scripts/test_appcast_history_validation.sh"
 bundle exec --gemfile "$repo_root/AppCast/Gemfile" ruby "$repo_root/AppCast/test_appcast.rb"
 
 mutate_workflow permissions_bypass \
@@ -79,21 +79,22 @@ mutate_workflow source_verification_continue_on_error \
 mutate_workflow source_verification_if_false \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Verify immutable appcast source" }; step["if"] = false; File.write(path, YAML.dump(data))'
 mutate_workflow release_verification_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |item| item["name"] == "Validate expected published release" }; File.write(path, YAML.dump(data) + "# gh api expected release\n")'
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |item| item["name"] == "Validate complete published release history" }; File.write(path, YAML.dump(data) + "# complete release history validation\n")'
 mutate_workflow release_verification_continue_on_error \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }["continue-on-error"] = true; File.write(path, YAML.dump(data))'
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate complete published release history" }["continue-on-error"] = true; File.write(path, YAML.dump(data))'
 mutate_workflow release_verification_if_false \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }["if"] = false; File.write(path, YAML.dump(data))'
-mutate_workflow release_extra_asset_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }; step["run"].sub!(/\(\(\[\.assets\[\]\.name\] \| sort\) == \(\[.*?\] \| sort\)\) and/m, "(([\"Xcodes.zip\", \"Xcodes.zip.sha256\", \"release-manifest.txt\", \"sparkle-signature.txt\"] - [.assets[].name]) | length == 0) and"); File.write(path, YAML.dump(data) + "# exact release asset set\n")'
-mutate_workflow release_asset_size_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }; step["run"].sub!(/^\s*\(all\(\.assets\[\];.*?\)\) and\n/m, ""); File.write(path, YAML.dump(data) + "# every asset size > 0\n")'
-mutate_workflow release_sole_zip_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }; step["run"].sub!(/\(\[\n\s*\.assets\[\].*?\] == \["Xcodes\.zip"\]\)/m, "true"); File.write(path, YAML.dump(data) + "# Xcodes.zip is sole ZIP\n")'
-mutate_workflow missing_byte_verification \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |step| step["name"] == "Download and verify release artifacts" }; File.write(path, YAML.dump(data) + "# byte-level verification\n")'
-mutate_workflow weakened_byte_verification \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Download and verify release artifacts" }; step && step["run"].sub!("bash Scripts/validate_appcast_release.sh", "true #"); File.write(path, YAML.dump(data) + "# exact validator\n")'
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate complete published release history" }["if"] = false; File.write(path, YAML.dump(data))'
+# shellcheck disable=SC2016 # Runtime variables must remain literal in mutation source.
+mutate_workflow expected_release_only \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate complete published release history" }; step["run"] = "gh api repos/$GITHUB_REPOSITORY/releases/tags/$EXPECTED_RELEASE_TAG > AppCast/_data/validated_releases.json"; File.write(path, YAML.dump(data) + "# all paginated releases\n")'
+mutate_workflow weakened_history_validator \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate complete published release history" }; step["run"].sub!("ruby Scripts/validate_appcast_history.rb", "true # history validator bypassed"); File.write(path, YAML.dump(data) + "# exact history validator\n")'
+# shellcheck disable=SC2016 # GitHub expression must remain literal in mutation source.
+mutate_workflow raw_api_jekyll_input \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Build appcasts" }; step["env"] = { "JEKYLL_GITHUB_TOKEN" => "${{ github.token }}" }; File.write(path, YAML.dump(data) + "# sanitized releases only\n")'
+# shellcheck disable=SC2016 # Runtime variables must remain literal in mutation source.
+mutate_workflow wrong_rendered_release_input \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate rendered appcasts" }; step["run"].sub!("\"$VALIDATED_RELEASES_FILE\"", "raw-releases.json"); File.write(path, YAML.dump(data) + "# sanitized releases exact\n")'
 mutate_workflow deploy_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["deploy"]["steps"].find { |item| item["uses"]&.start_with?("JamesIves/") }; step["with"]["branch"] = "main"; File.write(path, YAML.dump(data) + "# branch: gh-pages\n")'
 mutate_workflow action_pin_bypass \
@@ -122,6 +123,7 @@ cp \
     "$repo_root/Scripts/check_appcast_workflow.rb" \
     "$repo_root/Scripts/extract_sparkle_signature.rb" \
     "$repo_root/Scripts/inspect_app_archive.rb" \
+    "$repo_root/Scripts/validate_appcast_history.rb" \
     "$repo_root/Scripts/validate_appcast_release.sh" \
     "$repo_root/Scripts/validate_rendered_appcast.rb" \
     "$repo_root/Scripts/verify_sparkle_signature.swift" \
@@ -150,10 +152,17 @@ expect_failure prerelease_feed "$identity_fixture/Scripts/check_appcast_identity
 
 template_fixture="$test_root/template"
 cp -R "$repo_root/AppCast" "$template_fixture"
-perl -0pi -e \
-    's/if asset.name == "Xcodes.zip"/if asset.name == "wrong.zip"\n                        {% comment %} if asset.name == "Xcodes.zip" {% endcomment %}/' \
+perl -0pi -e 's/site\.data\.validated_releases/site.github.releases/' \
     "$template_fixture/_includes/appcast.inc"
-expect_failure zip_selector env APPCAST_SOURCE="$template_fixture" \
+expect_failure raw_release_template env APPCAST_SOURCE="$template_fixture" \
+    bundle exec --gemfile "$repo_root/AppCast/Gemfile" ruby "$repo_root/AppCast/test_appcast.rb"
+
+filter_fixture="$test_root/filter"
+cp -R "$repo_root/AppCast" "$filter_fixture"
+perl -0pi -e \
+    's/signatures\.fetch\(release_tag\) do.*?end/signatures.values.first/ms' \
+    "$filter_fixture/_plugins/signature_filter.rb"
+expect_failure permissive_signature_filter env APPCAST_SOURCE="$filter_fixture" \
     bundle exec --gemfile "$repo_root/AppCast/Gemfile" ruby "$repo_root/AppCast/test_appcast.rb"
 
 echo "Appcast contract mutation tests passed"

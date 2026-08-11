@@ -38,6 +38,7 @@ cp \
     "$repo_root/Scripts/check_fork_identity.sh" \
     "$repo_root/Scripts/extract_sparkle_signature.rb" \
     "$repo_root/Scripts/inspect_app_archive.rb" \
+    "$repo_root/Scripts/validate_appcast_history.rb" \
     "$repo_root/Scripts/uninstall_privileged_helper.sh" \
     "$repo_root/Scripts/validate_appcast_release.sh" \
     "$repo_root/Scripts/validate_rendered_appcast.rb" \
@@ -66,6 +67,7 @@ cp \
 cp "$repo_root/docs/RELEASING.md" "$fixture_root/docs/"
 cp \
     "$repo_root/AppCast/_config.yml" \
+    "$repo_root/AppCast/Gemfile" \
     "$repo_root/AppCast/Gemfile.lock" \
     "$repo_root/AppCast/test_appcast.rb" \
     "$fixture_root/AppCast/"

@@ -1,39 +1,39 @@
 require "base64"
+require "json"
 
 module Jekyll
   module SignatureFilter
-    SIGNATURE_MARKER = "sparkle:edSignature="
-    SIGNATURE_COMMENT = /\A[\t ]*<!-- sparkle:edSignature=(?<signature>[A-Za-z0-9+\/]+={0,2}) -->[\t ]*(?:\r?\n)?\z/
+    TAG_PATTERN = /\Av[0-9]+\.[0-9]+\.[0-9]+b(?:0|[1-9][0-9]*)\z/
 
-    def sparkle_signature(release_body, release_tag = nil)
-      candidate_lines = release_body.to_s.lines.select { |line| line.include?(SIGNATURE_MARKER) }
-      signature_match = SIGNATURE_COMMENT.match(candidate_lines.first.to_s)
-
-      unless candidate_lines.one? && signature_match
-        raise Jekyll::Errors::FatalException,
-              "Release must contain exactly one standalone Sparkle Ed25519 signature comment."
+    def sparkle_signature(_release_body, release_tag = nil)
+      unless TAG_PATTERN.match?(release_tag.to_s)
+        raise Jekyll::Errors::FatalException, "Release tag is absent from the validated signature map."
       end
 
-      signature = signature_match[:signature]
-      decoded_signature = Base64.strict_decode64(signature)
-      unless decoded_signature.bytesize == 64 && Base64.strict_encode64(decoded_signature) == signature
-        raise Jekyll::Errors::FatalException,
-              "Sparkle Ed25519 signature must be canonical Base64 encoding of exactly 64 bytes."
+      path = ENV.fetch("VALIDATED_RELEASE_SIGNATURES_FILE", "")
+      unless File.file?(path) && !File.symlink?(path)
+        raise Jekyll::Errors::FatalException, "Validated release signature map is unavailable."
       end
 
-      if release_tag && release_tag == ENV["VERIFIED_RELEASE_TAG"]
-        verified_signature = ENV.fetch("VERIFIED_SPARKLE_SIGNATURE", "")
-        unless signature == verified_signature
-          raise Jekyll::Errors::FatalException,
-                "Release body signature changed after downloaded release verification."
-        end
-        return verified_signature
+      signatures = JSON.parse(File.read(path))
+      unless signatures.is_a?(Hash) && signatures.all? { |tag, signature| TAG_PATTERN.match?(tag) && canonical_signature?(signature) }
+        raise Jekyll::Errors::FatalException, "Validated release signature map is invalid."
       end
 
-      signature
+      signatures.fetch(release_tag) do
+        raise Jekyll::Errors::FatalException, "Release tag is absent from the validated signature map."
+      end
+    rescue JSON::ParserError, SystemCallError
+      raise Jekyll::Errors::FatalException, "Validated release signature map is invalid."
+    end
+
+    def canonical_signature?(signature)
+      return false unless signature.is_a?(String)
+
+      decoded = Base64.strict_decode64(signature)
+      decoded.bytesize == 64 && Base64.strict_encode64(decoded) == signature
     rescue ArgumentError
-      raise Jekyll::Errors::FatalException,
-            "Sparkle Ed25519 signature must use strict Base64 encoding."
+      false
     end
 
     def escape_cdata(value)

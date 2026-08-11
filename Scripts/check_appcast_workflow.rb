@@ -64,7 +64,7 @@ build_guard = "#{repository_guard} && github.ref == format('refs/tags/{0}', inpu
 check.call(build["if"] == build_guard, "Build job must be restricted to fork repository and exact tag ref")
 check.call(build["permissions"] == { "contents" => "read" }, "Build job permissions must be contents: read")
 check.call(build["runs-on"] == "macos-26", "Build job runner changed")
-check.call(build["timeout-minutes"] == 30, "Build timeout must remain bounded")
+check.call(build["timeout-minutes"] == 60, "Build timeout must remain bounded")
 check.call(build.keys.sort == %w[env if permissions runs-on steps timeout-minutes], "Unexpected build job capability")
 check.call(
   build["env"] == {
@@ -132,58 +132,28 @@ expected_build_steps = [
     "run" => "bash Scripts/check_appcast_identity.sh",
   },
   {
-    "name" => "Validate expected published release",
+    "name" => "Validate complete published release history",
     "env" => { "GH_TOKEN" => "${{ github.token }}" },
     "run" => <<~'SHELL'.strip,
       set -euo pipefail
-      [[ "$EXPECTED_RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+b(0|[1-9][0-9]*)$ ]] || { echo "Expected release tag must match vX.Y.ZbN exactly" >&2; exit 1; }
-      readonly release_root="$RUNNER_TEMP/appcast-release"
-      rm -rf -- "$release_root"
-      install -d -m 700 "$release_root/$EXPECTED_RELEASE_TAG"
-      release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$EXPECTED_RELEASE_TAG")"
-      readonly release_json
-      jq -e --arg tag "$EXPECTED_RELEASE_TAG" '
-        (.tag_name == $tag) and
-        (.draft == false) and
-        (.prerelease == false) and
-        ((.assets | type) == "array") and
-        (([.assets[].name] | sort) == ([
-          "Xcodes.zip",
-          "Xcodes.zip.sha256",
-          "release-manifest.txt",
-          "sparkle-signature.txt"
-        ] | sort)) and
-        (all(.assets[]; ((.size | type) == "number") and (.size > 0))) and
-        ([
-          .assets[]
-          | select(
-              ((.name | type) == "string") and
-              (.name | ascii_downcase | endswith(".zip"))
-            )
-          | .name
-        ] == ["Xcodes.zip"])
-      ' <<< "$release_json" >/dev/null
-      jq -er '.body | strings' <<< "$release_json" > "$release_root/release-body.txt"
-    SHELL
-  },
-  {
-    "name" => "Download and verify release artifacts",
-    "env" => { "GH_TOKEN" => "${{ github.token }}" },
-    "run" => <<~'SHELL'.strip,
-      set -euo pipefail
-      readonly release_root="$RUNNER_TEMP/appcast-release"
-      readonly release_dir="$release_root/$EXPECTED_RELEASE_TAG"
-      for asset in Xcodes.zip Xcodes.zip.sha256 sparkle-signature.txt release-manifest.txt; do
-        gh release download "$EXPECTED_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir "$release_dir"
-      done
+      umask 077
+      release_root="$(mktemp -d "$RUNNER_TEMP/appcast-releases.XXXXXX")"
+      readonly release_root
+      readonly validated_releases="$GITHUB_WORKSPACE/AppCast/_data/validated_releases.json"
+      readonly validated_signatures="$RUNNER_TEMP/validated-release-signatures.json"
       readonly verifier="$RUNNER_TEMP/verify-sparkle-signature"
+      install -d -m 700 "$GITHUB_WORKSPACE/AppCast/_data"
       xcrun swiftc -parse-as-library Scripts/verify_sparkle_signature.swift -o "$verifier"
-      SPARKLE_SIGNATURE_VERIFIER="$verifier" bash Scripts/validate_appcast_release.sh \
-        "$release_dir" "$EXPECTED_RELEASE_TAG" "$release_root/release-body.txt"
-      signature="$(<"$release_dir/sparkle-signature.txt")"
-      readonly signature
-      printf 'VERIFIED_RELEASE_TAG=%s\nVERIFIED_SPARKLE_SIGNATURE=%s\n' \
-        "$EXPECTED_RELEASE_TAG" "$signature" >> "$GITHUB_ENV"
+      ruby Scripts/validate_appcast_history.rb \
+        "$EXPECTED_RELEASE_TAG" \
+        "$release_root" \
+        "$validated_releases" \
+        "$validated_signatures" \
+        "$verifier" \
+        "$GITHUB_WORKSPACE/Xcodes/Resources/Info.plist" \
+        "$GITHUB_WORKSPACE"
+      printf 'VALIDATED_RELEASES_FILE=%s\nVALIDATED_RELEASE_SIGNATURES_FILE=%s\n' \
+        "$validated_releases" "$validated_signatures" >> "$GITHUB_ENV"
     SHELL
   },
   {
@@ -208,7 +178,6 @@ expected_build_steps = [
   {
     "name" => "Build appcasts",
     "working-directory" => "AppCast",
-    "env" => { "JEKYLL_GITHUB_TOKEN" => "${{ github.token }}" },
     "run" => 'bundle "_${BUNDLER_VERSION}_" exec jekyll build',
   },
   {
@@ -217,7 +186,10 @@ expected_build_steps = [
       set -euo pipefail
       xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml
       ruby Scripts/validate_rendered_appcast.rb \
-        AppCast/_site/appcast.xml "$VERIFIED_RELEASE_TAG" "$RUNNER_TEMP/appcast-release/$VERIFIED_RELEASE_TAG/sparkle-signature.txt"
+        AppCast/_site/appcast.xml \
+        AppCast/_site/appcast_pre.xml \
+        "$VALIDATED_RELEASES_FILE" \
+        "$VALIDATED_RELEASE_SIGNATURES_FILE"
     SHELL
   },
   {
@@ -311,17 +283,17 @@ check.call(
   jekyll_build["run"] == 'bundle "_${BUNDLER_VERSION}_" exec jekyll build',
   "Jekyll build command changed"
 )
-check.call(
-  jekyll_build["env"] == { "JEKYLL_GITHUB_TOKEN" => "${{ github.token }}" },
-  "Jekyll metadata step must receive only job-scoped GitHub token"
-)
+check.call(jekyll_build["env"].nil?, "Jekyll must not receive raw GitHub release authority")
 
 xml_validation = build_steps.find { |step| step["name"] == "Validate rendered appcasts" } || {}
 expected_xml_validation = <<~'SHELL'.strip
   set -euo pipefail
   xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml
   ruby Scripts/validate_rendered_appcast.rb \
-    AppCast/_site/appcast.xml "$VERIFIED_RELEASE_TAG" "$RUNNER_TEMP/appcast-release/$VERIFIED_RELEASE_TAG/sparkle-signature.txt"
+    AppCast/_site/appcast.xml \
+    AppCast/_site/appcast_pre.xml \
+    "$VALIDATED_RELEASES_FILE" \
+    "$VALIDATED_RELEASE_SIGNATURES_FILE"
 SHELL
 check.call(xml_validation["run"]&.strip == expected_xml_validation, "Both rendered appcasts must pass xmllint before upload")
 

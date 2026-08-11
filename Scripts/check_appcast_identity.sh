@@ -8,12 +8,14 @@ readonly repo_root="${1:-$default_repo_root}"
 readonly app_info_plist="$repo_root/Xcodes/Resources/Info.plist"
 readonly updates_source="$repo_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift"
 readonly appcast_config="$repo_root/AppCast/_config.yml"
+readonly appcast_gemfile="$repo_root/AppCast/Gemfile"
 readonly appcast_template="$repo_root/AppCast/_includes/appcast.inc"
 readonly appcast_filter="$repo_root/AppCast/_plugins/signature_filter.rb"
 readonly appcast_test="$repo_root/AppCast/test_appcast.rb"
 readonly appcast_workflow="$repo_root/.github/workflows/appcast.yml"
 readonly workflow_check="$repo_root/Scripts/check_appcast_workflow.rb"
 readonly downloaded_release_validator="$repo_root/Scripts/validate_appcast_release.sh"
+readonly release_history_validator="$repo_root/Scripts/validate_appcast_history.rb"
 readonly archive_inspector="$repo_root/Scripts/inspect_app_archive.rb"
 readonly signature_verifier="$repo_root/Scripts/verify_sparkle_signature.swift"
 readonly signature_extractor="$repo_root/Scripts/extract_sparkle_signature.rb"
@@ -28,12 +30,14 @@ for required_file in \
     "$app_info_plist" \
     "$updates_source" \
     "$appcast_config" \
+    "$appcast_gemfile" \
     "$appcast_template" \
     "$appcast_filter" \
     "$appcast_test" \
     "$appcast_workflow" \
     "$workflow_check" \
     "$downloaded_release_validator" \
+    "$release_history_validator" \
     "$archive_inspector" \
     "$signature_verifier" \
     "$signature_extractor" \
@@ -73,8 +77,20 @@ config_json=$(ruby -rjson -ryaml -e 'print JSON.generate(YAML.safe_load_file(ARG
 jq -e \
     '.repository == "jacobcxdev/XcodesApp"
         and .url == "https://jacobcxdev.github.io"
-        and .baseurl == "/XcodesApp"' \
+        and .baseurl == "/XcodesApp"
+        and .plugins == []' \
     <<< "$config_json" >/dev/null
+
+validated_source_count="$(grep -Foc -- 'site.data.validated_releases' "$appcast_template" || true)"
+signature_map_count="$(grep -Foc -- 'VALIDATED_RELEASE_SIGNATURES_FILE' "$appcast_filter" || true)"
+readonly validated_source_count signature_map_count
+[[ "$validated_source_count" == 1 ]] || { echo "Appcast template must use validated release data exactly once" >&2; exit 1; }
+[[ "$signature_map_count" == 1 ]] || { echo "Appcast filter must use the validated signature map exactly once" >&2; exit 1; }
+if grep -Fq -- 'site.github.releases' "$appcast_template" || \
+    grep -Fq -- 'jekyll-github-metadata' "$appcast_config" "$appcast_gemfile"; then
+    echo "Raw GitHub release metadata must not reach appcast rendering" >&2
+    exit 1
+fi
 
 ruby "$workflow_check" "$appcast_workflow" "$lockfile"
 
