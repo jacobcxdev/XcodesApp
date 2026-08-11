@@ -174,7 +174,7 @@ begin
       )
     end
 
-    signature = File.read(File.join(release_dir, "sparkle-signature.txt"), chomp: true)
+    signature = File.read(File.join(release_dir, "sparkle-signature.txt")).chomp
     validated_signatures[tag] = signature
     validated_releases << {
       "tag_name" => tag,

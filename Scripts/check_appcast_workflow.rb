@@ -86,10 +86,10 @@ check.call(deploy.keys.sort == %w[if needs permissions runs-on steps timeout-min
 build_steps = build.fetch("steps", [])
 deploy_steps = deploy.fetch("steps", [])
 
-checkout_sha = "11bd71901bbe5b1630ceea73d27597364c9af683"
-ruby_sha = "7bae1d00b5db9166f4f0fc47985a3a5702cb58f0"
-upload_sha = "ea165f8d65b6e75b540449e92b4886f43607fa02"
-download_sha = "d3f86a106a0bac45b974a628896c90dbdf5c8093"
+checkout_sha = "3d3c42e5aac5ba805825da76410c181273ba90b1"
+ruby_sha = "95ef2b042f9d7a56d8268cba8559e2842e2ad01b"
+upload_sha = "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+download_sha = "3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
 deploy_sha = "fa24774553152dd7873cd16ebd8d959b010c5445"
 
 expected_build_uses = [

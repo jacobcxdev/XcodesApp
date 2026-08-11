@@ -205,6 +205,16 @@ jq -e '[.[].tag_name] == ["v4.1.0b40", "v4.0.4b39", "v4.0.3b38"]' \
     "$test_root/valid/validated-releases.json" >/dev/null || fail "validated history order changed"
 jq -e 'keys == ["v4.0.3b38", "v4.0.4b39", "v4.1.0b40"]' \
     "$test_root/valid/validated-signatures.json" >/dev/null || fail "validated signature map is incomplete"
+ruby -rbase64 -rjson -e '
+  signatures = JSON.parse(File.read(ARGV.fetch(0)))
+  valid = signatures.values.all? do |signature|
+    decoded = Base64.strict_decode64(signature)
+    decoded.bytesize == 64 && Base64.strict_encode64(decoded) == signature
+  rescue ArgumentError
+    false
+  end
+  exit(valid ? 0 : 1)
+' "$test_root/valid/validated-signatures.json" || fail "validated signature map contains non-canonical signatures"
 
 release_json v9.9.9b999 false 2026-08-11T04:00:00Z > "$test_root/replayed.json"
 write_release_pages "$test_root/replayed-pages.json" \

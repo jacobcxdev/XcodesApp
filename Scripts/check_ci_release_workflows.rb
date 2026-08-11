@@ -32,10 +32,10 @@ workflows = Dir[File.join(repo_root, ".github/workflows/*.{yml,yaml}")].to_h do 
   [path, load_workflow.call(path)]
 end
 
-checkout_sha = "11bd71901bbe5b1630ceea73d27597364c9af683"
-upload_sha = "ea165f8d65b6e75b540449e92b4886f43607fa02"
-download_sha = "d3f86a106a0bac45b974a628896c90dbdf5c8093"
-ruby_sha = "7bae1d00b5db9166f4f0fc47985a3a5702cb58f0"
+checkout_sha = "3d3c42e5aac5ba805825da76410c181273ba90b1"
+upload_sha = "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+download_sha = "3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
+ruby_sha = "95ef2b042f9d7a56d8268cba8559e2842e2ad01b"
 repository_guard = "github.repository == 'jacobcxdev/XcodesApp'"
 package_guard = "github.repository == 'jacobcxdev/XcodesApp' && github.ref == format('refs/tags/{0}', inputs.release_tag || github.ref_name)"
 
@@ -472,9 +472,9 @@ check.call(File.read(release_drafter_path).include?("# v7.7.0"), "Release drafte
 
 releasing_docs = File.file?(releasing_docs_path) ? File.read(releasing_docs_path) : ""
 check.call(releasing_docs.include?("environment protection rule must allow only protected tags matching `v*`"), "Release guide must require exact environment tag restrictions")
-check.call(releasing_docs.include?("`workflow_dispatch` reruns must use `--ref v4.0.4b40`"), "Release guide must document tag-ref manual dispatch")
+check.call(releasing_docs.include?("`workflow_dispatch` reruns must use `--ref v4.0.4b41`"), "Release guide must document tag-ref manual dispatch")
 check.call(
-  releasing_docs.include?("gh workflow run appcast.yml --ref v4.0.4b40 -f tag=v4.0.4b40"),
+  releasing_docs.include?("gh workflow run appcast.yml --ref v4.0.4b41 -f tag=v4.0.4b41"),
   "Release guide must document exact tag-bound appcast dispatch"
 )
 check.call(
