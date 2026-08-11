@@ -66,6 +66,29 @@ if let checkoutsIndex = arguments.firstIndex(of: "-c") {
         exit(EXIT_FAILURE)
     }
     checkouts = checkoutsURL
+} else if let buildDirectoryIndex = arguments.firstIndex(of: "-b") {
+    guard let buildDirectoryPath = arguments[safe: buildDirectoryIndex + 1] else {
+        print("Build directory path is missing after -b.")
+        exit(EXIT_FAILURE)
+    }
+
+    var ancestor = URL(fileURLWithPath: buildDirectoryPath.expandingTildeInPath).standardizedFileURL
+    var resolvedCheckouts: URL?
+    while ancestor.path != "/" {
+        let candidate = ancestor.appendingPathComponent("SourcePackages/checkouts")
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: candidate.path, isDirectory: &isDirectory), isDirectory.boolValue {
+            resolvedCheckouts = candidate
+            break
+        }
+        ancestor.deleteLastPathComponent()
+    }
+
+    guard let resolvedCheckouts else {
+        print("Checkouts directory not found above build directory at \(buildDirectoryPath)")
+        exit(EXIT_FAILURE)
+    }
+    checkouts = resolvedCheckouts
 } else {
     let projectsURL = Xcode.derivedDataURL
     func projectsInfo(at url: URL) throws -> [Xcode.Project] {

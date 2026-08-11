@@ -19,10 +19,13 @@ fail() {
     exit 1
 }
 
-readonly checkouts="$test_root/checkouts"
+readonly derived_data="$test_root/DerivedData"
+readonly checkouts="$derived_data/SourcePackages/checkouts"
 readonly fixture="$checkouts/FixtureDependency"
 readonly output="$test_root/Licenses.rtf"
-mkdir -p "$fixture"
+readonly normal_build_dir="$derived_data/Build/Products"
+readonly archive_build_dir="$derived_data/Build/Intermediates.noindex/ArchiveIntermediates/Xcodes/BuildProductsPath"
+mkdir -p "$fixture" "$normal_build_dir" "$archive_build_dir"
 printf 'Fixture licence text\n' > "$fixture/LICENSE"
 
 xcrun -sdk macosx swift run \
@@ -47,7 +50,30 @@ if xcrun -sdk macosx swift run \
     fail "Missing explicit checkouts directory was accepted"
 fi
 
-grep -Fq 'BUILD_DIR}/../../SourcePackages/checkouts' "$repo_root/Xcodes.xcodeproj/project.pbxproj" \
-    || fail "Xcode build phase does not pass its resolved checkouts directory"
+for build_dir in "$normal_build_dir" "$archive_build_dir"; do
+    build_output="$test_root/$(basename "$build_dir").rtf"
+    xcrun -sdk macosx swift run \
+        --package-path "$repo_root/Xcodes/AcknowledgementsGenerator" \
+        --scratch-path "$test_root/build" \
+        AcknowledgementsGenerator \
+        -p "$repo_root/Xcodes.xcodeproj" \
+        -o "$build_output" \
+        -b "$build_dir"
+    grep -aFq 'FixtureDependency' "$build_output" \
+        || fail "Build-directory checkout resolution missed dependency for $build_dir"
+done
+
+if xcrun -sdk macosx swift run \
+    --package-path "$repo_root/Xcodes/AcknowledgementsGenerator" \
+    --scratch-path "$test_root/build" \
+    AcknowledgementsGenerator \
+    -p "$repo_root/Xcodes.xcodeproj" \
+    -o "$test_root/missing-build.rtf" \
+    -b "$test_root/missing/Build/Products" >/dev/null 2>&1; then
+    fail "Build directory without ancestor checkouts was accepted"
+fi
+
+grep -Fq -- "-b \\\"\${BUILD_DIR}\\\"" "$repo_root/Xcodes.xcodeproj/project.pbxproj" \
+    || fail "Xcode build phase does not pass BUILD_DIR"
 
 printf 'Acknowledgements generator contracts passed\n'
