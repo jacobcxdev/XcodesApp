@@ -2,9 +2,13 @@
 
 set -euo pipefail
 
-readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root=""
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repo_root
 readonly validator="$repo_root/Scripts/validate_release_artifacts.sh"
-readonly test_root="$(mktemp -d "${TMPDIR:-/tmp}/xcodes-artifact-tests.XXXXXX")"
+test_root=""
+test_root="$(mktemp -d "${TMPDIR:-/tmp}/xcodes-artifact-tests.XXXXXX")"
+readonly test_root
 
 cleanup() {
     rm -rf -- "$test_root"

@@ -14,6 +14,7 @@ readonly appcast_test="$repo_root/AppCast/test_appcast.rb"
 readonly appcast_workflow="$repo_root/.github/workflows/appcast.yml"
 readonly workflow_check="$repo_root/Scripts/check_appcast_workflow.rb"
 readonly downloaded_release_validator="$repo_root/Scripts/validate_appcast_release.sh"
+readonly archive_inspector="$repo_root/Scripts/inspect_app_archive.rb"
 readonly signature_verifier="$repo_root/Scripts/verify_sparkle_signature.swift"
 readonly signature_extractor="$repo_root/Scripts/extract_sparkle_signature.rb"
 readonly rendered_appcast_validator="$repo_root/Scripts/validate_rendered_appcast.rb"
@@ -33,6 +34,7 @@ for required_file in \
     "$appcast_workflow" \
     "$workflow_check" \
     "$downloaded_release_validator" \
+    "$archive_inspector" \
     "$signature_verifier" \
     "$signature_extractor" \
     "$rendered_appcast_validator" \
@@ -42,6 +44,15 @@ for required_file in \
         exit 1
     fi
 done
+
+# shellcheck disable=SC2016 # Validator variables must remain literal in the contract.
+inspector_call='ruby "$repo_root/Scripts/inspect_app_archive.rb" "$release_dir/Xcodes.zip" >/dev/null'
+inspector_call_count="$(grep -Fxc -- "$inspector_call" "$downloaded_release_validator" || true)"
+readonly inspector_call inspector_call_count
+if [[ "$inspector_call_count" -ne 1 ]]; then
+    echo "Downloaded release validator must invoke the archive inspector exactly once" >&2
+    exit 1
+fi
 
 app_info=$(plutil -convert json -o - "$app_info_plist")
 jq -e --arg stable_feed "$stable_feed" --arg sparkle_public_key "$sparkle_public_key" \

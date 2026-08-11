@@ -2,9 +2,13 @@
 
 set -euo pipefail
 
-readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root=""
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repo_root
 readonly checker="$repo_root/Scripts/check_ci_release_workflows.rb"
-readonly test_root="$(mktemp -d "${TMPDIR:-/tmp}/xcodes-workflow-tests.XXXXXX")"
+test_root=""
+test_root="$(mktemp -d "${TMPDIR:-/tmp}/xcodes-workflow-tests.XXXXXX")"
+readonly test_root
 
 cleanup() {
     rm -rf -- "$test_root"
@@ -61,16 +65,20 @@ mutate_and_reject missing_repository_guard \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["if"] = "always()"; File.write(path, YAML.dump(data) + "# github.repository == jacobcxdev/XcodesApp\n")'
 mutate_and_reject missing_environment \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["package"].delete("environment"); File.write(path, YAML.dump(data) + "# environment: release\n")'
+# shellcheck disable=SC2016 # GitHub expressions must remain literal in the mutation.
 mutate_and_reject widened_concurrency \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["group"] = "release-global"; File.write(path, YAML.dump(data) + "# release-${{ inputs.release_tag || github.ref_name }}\n")'
 mutate_and_reject missing_cleanup \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["package"]["steps"].reject! { |step| step["name"] == "Remove release credentials" }; File.write(path, YAML.dump(data) + "# if: always()\n")'
+# shellcheck disable=SC2016 # Credential syntax must remain literal in the mutation.
 mutate_and_reject exposed_secret \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["package"]["steps"].find { |item| item["name"] == "Import protected release credentials" }; step["run"] += "\necho $CERTIFICATE_P12_BASE64"; File.write(path, YAML.dump(data) + "# printf secret safely\n")'
+# shellcheck disable=SC2016 # GitHub expressions must remain literal in the mutation.
 mutate_and_reject wrong_artifact_path \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["package"]["steps"].find { |item| item["name"] == "Upload verified release artifact" }; step["with"]["path"] = "Product"; File.write(path, YAML.dump(data) + "# Product/${{ steps.release.outputs.tag }}\n")'
 mutate_and_reject missing_verification \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["steps"].reject! { |step| step["name"] == "Revalidate downloaded artifact" }; File.write(path, YAML.dump(data) + "# validate_release_artifacts.sh\n")'
+# shellcheck disable=SC2016 # GitHub expressions must remain literal in the mutation.
 mutate_and_reject publish_secret_access \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["env"] = { "KEY" => "${{ secrets.SPARKLE_PRIVATE_KEY }}" }; File.write(path, YAML.dump(data) + "# no secrets here\n")'
 mutate_and_reject mutable_checkout \
@@ -103,12 +111,14 @@ mutate_and_reject missing_main_ancestry \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["package"]["steps"].find { |item| item["name"] == "Verify immutable release authority" }; step && step["run"].sub!(/^.*merge-base --is-ancestor.*\n/, ""); File.write(path, YAML.dump(data) + "# origin/main ancestry\n")'
 mutate_and_reject missing_package_sha_output \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["package"]["outputs"]&.delete("package_sha"); File.write(path, YAML.dump(data) + "# immutable package SHA\n")'
+# shellcheck disable=SC2016 # GitHub expressions must remain literal in the mutation.
 mutate_and_reject publish_tag_checkout \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Checkout packaged commit" }; step && step["with"]["ref"] = "${{ needs.package.outputs.release_tag }}"; File.write(path, YAML.dump(data) + "# exact package SHA\n")'
 mutate_and_reject missing_publish_sha_verification \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["steps"].reject! { |step| step["name"] == "Verify packaged release authority" }; File.write(path, YAML.dump(data) + "# compare tag and package SHA\n")'
 mutate_and_reject missing_publish_toctou_check \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Publish immutable GitHub release" }; step && step["run"].sub!(/^.*Release tag moved after validation.*\n/, ""); File.write(path, YAML.dump(data) + "# immediate tag recheck\n")'
+# shellcheck disable=SC2016 # Runner variables must remain literal in the mutation.
 mutate_and_reject inserted_credential_reader \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["package"]["steps"].insert(-2, { "name" => "Read credentials", "run" => "cat $RUNNER_TEMP/sparkle-private-key" }); File.write(path, YAML.dump(data) + "# exact package steps\n")'
 mutate_and_reject inserted_release_publisher \
@@ -121,10 +131,12 @@ mutate_and_reject missing_release_drafter_timeout \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release-drafter.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["update_release_draft"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded timeout\n")'
 mutate_and_reject missing_appcast_dispatch_docs \
     'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("gh workflow run appcast.yml --ref v4.0.4b39 -f tag=v4.0.4b39", "gh workflow run appcast.yml --ref main -f tag=latest"); File.write(path, text)'
+# shellcheck disable=SC2016 # Documentation code spans must remain literal in the mutation.
 mutate_and_reject missing_reusable_ref_docs \
     'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Reusable workflows receive the caller'\''s `github.ref`; the appcast build requires that ref to equal `refs/tags/<tag>`", "Reusable workflows are called after release publication"); File.write(path, text)'
 mutate_and_reject widened_same_tag_recovery_docs \
     'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Rerun the same appcast tag only for transient infrastructure or Pages configuration failures when the tagged source is unchanged.", "Rerun the same appcast tag after fixing its source or Pages configuration."); File.write(path, text)'
+# shellcheck disable=SC2016 # Documentation code spans must remain literal in the mutation.
 mutate_and_reject missing_new_release_recovery_docs \
     'path = File.join(ARGV.fetch(0), "docs/RELEASING.md"); text = File.read(path).sub("Any workflow, validator, or source fix requires an incremented build number, a new immutable `vX.Y.ZbN` tag, and a new release.", "Fix source issues before rerunning."); File.write(path, text)'
 

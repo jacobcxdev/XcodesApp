@@ -121,12 +121,19 @@ cp \
     "$repo_root/Scripts/check_appcast_identity.sh" \
     "$repo_root/Scripts/check_appcast_workflow.rb" \
     "$repo_root/Scripts/extract_sparkle_signature.rb" \
+    "$repo_root/Scripts/inspect_app_archive.rb" \
     "$repo_root/Scripts/validate_appcast_release.sh" \
     "$repo_root/Scripts/validate_rendered_appcast.rb" \
     "$repo_root/Scripts/verify_sparkle_signature.swift" \
     "$identity_fixture/Scripts/"
 cp "$repo_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift" "$identity_fixture/Xcodes/Frontend/Preferences/"
 cp "$repo_root/Xcodes/Resources/Info.plist" "$identity_fixture/Xcodes/Resources/"
+
+perl -0pi -e \
+    's~ruby "\$repo_root/Scripts/inspect_app_archive\.rb" "\$release_dir/Xcodes\.zip" >/dev/null~true # archive inspector bypassed~' \
+    "$identity_fixture/Scripts/validate_appcast_release.sh"
+expect_failure archive_inspector_bypass "$identity_fixture/Scripts/check_appcast_identity.sh" "$identity_fixture"
+cp "$repo_root/Scripts/validate_appcast_release.sh" "$identity_fixture/Scripts/validate_appcast_release.sh"
 
 plutil -replace SUPublicEDKey -string "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" \
     "$identity_fixture/Xcodes/Resources/Info.plist"

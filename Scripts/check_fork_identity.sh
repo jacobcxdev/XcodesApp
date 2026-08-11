@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root=""
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repo_root
 readonly project="$repo_root/Xcodes.xcodeproj"
 readonly project_file="$project/project.pbxproj"
 readonly shared_constants="$repo_root/HelperXPCShared/HelperXPCShared.swift"
@@ -40,7 +42,9 @@ readonly app_id="dev.jacobcx.Xcodes"
 readonly tests_id="dev.jacobcx.Xcodes.Tests"
 readonly helper_id="dev.jacobcx.Xcodes.Helper"
 readonly team_id="K2648T24P4"
+# shellcheck disable=SC2016 # Xcode expands this build-setting literal, not the shell.
 readonly app_requirement='identifier "dev.jacobcx.Xcodes" and info [CFBundleShortVersionString] >= "1.0.0" and anchor apple generic and certificate leaf[subject.OU] = "$(CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT)"'
+# shellcheck disable=SC2016 # Xcode expands this build-setting literal, not the shell.
 readonly helper_requirement='identifier "dev.jacobcx.Xcodes.Helper" and info [CFBundleShortVersionString] >= "1.0.0" and anchor apple generic and certificate leaf[subject.OU] = "$(CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT)"'
 
 status=0

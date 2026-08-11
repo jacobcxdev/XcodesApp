@@ -2,8 +2,12 @@
 
 set -euo pipefail
 
-readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly test_root="$(mktemp -d "${TMPDIR:-/tmp}/xcodes-fork-identity-test.XXXXXX")"
+repo_root=""
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repo_root
+test_root=""
+test_root="$(mktemp -d "${TMPDIR:-/tmp}/xcodes-fork-identity-test.XXXXXX")"
+readonly test_root
 readonly fixture_root="$test_root/repo"
 
 cleanup() {
@@ -33,6 +37,7 @@ cp \
     "$repo_root/Scripts/check_ci_release_workflows.rb" \
     "$repo_root/Scripts/check_fork_identity.sh" \
     "$repo_root/Scripts/extract_sparkle_signature.rb" \
+    "$repo_root/Scripts/inspect_app_archive.rb" \
     "$repo_root/Scripts/uninstall_privileged_helper.sh" \
     "$repo_root/Scripts/validate_appcast_release.sh" \
     "$repo_root/Scripts/validate_rendered_appcast.rb" \

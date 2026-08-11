@@ -42,7 +42,9 @@ unzip -tq "$zip_file" >/dev/null 2>&1 || fail "Release ZIP is invalid"
 
 signature_line_count="$(wc -l < "$signature_file" | tr -d '[:space:]')"
 readonly signature_line_count
-readonly sparkle_signature="$(<"$signature_file")"
+sparkle_signature=""
+sparkle_signature="$(<"$signature_file")"
+readonly sparkle_signature
 [[ "$signature_line_count" == 1 && "$sparkle_signature" =~ ^[A-Za-z0-9+/]{86}==$ ]] || fail "Sparkle signature is invalid"
 
 manifest_line_count="$(wc -l < "$manifest_file" | tr -d '[:space:]')"
@@ -71,7 +73,9 @@ notarization_count="$(grep -Ec '^notarization_id=[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[
 readonly notarization_count
 [[ "$notarization_count" == 1 ]] || fail "Manifest notarization identifier is missing or invalid"
 
-readonly expected_checksum="$(awk 'NR == 1 && NF == 2 && $2 == "Xcodes.zip" { print $1 }' "$checksum_file")"
+expected_checksum=""
+expected_checksum="$(awk 'NR == 1 && NF == 2 && $2 == "Xcodes.zip" { print $1 }' "$checksum_file")"
+readonly expected_checksum
 [[ "$expected_checksum" =~ ^[A-Fa-f0-9]{64}$ ]] || fail "Checksum file is malformed"
 require_manifest_line "sha256=$expected_checksum" "Manifest checksum does not match"
 

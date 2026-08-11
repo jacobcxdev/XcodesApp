@@ -15,6 +15,6 @@ last_tag=$(git describe --tags --match "v*" "$hash")
 # Get build number from last component of tag name
 last_build_number=$(echo "$last_tag" | grep -o "b.*" | cut -c 2-)
 
-build_number=$(($last_build_number + 1))
+build_number=$((last_build_number + 1))
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "${infoplist_file}"
