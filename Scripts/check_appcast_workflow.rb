@@ -231,6 +231,7 @@ expected_publish_steps = [
       "ref" => central_action_sha,
       "path" => "action-checkout",
       "persist-credentials" => false,
+      "token" => "${{ secrets.INDEX_REPO_TOKEN }}",
     },
   },
   {
@@ -341,6 +342,7 @@ check.call(
     "ref" => central_action_sha,
     "path" => "action-checkout",
     "persist-credentials" => false,
+    "token" => "${{ secrets.INDEX_REPO_TOKEN }}",
   },
   "Central publisher checkout must use exact immutable revision"
 )

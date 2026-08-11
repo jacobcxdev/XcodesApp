@@ -103,6 +103,8 @@ mutate_workflow mutable_central_checkout \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Checkout central publisher" }; step["with"]["ref"] = "main"; File.write(path, YAML.dump(data) + "# immutable central action revision\n")'
 mutate_workflow wrong_central_repository \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Checkout central publisher" }; step["with"]["repository"] = "example/docs"; File.write(path, YAML.dump(data) + "# jacobcxdev/jacobcxdev.github.io\n")'
+mutate_workflow missing_central_checkout_token \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Checkout central publisher" }; step["with"].delete("token"); File.write(path, YAML.dump(data) + "# private central repository token\n")'
 mutate_workflow missing_central_token \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Publish through central index" }; step["with"].delete("token"); File.write(path, YAML.dump(data) + "# INDEX_REPO_TOKEN\n")'
 mutate_workflow publish_continue_on_error \
