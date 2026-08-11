@@ -52,25 +52,41 @@ guard let pins = object["pins"] as? [[String: Any]] else {
     exit(EXIT_FAILURE)
 }
 
-let projectsURL = Xcode.derivedDataURL
-func projectsInfo(at url: URL) throws -> [Xcode.Project] {
-    try fileManager
-        .contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
-        .map { $0.appendingPathComponent("info.plist") }
-        .compactMap {
-            guard let info = NSDictionary(contentsOf: $0) as? [String: Any] else { return nil }
-            return Xcode.Project(url: $0, info: info)
+let checkouts: URL
+if let checkoutsIndex = arguments.firstIndex(of: "-c") {
+    guard let checkoutsPath = arguments[safe: checkoutsIndex + 1] else {
+        print("Checkouts path is missing after -c.")
+        exit(EXIT_FAILURE)
     }
-}
-let projects = try projectsInfo(at: projectsURL)
 
-// Despite the naming, if the project only has an xcodeproj and not an xcworkspace, the WorkspacePath value will be the path to the xcodeproj
-guard let currentProject = projects.first(where: ({ $0.workspacePath == projectPath.expandingTildeInPath })) else {
-    print("Derived data missing for project")
-    exit(EXIT_FAILURE)
-}
+    let checkoutsURL = URL(fileURLWithPath: checkoutsPath.expandingTildeInPath).standardizedFileURL
+    var isDirectory: ObjCBool = false
+    guard fileManager.fileExists(atPath: checkoutsURL.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+        print("Checkouts directory not found at \(checkoutsURL.path)")
+        exit(EXIT_FAILURE)
+    }
+    checkouts = checkoutsURL
+} else {
+    let projectsURL = Xcode.derivedDataURL
+    func projectsInfo(at url: URL) throws -> [Xcode.Project] {
+        try fileManager
+            .contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+            .map { $0.appendingPathComponent("info.plist") }
+            .compactMap {
+                guard let info = NSDictionary(contentsOf: $0) as? [String: Any] else { return nil }
+                return Xcode.Project(url: $0, info: info)
+        }
+    }
+    let projects = try projectsInfo(at: projectsURL)
 
-let checkouts = currentProject.url.deletingLastPathComponent().appendingPathComponent("SourcePackages/checkouts")
+    // Despite the naming, if the project only has an xcodeproj and not an xcworkspace, the WorkspacePath value will be the path to the xcodeproj
+    guard let currentProject = projects.first(where: ({ $0.workspacePath == projectPath.expandingTildeInPath })) else {
+        print("Derived data missing for project")
+        exit(EXIT_FAILURE)
+    }
+
+    checkouts = currentProject.url.deletingLastPathComponent().appendingPathComponent("SourcePackages/checkouts")
+}
 let checkedDependencies = try fileManager.contentsOfDirectory(at: checkouts, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
 
 let spmLicences: [Xcode.Project.License] = checkedDependencies.compactMap {

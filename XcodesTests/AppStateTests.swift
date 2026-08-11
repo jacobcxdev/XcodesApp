@@ -1,4 +1,5 @@
 import Combine
+import AsyncNetworkService
 @preconcurrency import Path
 import Version
 import XCTest
@@ -32,6 +33,87 @@ class AppStateTests: XCTestCase {
         Current = .mock
         syncXcodesKitMocks()
         subject = AppState()
+    }
+
+    func test_AuthenticationPolicy_MapsSession401ToNotAuthorized() {
+        let error = AuthenticationRequestPolicy.mapSessionValidationError(
+            NetworkError.non200StatusCode(statusCode: 401, data: Data())
+        )
+
+        XCTAssertEqual(error as? AuthenticationError, .notAuthorized)
+    }
+
+    func test_AuthenticationPolicy_Retries503UntilSuccess() async throws {
+        let attempts = TestLockedBox(0)
+
+        let result = try await AuthenticationRequestPolicy(delayBeforeRetry: .zero).perform {
+            let attempt = attempts.withValue { value in
+                value += 1
+                return value
+            }
+            if attempt < 3 {
+                throw NetworkError.non200StatusCode(statusCode: 503, data: nil)
+            }
+            return "authenticated"
+        }
+
+        XCTAssertEqual(result, "authenticated")
+        XCTAssertEqual(attempts.read { $0 }, 3)
+    }
+
+    func test_AuthenticationPolicy_StopsAfterThird503() async {
+        let attempts = TestLockedBox(0)
+
+        do {
+            let _: String = try await AuthenticationRequestPolicy(delayBeforeRetry: .zero).perform {
+                attempts.withValue { $0 += 1 }
+                throw NetworkError.non200StatusCode(statusCode: 503, data: nil)
+            }
+            XCTFail("Expected temporary service error")
+        } catch {
+            XCTAssertEqual(
+                error as? AuthenticationRequestError,
+                .serviceTemporarilyUnavailable(statusCode: 503)
+            )
+            XCTAssertEqual(attempts.read { $0 }, 3)
+        }
+    }
+
+    func test_AuthenticationPolicy_DoesNotClearCredentialsFor503() {
+        XCTAssertFalse(
+            AuthenticationRequestPolicy.shouldClearCredentials(
+                after: NetworkError.non200StatusCode(statusCode: 503, data: nil)
+            )
+        )
+    }
+
+    func test_AuthenticationPolicy_ClearsCredentialsForInvalidPassword() {
+        XCTAssertTrue(
+            AuthenticationRequestPolicy.shouldClearCredentials(
+                after: AuthenticationError.invalidUsernameOrPassword(username: "user@example.com")
+            )
+        )
+    }
+
+    func test_ValidateSession_RetriesTransientServiceFailure() async {
+        let attempts = TestLockedBox(0)
+        Current.network.validateSessionAsync = {
+            attempts.withValue { $0 += 1 }
+            throw NetworkError.non200StatusCode(statusCode: 503, data: nil)
+        }
+
+        do {
+            try await subject.validateSessionAsync(
+                authenticationRequestPolicy: AuthenticationRequestPolicy(delayBeforeRetry: .zero)
+            )
+            XCTFail("Expected temporary service error")
+        } catch {
+            XCTAssertEqual(
+                error as? AuthenticationRequestError,
+                .serviceTemporarilyUnavailable(statusCode: 503)
+            )
+            XCTAssertEqual(attempts.read { $0 }, 3)
+        }
     }
     
     func test_ParseCertificateInfo_Succeeds() throws {
@@ -84,6 +166,133 @@ class AppStateTests: XCTestCase {
         XCTAssertFalse(subject.enableGroupedXcodeList)
     }
 
+    func test_ForkPreferenceMigration_CopiesAllowlistedValues() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferenceKeys = [
+            PreferenceKey.installPath,
+            PreferenceKey.localPath,
+            PreferenceKey.unxipExperiment,
+            PreferenceKey.createSymLinkOnSelect,
+            PreferenceKey.createBetaSymLinkOnSelect,
+            PreferenceKey.onSelectActionType,
+            PreferenceKey.showOpenInRosettaOption,
+            PreferenceKey.autoInstallation,
+            PreferenceKey.SUEnableAutomaticChecks,
+            PreferenceKey.includePrereleaseVersions,
+            PreferenceKey.downloader,
+            PreferenceKey.dataSource,
+            PreferenceKey.xcodeListCategory,
+            PreferenceKey.allowedMajorVersions,
+            PreferenceKey.hideSupportXcodes,
+            PreferenceKey.xcodeListArchitectures,
+            PreferenceKey.enableGroupedXcodeList,
+            PreferenceKey.expandedMajorXcodeVersions,
+            PreferenceKey.expandedMinorXcodeVersions,
+        ]
+        let keys = preferenceKeys.map(\.rawValue) + ["terminateAfterLastWindowClosed"]
+        let legacyValues = Dictionary(uniqueKeysWithValues: keys.map { ($0, "legacy-\($0)") })
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: legacyValues,
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+
+        for key in keys {
+            XCTAssertEqual(defaults.string(forKey: key), "legacy-\(key)")
+        }
+    }
+
+    func test_ForkPreferenceMigration_DoesNotCopySensitiveOrUnknownValues() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let excludedKeys = [
+            "username",
+            "password",
+            "cookies",
+            "sessionCookies",
+            "credentials",
+            "SULastCheckTime",
+            "SUSkippedVersion",
+            "lastUpdated",
+            "arbitraryKey",
+        ]
+        let legacyValues = Dictionary(uniqueKeysWithValues: excludedKeys.map { ($0, "legacy-value") })
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: legacyValues,
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+
+        for key in excludedKeys {
+            XCTAssertNil(defaults.object(forKey: key))
+        }
+    }
+
+    func test_ForkPreferenceMigration_PreservesExistingForkValues() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set("fork-value", forKey: PreferenceKey.downloader.rawValue)
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: [PreferenceKey.downloader.rawValue: "legacy-value"],
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+
+        XCTAssertEqual(defaults.string(forKey: PreferenceKey.downloader.rawValue), "fork-value")
+    }
+
+    func test_ForkPreferenceMigration_UsesLegacySupportWhenLocalPathIsAbsent() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: [:],
+            into: defaults,
+            legacyApplicationSupportExists: true
+        )
+
+        XCTAssertEqual(
+            defaults.string(forKey: PreferenceKey.localPath.rawValue),
+            (Path.applicationSupport/"com.robotsandpencils.XcodesApp").string
+        )
+    }
+
+    func test_ForkPreferenceMigration_MarkerMakesMigrationIdempotent() {
+        let (defaults, suiteName) = makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        ForkPreferenceMigration.migrate(
+            legacyValues: [PreferenceKey.installPath.rawValue: "/Applications/Legacy"],
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+        ForkPreferenceMigration.migrate(
+            legacyValues: [PreferenceKey.downloader.rawValue: "aria2"],
+            into: defaults,
+            legacyApplicationSupportExists: false
+        )
+
+        XCTAssertEqual(defaults.integer(forKey: ForkPreferenceMigration.markerKey), 1)
+        XCTAssertNil(defaults.object(forKey: PreferenceKey.downloader.rawValue))
+    }
+
+    func test_ForkPaths_UseForkApplicationSupportAndCaches() {
+        let expectedApplicationSupport = Path.applicationSupport/"dev.jacobcx.Xcodes"
+
+        XCTAssertEqual(Path.defaultXcodesApplicationSupport, expectedApplicationSupport)
+        XCTAssertEqual(Path.xcodesApplicationSupport, expectedApplicationSupport)
+        XCTAssertEqual(Path.xcodesCaches, Path.caches/"dev.jacobcx.Xcodes")
+
+        Current.defaults.string = { key in
+            key == PreferenceKey.localPath.rawValue ? "/tmp/dev.jacobcx.Xcodes" : nil
+        }
+        XCTAssertEqual(Path.xcodesApplicationSupport.string, "/tmp/dev.jacobcx.Xcodes")
+    }
+
     func test_PrepareForHelperAction_StaleActionDoesNotClearReplacementAction() {
         var responses = [Bool]()
         subject.prepareForHelperAction { responses.append($0) }
@@ -100,6 +309,13 @@ class AppStateTests: XCTestCase {
         XCTAssertEqual(responses, [false])
         XCTAssertNil(subject.isPreparingUserForActionRequiringHelper)
         XCTAssertNil(subject.helperActionPreparationID)
+    }
+
+    private func makeIsolatedDefaults() -> (defaults: UserDefaults, suiteName: String) {
+        let suiteName = "dev.jacobcx.Xcodes.AppStateTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        return (defaults, suiteName)
     }
 
     func test_RespondToPreparedHelperAction_RunsActionAndClearsAlert() {
@@ -133,6 +349,82 @@ class AppStateTests: XCTestCase {
 
         let destination = try FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath.string)
         XCTAssertEqual(destination, installedXcodePath.string)
+    }
+
+    func test_CreateSymbolicLink_ReplacesBrokenStableLink() throws {
+        let installDirectory = try XCTUnwrap(Path(
+            NSTemporaryDirectory()
+                .appending("XcodesAppStateTests-")
+                .appending(UUID().uuidString)
+        ))
+        let installedXcodePath = installDirectory/"Xcode-16.4.app"
+        let symlinkPath = installDirectory/"Xcode.app"
+        try FileManager.default.createDirectory(at: installedXcodePath.url, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            atPath: symlinkPath.string,
+            withDestinationPath: (installDirectory/"Missing-Xcode.app").string
+        )
+        defer { try? FileManager.default.removeItem(at: installDirectory.url) }
+
+        Current.defaults.string = { key in
+            key == "installPath" ? installDirectory.string : nil
+        }
+
+        subject.createSymbolicLink(to: installedXcodePath)
+
+        let destination = try FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath.string)
+        XCTAssertEqual(destination, installedXcodePath.string)
+    }
+
+    func test_CreateSymbolicLink_ReplacesBrokenBetaLink() throws {
+        let installDirectory = try XCTUnwrap(Path(
+            NSTemporaryDirectory()
+                .appending("XcodesAppStateTests-")
+                .appending(UUID().uuidString)
+        ))
+        let installedXcodePath = installDirectory/"Xcode-27.0-Beta.5.app"
+        let symlinkPath = installDirectory/"Xcode-Beta.app"
+        try FileManager.default.createDirectory(at: installedXcodePath.url, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            atPath: symlinkPath.string,
+            withDestinationPath: (installDirectory/"Missing-Xcode-Beta.app").string
+        )
+        defer { try? FileManager.default.removeItem(at: installDirectory.url) }
+
+        Current.defaults.string = { key in
+            key == "installPath" ? installDirectory.string : nil
+        }
+
+        subject.createSymbolicLink(to: installedXcodePath, isBeta: true)
+
+        let destination = try FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath.string)
+        XCTAssertEqual(destination, installedXcodePath.string)
+    }
+
+    func test_AutomaticSymbolicLink_ReleaseUsesStableLinkOnly() {
+        subject.createSymLinkOnSelect = true
+        subject.createBetaSymLinkOnSelect = true
+        let xcode = Xcode(
+            version: Version("16.4.0")!,
+            installState: .notInstalled,
+            selected: false,
+            icon: nil
+        )
+
+        XCTAssertEqual(subject.automaticSymbolicLinkIsBeta(for: xcode), false)
+    }
+
+    func test_AutomaticSymbolicLink_PrereleaseUsesBetaLinkOnly() {
+        subject.createSymLinkOnSelect = true
+        subject.createBetaSymLinkOnSelect = true
+        let xcode = Xcode(
+            version: Version("27.0.0-Beta.5")!,
+            installState: .notInstalled,
+            selected: false,
+            icon: nil
+        )
+
+        XCTAssertEqual(subject.automaticSymbolicLinkIsBeta(for: xcode), true)
     }
 
     func test_InstallHelperIfNecessary_OldTaskDoesNotClearReplacementTask() async throws {
@@ -336,6 +628,116 @@ class AppStateTests: XCTestCase {
         XCTAssertTrue(Current.network.loginClient.urlSession === replacementSession)
     }
 
+    func test_RefreshInstalledRuntimes_UsesLiveSimctlOutput() async throws {
+        let identifier = "97772E90-7BD1-4882-9C51-782E62E0AF4F"
+        let json = """
+        {
+          "\(identifier)": {
+            "build": "23F72",
+            "deletable": true,
+            "identifier": "\(identifier)",
+            "kind": "Disk Image",
+            "lastUsedAt": null,
+            "path": "/Library/Developer/CoreSimulator/Images/iOS_26_5.dmg",
+            "platformIdentifier": "com.apple.platform.iphonesimulator",
+            "runtimeBundlePath": "/Library/Developer/CoreSimulator/Volumes/iOS_23F72/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime",
+            "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-5",
+            "signatureState": "Verified",
+            "state": "Ready",
+            "version": "26.5",
+            "sizeBytes": 9148280348,
+            "supportedArchitectures": ["arm64"]
+          }
+        }
+        """
+        subject.runtimeService = Self.runtimeService(installedRuntimesJSON: json)
+
+        try await subject.refreshInstalledRuntimes()
+
+        XCTAssertEqual(subject.installedRuntimes.map(\.uuid), [identifier])
+        XCTAssertEqual(subject.installedRuntimes.first?.runtimeInfo.build, "23F72")
+        XCTAssertEqual(subject.installedRuntimes.first?.runtimeInfo.supportedArchitectures, [.arm64])
+        XCTAssertEqual(
+            subject.installedRuntimes.first?.path["relative"],
+            "/Library/Developer/CoreSimulator/Images/iOS_26_5.dmg"
+        )
+    }
+
+    func test_RefreshInstalledRuntimes_OlderRequestCannotOverwriteNewerState() async throws {
+        let staleJSON = """
+        {
+          "97772E90-7BD1-4882-9C51-782E62E0AF4F": {
+            "build": "23F72",
+            "deletable": true,
+            "identifier": "97772E90-7BD1-4882-9C51-782E62E0AF4F",
+            "kind": "Disk Image",
+            "lastUsedAt": null,
+            "path": "/Library/Developer/CoreSimulator/Images/iOS_26_5.dmg",
+            "platformIdentifier": "com.apple.platform.iphonesimulator",
+            "runtimeBundlePath": "/Library/Developer/CoreSimulator/Volumes/iOS_23F72/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime",
+            "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-5",
+            "signatureState": "Verified",
+            "state": "Ready",
+            "version": "26.5",
+            "sizeBytes": 9148280348,
+            "supportedArchitectures": ["arm64"]
+          }
+        }
+        """
+        let continuations = TestLockedBox<[CheckedContinuation<ProcessOutput, Error>]>([])
+        subject.runtimeService = Self.runtimeService(installedRuntimesOutput: {
+            try await withCheckedThrowingContinuation { continuation in
+                continuations.withValue { $0.append(continuation) }
+            }
+        })
+
+        let staleRefresh = Task { @MainActor in
+            try await self.subject.refreshInstalledRuntimes()
+        }
+        for _ in 0..<100 where continuations.read({ $0.count }) < 1 {
+            await Task.yield()
+        }
+
+        let currentRefresh = Task { @MainActor in
+            try await self.subject.refreshInstalledRuntimes()
+        }
+        for _ in 0..<100 where continuations.read({ $0.count }) < 2 {
+            await Task.yield()
+        }
+
+        continuations.read { $0[1] }.resume(
+            returning: ProcessOutput(status: 0, out: "{}", err: "")
+        )
+        try await currentRefresh.value
+        continuations.read { $0[0] }.resume(
+            returning: ProcessOutput(status: 0, out: staleJSON, err: "")
+        )
+        try await staleRefresh.value
+
+        XCTAssertTrue(subject.installedRuntimes.isEmpty)
+    }
+
+    func test_InstalledPlatformRuntimes_RejectsArchitectureMismatch() throws {
+        let armRuntime = try Self.downloadableRuntime(architectures: [.arm64])
+        let x86Runtime = try Self.downloadableRuntime(architectures: [.x86_64])
+        subject.downloadableRuntimes = [x86Runtime, armRuntime]
+        subject.installedRuntimes = [
+            CoreSimulatorImage(
+                uuid: "runtime-uuid",
+                path: ["relative": "/Library/Developer/CoreSimulator/Images/runtime.dmg"],
+                runtimeInfo: CoreSimulatorRuntimeInfo(
+                    build: armRuntime.simulatorVersion.buildUpdate,
+                    supportedArchitectures: [.arm64]
+                )
+            )
+        ]
+
+        let runtimes = subject.installedPlatformRuntimes()
+
+        XCTAssertEqual(runtimes.count, 1)
+        XCTAssertEqual(runtimes.first?.architectures, [.arm64])
+    }
+
     func test_DownloadRuntimeViaXcodeBuild_ClearsRuntimeTaskWhenComplete() async throws {
         let runtime = try Self.downloadableRuntime()
         subject.downloadableRuntimes = [runtime]
@@ -398,12 +800,12 @@ class AppStateTests: XCTestCase {
         let deletedIdentifiers = TestLockedBox<[String]>([])
         let continuations = TestLockedBox<[CheckedContinuation<ProcessOutput, Error>]>([])
         subject = AppState(
-            runtimeService: Self.runtimeService { identifier in
+            runtimeService: Self.runtimeService(deleteRuntimeOutput: { identifier in
                 deletedIdentifiers.withValue { $0.append(identifier) }
                 return try await withCheckedThrowingContinuation { continuation in
                     continuations.withValue { $0.append(continuation) }
                 }
-            }
+            })
         )
         subject.installedRuntimes = [installedRuntime]
 
@@ -431,20 +833,61 @@ class AppStateTests: XCTestCase {
         XCTAssertNil(subject.deleteRuntimeTaskID)
     }
 
-    func test_ConfirmDeleteRuntime_PresentsPreferenceAlertOnError() async throws {
+    func test_ConfirmDeleteRuntime_PresentsPlatformAlertOnError() async throws {
         let runtime = try Self.downloadableRuntime()
 
         subject.confirmDeleteRuntime(runtime: runtime)
         let task = try XCTUnwrap(subject.deleteRuntimeTask)
         await task.value
 
-        guard case let .generic(title, message) = subject.presentedPreferenceAlert else {
-            return XCTFail("Expected generic preference alert")
+        guard case let .generic(title, message) = subject.presentedPlatformAlert else {
+            return XCTFail("Expected generic platform alert")
         }
         XCTAssertEqual(title, "Error")
         XCTAssertEqual(message, "No simulator found with \(runtime.identifier)")
         XCTAssertNil(subject.deleteRuntimeTask)
         XCTAssertNil(subject.deleteRuntimeTaskID)
+    }
+
+    func test_DeleteRuntime_RefreshesInstalledRuntimesAfterSuccess() async throws {
+        let runtime = try Self.downloadableRuntime()
+        let installedRuntime = CoreSimulatorImage(
+            uuid: "runtime-uuid",
+            path: ["relative": "/Library/Developer/CoreSimulator/Images/runtime.dmg"],
+            runtimeInfo: CoreSimulatorRuntimeInfo(build: runtime.simulatorVersion.buildUpdate)
+        )
+        subject = AppState(runtimeService: Self.runtimeService())
+        subject.installedRuntimes = [installedRuntime]
+
+        try await subject.deleteRuntime(runtime: runtime)
+
+        XCTAssertTrue(subject.installedRuntimes.isEmpty)
+    }
+
+    func test_ConfirmDeleteRuntime_RefreshesStaleStateOnError() async throws {
+        let runtime = try Self.downloadableRuntime()
+        let installedRuntime = CoreSimulatorImage(
+            uuid: "runtime-uuid",
+            path: ["relative": "/Library/Developer/CoreSimulator/Images/runtime.dmg"],
+            runtimeInfo: CoreSimulatorRuntimeInfo(build: runtime.simulatorVersion.buildUpdate)
+        )
+        subject = AppState(
+            runtimeService: Self.runtimeService(deleteRuntimeOutput: { _ in
+                throw XcodesKitError("No matching images found to delete")
+            })
+        )
+        subject.installedRuntimes = [installedRuntime]
+
+        subject.confirmDeleteRuntime(runtime: runtime)
+        let task = try XCTUnwrap(subject.deleteRuntimeTask)
+        await task.value
+
+        XCTAssertTrue(subject.installedRuntimes.isEmpty)
+        guard case let .generic(title, message) = subject.presentedPlatformAlert else {
+            return XCTFail("Expected generic platform alert")
+        }
+        XCTAssertEqual(title, "Error")
+        XCTAssertEqual(message, "No matching images found to delete")
     }
 
     func test_InstallWithoutLogin_OldTaskDoesNotClearReplacementTask() async throws {
@@ -674,7 +1117,15 @@ class AppStateTests: XCTestCase {
         )
     }
 
-    private static func downloadableRuntime() throws -> DownloadableRuntime {
+    private static func downloadableRuntime(
+        architectures: [Architecture]? = nil
+    ) throws -> DownloadableRuntime {
+        let encodedArchitectures: String
+        if let architectures {
+            encodedArchitectures = "[\(architectures.map { "\"\($0.rawValue)\"" }.joined(separator: ","))]"
+        } else {
+            encodedArchitectures = "null"
+        }
         let json = """
         {
           "category": "simulator",
@@ -683,7 +1134,7 @@ class AppStateTests: XCTestCase {
             "version": "16.0"
           },
           "source": "https://example.com/iOS_16_Runtime.dmg",
-          "architectures": null,
+          "architectures": \(encodedArchitectures),
           "dictionaryVersion": 1,
           "contentType": "diskImage",
           "platform": "com.apple.platform.iphoneos",
@@ -706,7 +1157,11 @@ class AppStateTests: XCTestCase {
     }
 
     private static func runtimeService(
-        deleteRuntimeOutput: @escaping @Sendable (String) async throws -> ProcessOutput
+        installedRuntimesJSON: String = "{}",
+        installedRuntimesOutput: (@Sendable () async throws -> ProcessOutput)? = nil,
+        deleteRuntimeOutput: @escaping @Sendable (String) async throws -> ProcessOutput = { _ in
+            ProcessOutput(status: 0, out: "", err: "")
+        }
     ) -> RuntimeService {
         RuntimeService(
             loadData: { request in
@@ -725,7 +1180,10 @@ class AppStateTests: XCTestCase {
                 """.utf8)
             },
             installedRuntimesOutput: {
-                ProcessOutput(status: 0, out: "{}", err: "")
+                if let installedRuntimesOutput {
+                    return try await installedRuntimesOutput()
+                }
+                return ProcessOutput(status: 0, out: installedRuntimesJSON, err: "")
             },
             installRuntimeImageOutput: { _ in
                 ProcessOutput(status: 0, out: "", err: "")

@@ -1,16 +1,27 @@
 name: Release Drafter
 
-on:
+'on':
   # Allow running it manually in case we forget to label a PR before merging
   workflow_dispatch:
   push:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: release-drafter-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update_release_draft:
+    if: github.repository == 'jacobcxdev/XcodesApp'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
-      - uses: release-drafter/release-drafter@v7
+      - uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}

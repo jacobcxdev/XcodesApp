@@ -44,15 +44,27 @@ extension AppState {
             }
             do {
                 Logger.appState.info("Loading Installed runtimes")
-                let runtimes = try await self.runtimeService.localInstalledRuntimes()
-                try Task.checkCancellation()
-
-                self.installedRuntimes = runtimes
+                try await self.refreshInstalledRuntimes()
             } catch is CancellationError {
             } catch {
                 Logger.appState.error("Error loading installed runtimes: \(error.localizedDescription)")
             }
         }
+    }
+
+    func refreshInstalledRuntimes() async throws {
+        let refreshID = UUID()
+        installedRuntimesRefreshID = refreshID
+        defer {
+            if installedRuntimesRefreshID == refreshID {
+                installedRuntimesRefreshID = nil
+            }
+        }
+
+        let runtimes = try await runtimeService.installedRuntimes()
+        try Task.checkCancellation()
+        guard installedRuntimesRefreshID == refreshID else { return }
+        installedRuntimes = runtimes.map(CoreSimulatorImage.init)
     }
 
     func downloadRuntime(runtime: DownloadableRuntime) {
@@ -273,13 +285,14 @@ extension AppState {
             .coreSimulatorImage(for: runtime, in: installedRuntimes)
     }
 
+    func installedPlatformRuntimes() -> [DownloadableRuntime] {
+        downloadableRuntimes.filter { coreSimulatorInfo(runtime: $0) != nil }
+    }
+
     func deleteRuntime(runtime: DownloadableRuntime) async throws {
         if let info = coreSimulatorInfo(runtime: runtime) {
             try await runtimeService.deleteRuntime(identifier: info.uuid)
-
-            // give it some time to actually finish deleting before updating
-            try await Task.sleep(nanoseconds: 500_000_000)
-            updateInstalledRuntimes()
+            try await refreshInstalledRuntimes()
         } else {
             throw XcodesKitError("No simulator found with \(runtime.identifier)")
         }
@@ -302,10 +315,18 @@ extension AppState {
                 try await self.deleteRuntime(runtime: runtime)
             } catch is CancellationError {
             } catch {
+                let deletionError = error
+                do {
+                    try await self.refreshInstalledRuntimes()
+                } catch is CancellationError {
+                    return
+                } catch {
+                    Logger.appState.error("Error refreshing installed runtimes: \(error.localizedDescription)")
+                }
                 guard self.deleteRuntimeTaskID == taskID else { return }
-                self.presentedPreferenceAlert = .generic(
+                self.presentedPlatformAlert = .generic(
                     title: "Error",
-                    message: self.runtimeDeletionErrorMessage(error)
+                    message: self.runtimeDeletionErrorMessage(deletionError)
                 )
             }
         }
@@ -317,5 +338,18 @@ extension AppState {
         }
 
         return error.localizedDescription
+    }
+}
+
+private extension CoreSimulatorImage {
+    init(_ runtime: InstalledRuntime) {
+        self.init(
+            uuid: runtime.identifier.uuidString,
+            path: ["relative": runtime.path],
+            runtimeInfo: CoreSimulatorRuntimeInfo(
+                build: runtime.build,
+                supportedArchitectures: runtime.supportedArchitectures
+            )
+        )
     }
 }

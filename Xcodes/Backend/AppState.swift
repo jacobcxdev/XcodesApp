@@ -1,4 +1,5 @@
 import AppKit
+import AsyncNetworkService
 import XcodesLoginKit
 import XcodesLoginKitSecurityKey
 import Path
@@ -10,11 +11,73 @@ import os.log
 import DockProgress
 import XcodesKit
 
+enum AuthenticationRequestError: LocalizedError, Equatable {
+    case serviceTemporarilyUnavailable(statusCode: Int)
+
+    var errorDescription: String? {
+        switch self {
+        case let .serviceTemporarilyUnavailable(statusCode):
+            return "Apple's authentication service is temporarily unavailable (HTTP \(statusCode)). Try again shortly."
+        }
+    }
+}
+
+struct AuthenticationRequestPolicy: Sendable {
+    let maximumAttemptCount: Int
+    let delayBeforeRetry: Duration
+
+    init(maximumAttemptCount: Int = 3, delayBeforeRetry: Duration = .seconds(2)) {
+        self.maximumAttemptCount = maximumAttemptCount
+        self.delayBeforeRetry = delayBeforeRetry
+    }
+
+    func perform<T>(_ operation: @escaping @Sendable () async throws -> T) async throws -> T {
+        do {
+            return try await attemptRetryableTask(
+                maximumRetryCount: maximumAttemptCount,
+                delayBeforeRetry: delayBeforeRetry,
+                shouldRetry: Self.isTransient,
+                operation
+            )
+        } catch let NetworkError.non200StatusCode(statusCode, _)
+            where [502, 503, 504].contains(statusCode) {
+            throw AuthenticationRequestError.serviceTemporarilyUnavailable(statusCode: statusCode)
+        }
+    }
+
+    static func mapSessionValidationError(_ error: Error) -> Error {
+        guard
+            let networkError = error as? NetworkError,
+            case .non200StatusCode(statusCode: 401, data: _) = networkError
+        else {
+            return error
+        }
+        return AuthenticationError.notAuthorized
+    }
+
+    static func shouldClearCredentials(after error: Error) -> Bool {
+        guard let authenticationError = error as? AuthenticationError else { return false }
+        if case .invalidUsernameOrPassword = authenticationError { return true }
+        return false
+    }
+
+    private static func isTransient(_ error: Error) -> Bool {
+        guard
+            let networkError = error as? NetworkError,
+            case let .non200StatusCode(statusCode, _) = networkError
+        else {
+            return false
+        }
+        return [502, 503, 504].contains(statusCode)
+    }
+}
+
 enum PreferenceKey: String {
     case installPath
     case localPath
     case unxipExperiment
     case createSymLinkOnSelect
+    case createBetaSymLinkOnSelect
     case onSelectActionType
     case showOpenInRosettaOption
     case autoInstallation
@@ -31,6 +94,70 @@ enum PreferenceKey: String {
     case expandedMinorXcodeVersions
 
     func isManaged() -> Bool { UserDefaults.standard.objectIsForced(forKey: self.rawValue) }
+}
+
+struct ForkPreferenceMigration {
+    static let markerKey = "dev.jacobcx.Xcodes.preferenceMigrationVersion"
+
+    private static let version = 1
+    private static let legacyDefaultsDomain = "com.xcodesorg.xcodesapp"
+    private static var legacyApplicationSupport: Path {
+        Path.applicationSupport/"com.robotsandpencils.XcodesApp"
+    }
+    private static let allowlistedKeys = [
+        PreferenceKey.installPath.rawValue,
+        PreferenceKey.localPath.rawValue,
+        PreferenceKey.unxipExperiment.rawValue,
+        PreferenceKey.createSymLinkOnSelect.rawValue,
+        PreferenceKey.createBetaSymLinkOnSelect.rawValue,
+        PreferenceKey.onSelectActionType.rawValue,
+        PreferenceKey.showOpenInRosettaOption.rawValue,
+        PreferenceKey.autoInstallation.rawValue,
+        PreferenceKey.SUEnableAutomaticChecks.rawValue,
+        PreferenceKey.includePrereleaseVersions.rawValue,
+        PreferenceKey.downloader.rawValue,
+        PreferenceKey.dataSource.rawValue,
+        PreferenceKey.xcodeListCategory.rawValue,
+        PreferenceKey.allowedMajorVersions.rawValue,
+        PreferenceKey.hideSupportXcodes.rawValue,
+        PreferenceKey.xcodeListArchitectures.rawValue,
+        PreferenceKey.enableGroupedXcodeList.rawValue,
+        PreferenceKey.expandedMajorXcodeVersions.rawValue,
+        PreferenceKey.expandedMinorXcodeVersions.rawValue,
+        "terminateAfterLastWindowClosed",
+    ]
+
+    static func migrate() {
+        let defaults = UserDefaults.standard
+        migrate(
+            legacyValues: defaults.persistentDomain(forName: legacyDefaultsDomain) ?? [:],
+            into: defaults,
+            legacyApplicationSupportExists: FileManager.default.fileExists(
+                atPath: legacyApplicationSupport.string
+            )
+        )
+    }
+
+    static func migrate(
+        legacyValues: [String: Any],
+        into defaults: UserDefaults,
+        legacyApplicationSupportExists: Bool
+    ) {
+        guard defaults.integer(forKey: markerKey) < version else { return }
+
+        for key in allowlistedKeys where defaults.object(forKey: key) == nil {
+            if let value = legacyValues[key] {
+                defaults.set(value, forKey: key)
+            }
+        }
+
+        if defaults.object(forKey: PreferenceKey.localPath.rawValue) == nil,
+           legacyApplicationSupportExists {
+            defaults.set(legacyApplicationSupport.string, forKey: PreferenceKey.localPath.rawValue)
+        }
+
+        defaults.set(version, forKey: markerKey)
+    }
 }
 
 @MainActor
@@ -77,7 +204,7 @@ class AppState: ObservableObject {
     private var authenticationTaskID: UUID?
     @Published var xcodeBeingConfirmedForUninstallation: Xcode?
     @Published var presentedAlert: XcodesAlert?
-    @Published var presentedPreferenceAlert: XcodesPreferencesAlert?
+    @Published var presentedPlatformAlert: XcodesPlatformAlert?
     @Published var helperInstallState: HelperInstallState = .notInstalled
     /// Whether the user is being prepared for the helper installation alert with an explanation.
     /// This closure will be performed after the user chooses whether or not to proceed.
@@ -124,12 +251,23 @@ class AppState: ObservableObject {
         return onSelectActionType == .rename || PreferenceKey.createSymLinkOnSelect.isManaged()
     }
 
+    @Published var createBetaSymLinkOnSelect = false {
+        didSet {
+            Current.defaults.set(createBetaSymLinkOnSelect, forKey: "createBetaSymLinkOnSelect")
+        }
+    }
+
+    var createBetaSymLinkOnSelectDisabled: Bool {
+        return onSelectActionType == .rename || PreferenceKey.createBetaSymLinkOnSelect.isManaged()
+    }
+
     @Published var onSelectActionType = SelectedActionType.none {
         didSet {
             Current.defaults.set(onSelectActionType.rawValue, forKey: "onSelectActionType")
 
             if onSelectActionType == .rename {
                 createSymLinkOnSelect = false
+                createBetaSymLinkOnSelect = false
             }
         }
     }
@@ -165,6 +303,7 @@ class AppState: ObservableObject {
     var downloadableRuntimesTaskID: UUID?
     var installedRuntimesTask: Task<Void, Never>?
     var installedRuntimesTaskID: UUID?
+    var installedRuntimesRefreshID: UUID?
     internal var installationTasks: [XcodeID: Task<Void, Never>] = [:]
     internal var installationTaskIDs: [XcodeID: UUID] = [:]
     internal var runtimeTasks: [String: Task<Void, Never>] = [:]
@@ -227,6 +366,7 @@ class AppState: ObservableObject {
     init(runtimeService: RuntimeService = RuntimeService()) {
         self.runtimeService = runtimeService
         guard !isTesting else { return }
+        ForkPreferenceMigration.migrate()
         try? loadCachedAvailableXcodes()
         try? loadCacheDownloadableRuntimes()
         Task { @MainActor in
@@ -244,6 +384,7 @@ class AppState: ObservableObject {
         localPath = Current.defaults.string(forKey: "localPath") ?? Path.defaultXcodesApplicationSupport.string
         unxipExperiment = Current.defaults.bool(forKey: "unxipExperiment") ?? false
         createSymLinkOnSelect = Current.defaults.bool(forKey: "createSymLinkOnSelect") ?? false
+        createBetaSymLinkOnSelect = Current.defaults.bool(forKey: "createBetaSymLinkOnSelect") ?? false
         onSelectActionType = SelectedActionType(rawValue: Current.defaults.string(forKey: "onSelectActionType") ?? "none") ?? .none
         installPath = Current.defaults.string(forKey: "installPath") ?? Path.defaultInstallDirectory.string
         showOpenInRosettaOption = Current.defaults.bool(forKey: "showOpenInRosettaOption") ?? false
@@ -275,8 +416,16 @@ class AppState: ObservableObject {
         ).validateADCSession(path: path)
     }
 
-    func validateSessionAsync() async throws {
-        try await Current.network.validateSessionAsync()
+    func validateSessionAsync(
+        authenticationRequestPolicy: AuthenticationRequestPolicy = AuthenticationRequestPolicy()
+    ) async throws {
+        do {
+            try await authenticationRequestPolicy.perform {
+                try await Current.network.validateSessionAsync()
+            }
+        } catch {
+            throw AuthenticationRequestPolicy.mapSessionValidationError(error)
+        }
     }
 
     func signInIfNeededAsync() async throws {
@@ -308,7 +457,9 @@ class AppState: ObservableObject {
         Current.defaults.set(username, forKey: "username")
 
         return try await performAuthenticationRequest {
-            try await client.authenticationState(accountName: username, password: password)
+            try await AuthenticationRequestPolicy().perform {
+                try await self.client.authenticationState(accountName: username, password: password)
+            }
         }
     }
 
@@ -386,8 +537,9 @@ class AppState: ObservableObject {
     }
 
     private func handleAuthenticationFlowFailure(_ error: Error) {
-        // remove saved username and any stored keychain password if authentication fails so it doesn't try again.
-        clearLoginCredentials()
+        if AuthenticationRequestPolicy.shouldClearCredentials(after: error) {
+            clearLoginCredentials()
+        }
         Logger.appState.error("Authentication error: \(error.legibleDescription)")
         self.authError = error
     }
@@ -751,8 +903,11 @@ class AppState: ObservableObject {
                 try await Current.helper.switchXcodePathAsync(installedXcodePath.string)
                 try Task.checkCancellation()
                 await updateSelectedXcodePathAsync()
-                if createSymLinkOnSelect && onSelectActionType != .rename {
-                    createSymbolicLink(to: installedXcodePath)
+                if
+                    onSelectActionType != .rename,
+                    let isBeta = automaticSymbolicLinkIsBeta(for: xcode)
+                {
+                    createSymbolicLink(to: installedXcodePath, isBeta: isBeta)
                 }
             } catch is CancellationError {
             } catch {
@@ -797,11 +952,21 @@ class AppState: ObservableObject {
         createSymbolicLink(to: installedXcodePath, isBeta: isBeta)
     }
 
+    func automaticSymbolicLinkIsBeta(for xcode: Xcode) -> Bool? {
+        if xcode.version.isPrerelease {
+            return createBetaSymLinkOnSelect ? true : nil
+        }
+        return createSymLinkOnSelect ? false : nil
+    }
+
     func createSymbolicLink(to installedXcodePath: Path, isBeta: Bool = false) {
         let destinationPath = Path.installDirectory/"Xcode\(isBeta ? "-Beta" : "").app"
 
         do {
             let service = XcodeSelectionFilesystemService(
+                fileExists: { path in
+                    (try? FileManager.default.attributesOfItem(atPath: path)) != nil
+                },
                 installedXcode: { Current.files.installedXcode(destination: $0) }
             )
             let result = try service.createSymbolicLink(

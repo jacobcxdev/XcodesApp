@@ -52,19 +52,19 @@ struct XcodesApp: App {
 
             CommandGroup(replacing: CommandGroupPlacement.help) {
                 Button("Menu.GitHubRepo") {
-                    let xcodesRepoURL = URL(string: "https://github.com/XcodesOrg/XcodesApp/")!
+                    let xcodesRepoURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/")!
                     openURL(xcodesRepoURL)
                 }
 
                 Divider()
 
                 Button("Menu.ReportABug") {
-                    let bugReportURL = URL(string: "https://github.com/XcodesOrg/XcodesApp/issues/new?assignees=&labels=bug&template=bug_report.md&title=")!
+                    let bugReportURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/issues/new?assignees=&labels=bug&template=bug_report.md&title=")!
                     openURL(bugReportURL)
                 }
 
                 Button("Menu.RequestNewFeature") {
-                    let featureRequestURL = URL(string: "https://github.com/XcodesOrg/XcodesApp/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=")!
+                    let featureRequestURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=")!
                     openURL(featureRequestURL)
                 }
             }
@@ -74,22 +74,19 @@ struct XcodesApp: App {
         PreferencesView()
           .environmentObject(appState)
           .environmentObject(updater)
-          .alert(item: $appState.presentedPreferenceAlert, content: { presentedAlert in
-              alert(for: presentedAlert)
-          })
       }
         
         Window("Platforms", id: "platforms") {
             PlatformsListView()
                 .environmentObject(appState)
-                .alert(item: $appState.presentedPreferenceAlert, content: { presentedAlert in
+                .alert(item: $appState.presentedPlatformAlert, content: { presentedAlert in
                     alert(for: presentedAlert)
                 })
         }
 #endif
     }
     
-    private func alert(for alertType: XcodesPreferencesAlert) -> Alert {
+    private func alert(for alertType: XcodesPlatformAlert) -> Alert {
         switch alertType {
         case let .deletePlatform(runtime):
             return Alert(
@@ -108,7 +105,7 @@ struct XcodesApp: App {
                 message: Text(message),
                 dismissButton: .default(
                     Text("OK"),
-                    action: { appState.presentedAlert = nil }
+                    action: { appState.presentedPlatformAlert = nil }
                 )
             )
         }

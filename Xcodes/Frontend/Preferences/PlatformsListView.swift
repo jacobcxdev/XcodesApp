@@ -61,15 +61,12 @@ struct PlatformsListView: View {
     }
     
     func loadRuntimes() {
-        let filteredRuntimes = appState.downloadableRuntimes.filter { runtime in
-            appState.installedRuntimes.contains { $0.runtimeInfo.build == runtime.simulatorVersion.buildUpdate
-            }
-        }
+        let filteredRuntimes = appState.installedPlatformRuntimes()
         runtimes = OrderedDictionary(grouping: filteredRuntimes, by: { $0.platform })
     }
     
     func deleteRuntime(runtime: DownloadableRuntime) {
-        appState.presentedPreferenceAlert = .deletePlatform(runtime: runtime)
+        appState.presentedPlatformAlert = .deletePlatform(runtime: runtime)
     }
 }
 

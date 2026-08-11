@@ -110,6 +110,12 @@ struct AdvancedPreferencePane: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                    Toggle("AutomaticallyCreateBetaSymbolicLink", isOn: $appState.createBetaSymLinkOnSelect)
+                        .disabled(appState.createBetaSymLinkOnSelectDisabled)
+                    Text("AutomaticallyCreateBetaSymbolicLinkDescription")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .fixedSize(horizontal: false, vertical: true)
             }

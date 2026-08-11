@@ -4,11 +4,11 @@ import XcodesKit
 
 extension Path {
     static var defaultXcodesApplicationSupport: Path {
-        XcodesPathResolver.appDefaultApplicationSupport
+        Path.applicationSupport/"dev.jacobcx.Xcodes"
     }
 
     static var xcodesApplicationSupport: Path {
-        XcodesPathResolver.appApplicationSupport(savedPath: Current.defaults.string(forKey: "localPath"))
+        Current.defaults.string(forKey: "localPath").flatMap(Path.init) ?? defaultXcodesApplicationSupport
     }
     
     static var cacheFile: Path {
@@ -28,6 +28,6 @@ extension Path {
     }
     
     static var xcodesCaches: Path {
-        XcodesPathResolver.appCaches()
+        Path.caches/"dev.jacobcx.Xcodes"
     }
 }

@@ -150,8 +150,8 @@ class UpdaterDelegate: NSObject, SPUUpdaterDelegate {
 
 
 extension String {
-    static let appcast = "https://www.xcodes.app/appcast.xml"
-    static let prereleaseAppcast = "https://www.xcodes.app/appcast_pre.xml"
+    static let appcast = "https://jacobcxdev.github.io/XcodesApp/appcast.xml"
+    static let prereleaseAppcast = "https://jacobcxdev.github.io/XcodesApp/appcast_pre.xml"
 }
 
 struct UpdatesPreferencePane_Previews: PreviewProvider {
