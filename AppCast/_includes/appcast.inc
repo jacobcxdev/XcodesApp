@@ -9,8 +9,7 @@
                 {% unless release.prerelease and page.release_only %}
                     {% assign zip_asset = nil %}
                     {% for asset in release.assets %}
-                        {% assign asset_extension = asset.name | split: "." | last | downcase %}
-                        {% if asset_extension == "zip" %}
+                        {% if asset.name == "Xcodes.zip" %}
                             {% assign zip_asset = asset %}
                             {% break %}
                         {% endif %}

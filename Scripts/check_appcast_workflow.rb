@@ -116,8 +116,22 @@ expected_build_steps = [
         (.tag_name == $tag) and
         (.draft == false) and
         (.prerelease == false) and
-        ((["Xcodes.zip", "Xcodes.zip.sha256", "sparkle-signature.txt", "release-manifest.txt"] - [.assets[].name]) | length == 0) and
-        ([.assets[] | select(.name == "Xcodes.zip" and .size > 0)] | length == 1)
+        ((.assets | type) == "array") and
+        (([.assets[].name] | sort) == ([
+          "Xcodes.zip",
+          "Xcodes.zip.sha256",
+          "release-manifest.txt",
+          "sparkle-signature.txt"
+        ] | sort)) and
+        (all(.assets[]; ((.size | type) == "number") and (.size > 0))) and
+        ([
+          .assets[]
+          | select(
+              ((.name | type) == "string") and
+              (.name | ascii_downcase | endswith(".zip"))
+            )
+          | .name
+        ] == ["Xcodes.zip"])
       ' <<< "$release_json" >/dev/null
     SHELL
   },

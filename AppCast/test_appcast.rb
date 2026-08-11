@@ -59,13 +59,13 @@ releases = [
         "size" => 10,
       },
       {
-        "name" => "Xcodes.zip",
-        "browser_download_url" => "https://example.invalid/Xcodes.zip?download=1&source=test",
+        "name" => "wrong.zip",
+        "browser_download_url" => "https://example.invalid/wrong.zip",
         "size" => 20,
       },
       {
-        "name" => "Xcodes-second.zip",
-        "browser_download_url" => "https://example.invalid/Xcodes-second.zip",
+        "name" => "Xcodes.zip",
+        "browser_download_url" => "https://example.invalid/Xcodes.zip?download=1&source=test",
         "size" => 30,
       },
     ],
@@ -83,6 +83,11 @@ releases = [
         "browser_download_url" => "https://example.invalid/Xcodes-prerelease.ZIP",
         "size" => 40,
       },
+      {
+        "name" => "Xcodes.zip",
+        "browser_download_url" => "https://example.invalid/prerelease/Xcodes.zip",
+        "size" => 41,
+      },
     ],
   },
   {
@@ -94,8 +99,8 @@ releases = [
     "tag_name" => "v1.4b36",
     "assets" => [
       {
-        "name" => "Xcodes.pkg",
-        "browser_download_url" => "https://example.invalid/Xcodes.pkg",
+        "name" => "wrong.zip",
+        "browser_download_url" => "https://example.invalid/wrong.zip",
         "size" => 50,
       },
     ],
@@ -136,16 +141,16 @@ Dir.mktmpdir("xcodes-appcast-test.") do |fixture_root|
   )
 
   enclosure = stable_items.first.elements["enclosure"]
-  assert(enclosure.attributes["url"] == "https://example.invalid/Xcodes.zip?download=1&source=test", "First ZIP selection failed")
+  assert(enclosure.attributes["url"] == "https://example.invalid/Xcodes.zip?download=1&source=test", "Exact Xcodes.zip selection failed")
   assert(enclosure.attributes["sparkle:version"] == "34", "Build version extraction failed")
   assert(enclosure.attributes["sparkle:shortVersionString"] == "1.2.3", "Marketing version extraction failed")
   assert(enclosure.attributes["sparkle:edSignature"] == valid_signature, "Signature output changed")
   prerelease_enclosure = prerelease_items.last.elements["enclosure"]
   assert(
-    prerelease_enclosure.attributes["url"] == "https://example.invalid/Xcodes-prerelease.ZIP",
-    "Case-insensitive ZIP selection failed"
+    prerelease_enclosure.attributes["url"] == "https://example.invalid/prerelease/Xcodes.zip",
+    "Prerelease exact Xcodes.zip selection failed"
   )
-  assert(!stable_xml.include?("Xcodes-second.zip"), "Second ZIP unexpectedly selected")
+  assert(!stable_xml.include?("wrong.zip"), "Non-contract ZIP unexpectedly selected")
   assert(!stable_xml.include?("Missing ZIP"), "Release without ZIP unexpectedly emitted")
   assert(!prerelease_xml.include?("Missing ZIP"), "Release without ZIP unexpectedly emitted in prerelease feed")
   assert(stable_xml.include?("Stable notes with ]]&gt; boundary."), "CDATA boundary was not escaped")

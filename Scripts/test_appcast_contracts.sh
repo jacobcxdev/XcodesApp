@@ -36,6 +36,7 @@ mutate_workflow() {
 }
 
 "$repo_root/Scripts/check_appcast_identity.sh"
+ruby "$repo_root/Scripts/test_appcast_release_validation.rb"
 bundle exec --gemfile "$repo_root/AppCast/Gemfile" ruby "$repo_root/AppCast/test_appcast.rb"
 
 mutate_workflow permissions_bypass \
@@ -57,6 +58,12 @@ mutate_workflow release_verification_continue_on_error \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }["continue-on-error"] = true; File.write(path, YAML.dump(data))'
 mutate_workflow release_verification_if_false \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }["if"] = false; File.write(path, YAML.dump(data))'
+mutate_workflow release_extra_asset_bypass \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }; step["run"].sub!(/\(\(\[\.assets\[\]\.name\] \| sort\) == \(\[.*?\] \| sort\)\) and/m, "(([\"Xcodes.zip\", \"Xcodes.zip.sha256\", \"release-manifest.txt\", \"sparkle-signature.txt\"] - [.assets[].name]) | length == 0) and"); File.write(path, YAML.dump(data) + "# exact release asset set\n")'
+mutate_workflow release_asset_size_bypass \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }; step["run"].sub!(/^\s*\(all\(\.assets\[\];.*?\)\) and\n/m, ""); File.write(path, YAML.dump(data) + "# every asset size > 0\n")'
+mutate_workflow release_sole_zip_bypass \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }; step["run"].sub!(/\(\[\n\s*\.assets\[\].*?\] == \["Xcodes\.zip"\]\)/m, "true"); File.write(path, YAML.dump(data) + "# Xcodes.zip is sole ZIP\n")'
 mutate_workflow deploy_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["deploy"]["steps"].find { |item| item["uses"]&.start_with?("JamesIves/") }; step["with"]["branch"] = "main"; File.write(path, YAML.dump(data) + "# branch: gh-pages\n")'
 mutate_workflow action_pin_bypass \
@@ -103,7 +110,7 @@ expect_failure prerelease_feed "$identity_fixture/Scripts/check_appcast_identity
 template_fixture="$test_root/template"
 cp -R "$repo_root/AppCast" "$template_fixture"
 perl -0pi -e \
-    's/if asset_extension == "zip"/if asset_extension == "dmg"\n                        {% comment %} if asset_extension == "zip" {% endcomment %}/' \
+    's/if asset.name == "Xcodes.zip"/if asset.name == "wrong.zip"\n                        {% comment %} if asset.name == "Xcodes.zip" {% endcomment %}/' \
     "$template_fixture/_includes/appcast.inc"
 expect_failure zip_selector env APPCAST_SOURCE="$template_fixture" \
     bundle exec --gemfile "$repo_root/AppCast/Gemfile" ruby "$repo_root/AppCast/test_appcast.rb"
