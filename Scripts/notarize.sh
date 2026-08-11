@@ -46,19 +46,20 @@ cleanup() {
 }
 trap cleanup EXIT
 
-readonly result_plist="$work_dir/result.plist"
+readonly result_json="$work_dir/result.json"
 "$xcrun_tool" notarytool submit "$archive_path" \
     --key "$notary_key_path" \
     --key-id "$notary_key_id" \
     --issuer "$notary_issuer_id" \
     --wait \
-    --output-format plist > "$result_plist" || fail "notarytool submission failed"
+    --output-format json > "$result_json" || fail "notarytool submission failed"
 
-notary_status="$("$plutil_tool" -extract status raw "$result_plist" 2>/dev/null || true)"
+notary_status="$("$plutil_tool" -extract status raw "$result_json" 2>/dev/null || true)"
 readonly notary_status
 [[ "$notary_status" == "Accepted" ]] || fail "notarization status was '${notary_status:-missing}', expected 'Accepted'"
 
-submission_id="$("$plutil_tool" -extract id raw "$result_plist" 2>/dev/null || true)"
+submission_id="$("$plutil_tool" -extract id raw "$result_json" 2>/dev/null || true)"
 readonly submission_id
-[[ -n "$submission_id" ]] || fail "notarization response did not contain a submission id"
+[[ "$submission_id" =~ ^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$ ]] || \
+    fail "notarization response id must be a UUID"
 printf '%s\n' "$submission_id"

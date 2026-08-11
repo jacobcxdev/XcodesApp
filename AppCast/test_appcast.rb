@@ -31,6 +31,8 @@ assert(
 assert_signature_error(filter, "Release notes only", "Missing")
 assert_signature_error(filter, "<!-- sparkle:edSignature=not-base64 -->", "Invalid Base64")
 assert_signature_error(filter, "<!-- sparkle:edSignature=#{Base64.strict_encode64("short")} -->", "Invalid length")
+assert_signature_error(filter, "<!-- sparkle:edSignature= #{valid_signature} -->", "Leading whitespace")
+assert_signature_error(filter, "<!-- sparkle:edSignature=#{valid_signature[0, 44]}\n#{valid_signature[44..]} -->", "Embedded newline")
 assert_signature_error(
   filter,
   "<!-- sparkle:edSignature=#{valid_signature} -->\n<!-- sparkle:edSignature=#{second_signature} -->",

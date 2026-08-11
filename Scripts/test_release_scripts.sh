@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2016 # Mutation expressions intentionally match literal shell variables.
 
 set -euo pipefail
 
@@ -65,7 +66,11 @@ for literal in \
     "codesign_tool\" --verify --deep --strict" \
     "codesign_tool\" --display --entitlements -" \
     "spctl_tool\" --assess --type execute --verbose=4" \
+    "--norsrc --keepParent" \
+    "/usr/bin/unzip -tq" \
+    "/usr/bin/xmllint --noout" \
     "SPARKLE_SIGN_UPDATE_PATH" \
+    "SPARKLE_GENERATE_APPCAST_PATH" \
     "SPARKLE_PRIVATE_KEY_FILE" \
     "sparkle-signature.txt" \
     "release-manifest.txt"; do
@@ -76,7 +81,7 @@ for literal in \
     "NOTARY_KEY_ID is required" \
     "NOTARY_ISSUER_ID is required" \
     "NOTARY_KEY_PATH" \
-    "--output-format plist" \
+    "--output-format json" \
     "Accepted"; do
     require_literal "$literal" "$notarize_script"
 done
@@ -111,6 +116,10 @@ argument_after() {
         shift
     done
     exit 2
+}
+
+record_call() {
+    [[ -z "${FAKE_TOOL_LOG:-}" ]] || printf '%s %s\n' "$tool" "$*" >> "$FAKE_TOOL_LOG"
 }
 
 case "$tool" in
@@ -148,8 +157,12 @@ case "$tool" in
 <key>CFBundleIdentifier</key><string>${FAKE_APP_BUNDLE_ID:-dev.jacobcx.Xcodes}</string>
 <key>CFBundleShortVersionString</key><string>${FAKE_EXPORTED_VERSION:-${FAKE_VERSION:-4.0.4}}</string>
 <key>CFBundleVersion</key><string>${FAKE_EXPORTED_BUILD:-${FAKE_BUILD:-39}}</string>
+<key>SUPublicEDKey</key><string>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</string>
 </dict></plist>
 PLIST
+            if [[ "${FAKE_UNSAFE_APP_SYMLINK:-0}" == "1" ]]; then
+                ln -s /tmp "$app_path/Contents/UnsafeOutsideLink"
+            fi
             printf 'generated licence\n' > "$PWD/Xcodes/Resources/Licenses.rtf"
         elif [[ "${1:-}" == "-exportArchive" ]]; then
             archive_path="$(argument_after -archivePath "$@")"
@@ -185,20 +198,35 @@ PLIST
         fi
         ;;
     ditto)
+        record_call "$@"
         output="${!#}"
-        mkdir -p "$(dirname "$output")"
-        printf 'fake zip\n' > "$output"
+        if [[ "${FAKE_ZIP_MODE:-valid}" == "corrupt" ]]; then
+            printf 'not a zip\n' > "$output"
+        else
+            /usr/bin/ditto "$@"
+            if [[ "${FAKE_ZIP_MODE:-valid}" == "truncated" ]]; then
+                /usr/bin/head -c 10 "$output" > "$output.truncated"
+                /bin/mv "$output.truncated" "$output"
+            elif [[ "${FAKE_ZIP_MODE:-valid}" == "extra" ]]; then
+                extra_dir="$(mktemp -d "${TMPDIR:-/tmp}/xcodes-extra-payload.XXXXXX")"
+                printf 'unexpected\n' > "$extra_dir/unexpected.txt"
+                (cd "$extra_dir" && /usr/bin/zip -q "$output" unexpected.txt)
+                rm -rf -- "$extra_dir"
+            fi
+        fi
         ;;
     xcrun)
+        record_call "$@"
         if [[ "${1:-}" == "notarytool" ]]; then
-            cat <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-<key>id</key><string>00000000-0000-0000-0000-000000000000</string>
-<key>status</key><string>${FAKE_NOTARY_STATUS:-Accepted}</string>
-</dict></plist>
-PLIST
+            [[ "${2:-}" == "submit" && -f "${3:-}" ]] || exit 2
+            [[ " $* " == *" --key ${NOTARY_KEY_PATH:-missing} "* ]] || exit 2
+            [[ " $* " == *" --key-id ${NOTARY_KEY_ID:-missing} "* ]] || exit 2
+            [[ " $* " == *" --issuer ${NOTARY_ISSUER_ID:-missing} "* ]] || exit 2
+            [[ " $* " == *" --wait "* ]] || exit 2
+            [[ " $* " == *" --output-format json "* ]] || exit 2
+            printf '{"id":"%s","status":"%s"}\n' \
+                "${FAKE_NOTARY_ID:-00000000-0000-0000-0000-000000000000}" \
+                "${FAKE_NOTARY_STATUS:-Accepted}"
         elif [[ "${1:-}" == "stapler" && "${2:-}" == "staple" ]]; then
             [[ "${FAKE_STAPLE_MISSING:-0}" != "1" ]] || exit 1
             touch "$3/.fake-stapled"
@@ -212,8 +240,31 @@ PLIST
         [[ "${FAKE_SPCTL_FAIL:-0}" != "1" ]]
         ;;
     sign_update)
+        record_call "$@"
         [[ "${FAKE_SIGNATURE_MISSING:-0}" != "1" ]] || exit 0
+        if [[ "${FAKE_SIGNATURE_WHITESPACE:-0}" == "1" ]]; then
+            printf ' %086d==\n' 0 | tr '0' 'A'
+            exit 0
+        fi
         printf '%086d==\n' 0 | tr '0' 'A'
+        ;;
+    generate_appcast)
+        record_call "$@"
+        output="$(argument_after -o "$@")"
+        mkdir -p "$(dirname "$output")"
+        if [[ "${FAKE_SPARKLE_KEY_MISMATCH:-0}" == "1" ]]; then
+            printf '<rss xmlns:sparkle="https://sparkle-project.org"><enclosure /></rss>\n' > "$output"
+            printf 'Warning: SUPublicEDKey in the app fake does not match key EdDSA in the Keychain. Run generate_keys and update Info.plist to match\n'
+        else
+            signature="$(printf '%086d==' 0 | tr '0' 'A')"
+            printf '<rss xmlns:sparkle="https://sparkle-project.org"><enclosure sparkle:edSignature="%s" /></rss>\n' "$signature" > "$output"
+        fi
+        ;;
+    mv)
+        record_call "$@"
+        [[ "${FAKE_PUBLISH_FAIL:-0}" != "1" ]] || exit 1
+        /bin/mv "$@"
+        [[ "${FAKE_PUBLISHED_CORRUPT:-0}" != "1" ]] || printf 'changed after publication\n' >> "${!#}/Xcodes.zip"
         ;;
     *) exit 2 ;;
 esac
@@ -228,7 +279,7 @@ make_fixture() {
     mkdir -p "$fixture/Scripts" "$fixture/bin" "$fixture/Xcodes.xcodeproj" "$fixture/Xcodes/Resources"
     cp "$package_script" "$notarize_script" "$export_options" "$fixture/Scripts/"
     chmod +x "$fixture/Scripts/package_release.sh" "$fixture/Scripts/notarize.sh"
-    for tool in git security xcodebuild codesign ditto xcrun spctl sign_update; do
+    for tool in git security xcodebuild codesign ditto xcrun spctl sign_update generate_appcast mv; do
         ln -s "$dispatcher" "$fixture/bin/$tool"
     done
     printf 'fake notary key\n' > "$fixture/notary-key.p8"
@@ -252,13 +303,27 @@ run_package() {
         XCRUN_TOOL="$fixture/bin/xcrun" \
         SPCTL_TOOL="$fixture/bin/spctl" \
         SHASUM_TOOL=/usr/bin/shasum \
+        MV_TOOL="$fixture/bin/mv" \
         SPARKLE_SIGN_UPDATE_PATH="$fixture/bin/sign_update" \
+        SPARKLE_GENERATE_APPCAST_PATH="$fixture/bin/generate_appcast" \
         SPARKLE_PRIVATE_KEY_FILE="$fixture/sparkle-key" \
         NOTARY_KEY_ID=TESTKEY123 \
         NOTARY_ISSUER_ID=00000000-0000-0000-0000-000000000000 \
         NOTARY_KEY_PATH="$fixture/notary-key.p8" \
+        FAKE_TOOL_LOG="$fixture/tool.log" \
         "$@" \
         bash "$fixture/Scripts/package_release.sh" "$tag"
+}
+
+assert_no_release() {
+    local fixture="$1"
+    local release_path="$fixture/Product/v4.0.4b39"
+
+    [[ ! -e "$release_path" && ! -L "$release_path" ]] || fail "Failed flow published a release directory"
+    if [[ -d "$fixture/Product" && ! -L "$fixture/Product" ]]; then
+        [[ -z "$(find "$fixture/Product" -maxdepth 1 -name '.v4.0.4b39.staging.*' -print -quit)" ]] || \
+            fail "Failed flow left a publication staging directory"
+    fi
 }
 
 fixture="$(make_fixture invalid-tag)"
@@ -328,6 +393,9 @@ expect_failure "release entitlement get-task-allow is forbidden" run_package "$f
 fixture="$(make_fixture failed-notary)"
 expect_failure "notarization status was 'Invalid'" run_package "$fixture" "v4.0.4b39" FAKE_NOTARY_STATUS=Invalid
 
+fixture="$(make_fixture invalid-notary-id)"
+expect_failure "notarization response id must be a UUID" run_package "$fixture" "v4.0.4b39" FAKE_NOTARY_ID=not-a-uuid
+
 fixture="$(make_fixture missing-staple)"
 expect_failure "failed to staple notarization ticket" run_package "$fixture" "v4.0.4b39" FAKE_STAPLE_MISSING=1
 
@@ -335,9 +403,66 @@ fixture="$(make_fixture failed-gatekeeper)"
 expect_failure "Gatekeeper assessment failed" run_package "$fixture" "v4.0.4b39" FAKE_SPCTL_FAIL=1
 
 fixture="$(make_fixture missing-signature)"
-expect_failure "Sparkle signer did not return an Ed25519 signature" run_package "$fixture" "v4.0.4b39" FAKE_SIGNATURE_MISSING=1
-[[ ! -e "$fixture/Product/Xcodes.zip" ]] || fail "Failed flow published a partial Product/Xcodes.zip"
+expect_failure "Sparkle signer did not return a canonical Ed25519 signature" run_package "$fixture" "v4.0.4b39" FAKE_SIGNATURE_MISSING=1
+assert_no_release "$fixture"
 [[ "$(<"$fixture/Xcodes/Resources/Licenses.rtf")" == "committed licence" ]] || fail "Failed release did not restore generated licences"
+
+fixture="$(make_fixture whitespace-signature)"
+expect_failure "Sparkle signer did not return a canonical Ed25519 signature" run_package "$fixture" "v4.0.4b39" FAKE_SIGNATURE_WHITESPACE=1
+assert_no_release "$fixture"
+
+fixture="$(make_fixture sparkle-key-mismatch)"
+expect_failure "Sparkle signing key does not match exported SUPublicEDKey" run_package "$fixture" "v4.0.4b39" FAKE_SPARKLE_KEY_MISMATCH=1
+assert_no_release "$fixture"
+
+for zip_mode in corrupt truncated extra; do
+    fixture="$(make_fixture "$zip_mode-zip")"
+    if [[ "$zip_mode" == "extra" ]]; then
+        expect_failure "release ZIP contains an unexpected entry" run_package "$fixture" "v4.0.4b39" FAKE_ZIP_MODE="$zip_mode"
+    else
+        expect_failure "release ZIP integrity check failed" run_package "$fixture" "v4.0.4b39" FAKE_ZIP_MODE="$zip_mode"
+    fi
+    assert_no_release "$fixture"
+done
+
+fixture="$(make_fixture unsafe-zip-symlink)"
+expect_failure "release ZIP contains an unsafe symbolic link" run_package "$fixture" "v4.0.4b39" FAKE_UNSAFE_APP_SYMLINK=1
+assert_no_release "$fixture"
+
+outside_product="$test_root/outside-product"
+mkdir "$outside_product"
+fixture="$(make_fixture product-symlink)"
+ln -s "$outside_product" "$fixture/Product"
+expect_failure "Product output directory must not be a symbolic link" run_package "$fixture" "v4.0.4b39"
+[[ -z "$(find "$outside_product" -mindepth 1 -print -quit)" ]] || fail "Product symlink escaped outside the repository"
+
+outside_release="$test_root/outside-release"
+mkdir "$outside_release"
+fixture="$(make_fixture destination-symlink)"
+mkdir "$fixture/Product"
+ln -s "$outside_release" "$fixture/Product/v4.0.4b39"
+expect_failure "release destination already exists or is a symbolic link" run_package "$fixture" "v4.0.4b39"
+[[ -z "$(find "$outside_release" -mindepth 1 -print -quit)" ]] || fail "Release destination symlink was modified"
+
+fixture="$(make_fixture dangling-destination-symlink)"
+mkdir "$fixture/Product"
+ln -s "$test_root/does-not-exist" "$fixture/Product/v4.0.4b39"
+expect_failure "release destination already exists or is a symbolic link" run_package "$fixture" "v4.0.4b39"
+[[ -L "$fixture/Product/v4.0.4b39" ]] || fail "Dangling caller output symlink was removed"
+
+fixture="$(make_fixture existing-release)"
+mkdir -p "$fixture/Product/v4.0.4b39"
+printf 'caller output\n' > "$fixture/Product/v4.0.4b39/sentinel"
+expect_failure "release destination already exists or is a symbolic link" run_package "$fixture" "v4.0.4b39"
+[[ "$(<"$fixture/Product/v4.0.4b39/sentinel")" == "caller output" ]] || fail "Existing caller output was modified"
+
+fixture="$(make_fixture failed-publication)"
+expect_failure "failed to publish complete release directory" run_package "$fixture" "v4.0.4b39" FAKE_PUBLISH_FAIL=1
+assert_no_release "$fixture"
+
+fixture="$(make_fixture failed-published-checksum)"
+expect_failure "published ZIP checksum changed" run_package "$fixture" "v4.0.4b39" FAKE_PUBLISHED_CORRUPT=1
+assert_no_release "$fixture"
 
 fixture="$(make_fixture failed-notary-preserves-archive)"
 printf 'caller archive\n' > "$fixture/caller.zip"
@@ -351,16 +476,51 @@ expect_failure "notarization status was 'Invalid'" env \
     bash "$fixture/Scripts/notarize.sh" "$fixture/caller.zip"
 [[ -f "$fixture/caller.zip" ]] || fail "notarize.sh deleted caller archive"
 
+mutate_notary() {
+    local name="$1"
+    local mutation="$2"
+    local fixture
+    local mutated_script
+
+    fixture="$(make_fixture "notary-$name")"
+    mutated_script="$fixture/Scripts/notarize-mutated.sh"
+    cp "$fixture/Scripts/notarize.sh" "$mutated_script"
+    perl -0pi -e "$mutation" "$mutated_script"
+    printf 'caller archive\n' > "$fixture/caller.zip"
+    expect_failure "notarytool submission failed" env \
+        XCRUN_TOOL="$fixture/bin/xcrun" \
+        PLUTIL_TOOL=/usr/bin/plutil \
+        NOTARY_KEY_ID=TESTKEY123 \
+        NOTARY_ISSUER_ID=00000000-0000-0000-0000-000000000000 \
+        NOTARY_KEY_PATH="$fixture/notary-key.p8" \
+        FAKE_TOOL_LOG="$fixture/tool.log" \
+        bash "$mutated_script" "$fixture/caller.zip"
+}
+
+mutate_notary missing_archive 's/submit "\$archive_path" \\\n/submit \\\n/'
+mutate_notary missing_key 's/    --key "\$notary_key_path" \\\n//'
+mutate_notary missing_key_id 's/    --key-id "\$notary_key_id" \\\n//'
+mutate_notary missing_issuer 's/    --issuer "\$notary_issuer_id" \\\n//'
+mutate_notary missing_wait 's/    --wait \\\n//'
+
 fixture="$(make_fixture successful-flow)"
 run_package "$fixture" "v4.0.4b39" > "$test_root/success.log"
+release_dir="$fixture/Product/v4.0.4b39"
 for output in Xcodes.zip Xcodes.zip.sha256 sparkle-signature.txt release-manifest.txt; do
-    [[ -s "$fixture/Product/$output" ]] || fail "Successful flow omitted Product/$output"
+    [[ -f "$release_dir/$output" && ! -L "$release_dir/$output" && -s "$release_dir/$output" ]] || \
+        fail "Successful flow omitted regular release file $output"
 done
-grep -Fq 'tag=v4.0.4b39' "$fixture/Product/release-manifest.txt" || fail "Manifest omitted release tag"
-grep -Fq 'version=4.0.4' "$fixture/Product/release-manifest.txt" || fail "Manifest omitted marketing version"
-grep -Fq 'build=39' "$fixture/Product/release-manifest.txt" || fail "Manifest omitted build version"
-grep -Fq 'team_id=K2648T24P4' "$fixture/Product/release-manifest.txt" || fail "Manifest omitted release team"
+grep -Fq 'tag=v4.0.4b39' "$release_dir/release-manifest.txt" || fail "Manifest omitted release tag"
+grep -Fq 'version=4.0.4' "$release_dir/release-manifest.txt" || fail "Manifest omitted marketing version"
+grep -Fq 'build=39' "$release_dir/release-manifest.txt" || fail "Manifest omitted build version"
+grep -Fq 'team_id=K2648T24P4' "$release_dir/release-manifest.txt" || fail "Manifest omitted release team"
+/usr/bin/unzip -tq "$release_dir/Xcodes.zip" >/dev/null || fail "Published release ZIP is invalid"
+published_checksum="$(/usr/bin/shasum -a 256 "$release_dir/Xcodes.zip" | awk '{ print $1 }')"
+grep -Fxq "$published_checksum  Xcodes.zip" "$release_dir/Xcodes.zip.sha256" || fail "Published checksum does not match ZIP"
+grep -Fq "xcrun notarytool submit" "$fixture/tool.log" || fail "Notary submit was not recorded"
+grep -Fq " --key $fixture/notary-key.p8 --key-id TESTKEY123 --issuer 00000000-0000-0000-0000-000000000000 --wait --output-format json" "$fixture/tool.log" || fail "Notary submit authentication contract changed"
+grep -Fq "generate_appcast --ed-key-file $fixture/sparkle-key" "$fixture/tool.log" || fail "Sparkle key correspondence was not verified"
 [[ "$(<"$fixture/Xcodes/Resources/Licenses.rtf")" == "committed licence" ]] || fail "Release build left generated licences in tracked source"
-expect_failure "refusing to overwrite existing release output" run_package "$fixture" "v4.0.4b39"
+expect_failure "release destination already exists or is a symbolic link" run_package "$fixture" "v4.0.4b39"
 
 printf 'Release script contracts passed.\n'
