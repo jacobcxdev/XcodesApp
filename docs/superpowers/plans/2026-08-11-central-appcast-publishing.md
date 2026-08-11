@@ -4,7 +4,7 @@
 
 **Goal:** Publish Xcodes Sparkle feeds through `docs.jacobcx.dev` without enabling Pages or creating a `gh-pages` branch in XcodesApp.
 
-**Architecture:** XcodesApp continues to generate and validate complete appcast history. A dedicated composite action owned by `jacobcxdev.github.io` accepts only the two rendered feeds and atomically publishes them under `public/updates/xcodes/`, matching the central publisher pattern already used by sibling repositories.
+**Architecture:** XcodesApp continues to generate and validate complete appcast history. A dedicated composite action owned by `jacobcxdev.github.io` accepts only the two rendered feeds and atomically publishes them under `public/repo/1330187036/updates/`, matching the central site's stable repository-ID pattern and the publisher flow already used by sibling repositories.
 
 **Tech Stack:** GitHub Actions, Node.js 25, Ruby/Jekyll, Sparkle, Astro static assets, Bash contract tests, GitHub CLI.
 
@@ -24,7 +24,7 @@
 Cover exact two-file input, missing/extra files, empty files, symlinks,
 malformed XML, fixed destination, unchanged output, and local bare-repository
 publication. Assert output names are `appcast.xml` and
-`appcast-prereleases.xml` under `public/updates/xcodes/`.
+`appcast-prereleases.xml` under `public/repo/1330187036/updates/`.
 
 - [ ] **Step 2: Run tests and capture RED**
 
@@ -41,9 +41,9 @@ validate source directory with lstat
 require exact regular files appcast.xml and appcast-prereleases.xml
 reject symlinks, empty files, unexpected entries, and malformed XML
 clone central repository without logging token
-stage replacement at public/updates/.xcodes.<random>
-rename staged directory to public/updates/xcodes
-commit only public/updates/xcodes
+stage replacement beside public/repo/1330187036/updates
+rename staged directory to public/repo/1330187036/updates
+commit only public/repo/1330187036/updates
 pull --rebase and retry bounded push failures
 support local test repository and dry-run without weakening hosted mode
 ```
@@ -179,8 +179,8 @@ Expected: PASS.
 - [ ] **Step 1: Add failing URL contract mutations**
 
 Require stable URL
-`https://docs.jacobcx.dev/updates/xcodes/appcast.xml` and prerelease URL
-`https://docs.jacobcx.dev/updates/xcodes/appcast-prereleases.xml`. Reject old
+`https://docs.jacobcx.dev/repo/1330187036/updates/appcast.xml` and prerelease URL
+`https://docs.jacobcx.dev/repo/1330187036/updates/appcast-prereleases.xml`. Reject old
 `jacobcxdev.github.io/XcodesApp` URLs anywhere active.
 
 - [ ] **Step 2: Update application and renderer configuration**

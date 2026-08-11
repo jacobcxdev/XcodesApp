@@ -21,9 +21,11 @@ readonly signature_verifier="$repo_root/Scripts/verify_sparkle_signature.swift"
 readonly signature_extractor="$repo_root/Scripts/extract_sparkle_signature.rb"
 readonly rendered_appcast_validator="$repo_root/Scripts/validate_rendered_appcast.rb"
 readonly lockfile="$repo_root/AppCast/Gemfile.lock"
+readonly stable_appcast_source="$repo_root/AppCast/appcast.xml"
+readonly prerelease_appcast_source="$repo_root/AppCast/appcast-prereleases.xml"
 
-readonly stable_feed="https://jacobcxdev.github.io/XcodesApp/appcast.xml"
-readonly prerelease_feed="https://jacobcxdev.github.io/XcodesApp/appcast_pre.xml"
+readonly stable_feed="https://docs.jacobcx.dev/repo/1330187036/updates/appcast.xml"
+readonly prerelease_feed="https://docs.jacobcx.dev/repo/1330187036/updates/appcast-prereleases.xml"
 readonly sparkle_public_key="CbToeJaT+HbP9oQAtNtKtBABQhYYisM4Y/fI8q2gcF8="
 
 for required_file in \
@@ -42,7 +44,9 @@ for required_file in \
     "$signature_verifier" \
     "$signature_extractor" \
     "$rendered_appcast_validator" \
-    "$lockfile"; do
+    "$lockfile" \
+    "$stable_appcast_source" \
+    "$prerelease_appcast_source"; do
     if [[ ! -f "$required_file" ]]; then
         echo "Missing appcast contract file: ${required_file#"$repo_root/"}" >&2
         exit 1
@@ -76,8 +80,8 @@ done
 config_json=$(ruby -rjson -ryaml -e 'print JSON.generate(YAML.safe_load_file(ARGV.fetch(0), aliases: false))' "$appcast_config")
 jq -e \
     '.repository == "jacobcxdev/XcodesApp"
-        and .url == "https://jacobcxdev.github.io"
-        and .baseurl == "/XcodesApp"
+        and .url == "https://docs.jacobcx.dev"
+        and .baseurl == "/repo/1330187036/updates"
         and .plugins == []' \
     <<< "$config_json" >/dev/null
 
@@ -99,7 +103,7 @@ if command -v actionlint >/dev/null 2>&1; then
 fi
 
 if grep -R -n -E -- \
-    'www\.xcodes\.app/appcast|SEcz0vgUSeBTOoAXYe\+64zea95G6lIf5NgzFs3InYJQ=|github\.com/XcodesOrg/XcodesApp' \
+    'www\.xcodes\.app/appcast|SEcz0vgUSeBTOoAXYe\+64zea95G6lIf5NgzFs3InYJQ=|github\.com/XcodesOrg/XcodesApp|jacobcxdev\.github\.io/XcodesApp|appcast_pre\.xml' \
     "$app_info_plist" "$updates_source" "$appcast_config" "$appcast_template" "$appcast_filter" "$appcast_workflow"; then
     echo "Upstream-owned Sparkle feed, key, or repository remains" >&2
     exit 1

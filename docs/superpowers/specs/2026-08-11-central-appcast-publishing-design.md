@@ -23,10 +23,11 @@ pattern used by `rust-composable-architecture` and `gemini-mcp-tool`.
 3. XcodesApp checks out the central index repository at an immutable action
    revision.
 4. A central composite action validates the two expected XML files and commits
-   them to `public/updates/xcodes/` in the central repository.
+   them to the stable repository identity path
+   `public/repo/1330187036/updates/` in the central repository.
 5. The central repository's existing build deploys them at:
-   - `https://docs.jacobcx.dev/updates/xcodes/appcast.xml`
-   - `https://docs.jacobcx.dev/updates/xcodes/appcast-prereleases.xml`
+   - `https://docs.jacobcx.dev/repo/1330187036/updates/appcast.xml`
+   - `https://docs.jacobcx.dev/repo/1330187036/updates/appcast-prereleases.xml`
 6. XcodesApp's stable and prerelease feed settings use those URLs.
 
 ## Publisher Contract
@@ -34,8 +35,10 @@ pattern used by `rust-composable-architecture` and `gemini-mcp-tool`.
 The central publisher accepts exactly two regular, non-empty XML files. It
 parses both before publication, rejects symlinks and unexpected entries,
 publishes through an isolated staging directory, and updates only
-`public/updates/xcodes/`. It uses the existing `INDEX_REPO_TOKEN` model used by
-other source repositories. XcodesApp's secret-bearing publication job receives
+`public/repo/1330187036/updates/`. The numeric repository ID follows the
+central site's canonical stable-identity rule. It uses the existing
+`INDEX_REPO_TOKEN` model used by other source repositories. XcodesApp's
+secret-bearing publication job receives
 only that token and the already verified appcast artifact.
 
 ## Branch and Release Policy
