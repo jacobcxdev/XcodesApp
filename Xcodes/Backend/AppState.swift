@@ -180,7 +180,9 @@ class AppState: ObservableObject {
             )
         }
         didSet {
-            autoInstallIfNeeded()
+            if hasCompletedInitialInstalledXcodeScan {
+                autoInstallIfNeeded()
+            }
         }
     }
     @Published var allXcodes: [Xcode] = []
@@ -194,6 +196,7 @@ class AppState: ObservableObject {
         }
     }
     private var installedXcodes: [InstalledXcode] = []
+    private var hasCompletedInitialInstalledXcodeScan = false
     @Published var updateTask: Task<Void, Never>?
     var updateTaskID: UUID?
     var isUpdating: Bool { updateTask != nil }
@@ -371,6 +374,8 @@ class AppState: ObservableObject {
         try? loadCacheDownloadableRuntimes()
         Task { @MainActor in
             await updateInstalledXcodesAsync()
+            hasCompletedInitialInstalledXcodeScan = true
+            autoInstallIfNeeded()
         }
         helperStatusTask = Task { @MainActor in
             await checkIfHelperIsInstalled()

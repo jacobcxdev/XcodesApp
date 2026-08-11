@@ -42,6 +42,9 @@ readonly app_id="dev.jacobcx.Xcodes"
 readonly tests_id="dev.jacobcx.Xcodes.Tests"
 readonly helper_id="dev.jacobcx.Xcodes.Helper"
 readonly team_id="K2648T24P4"
+readonly marketing_version="4.0.5"
+readonly build_number="45"
+readonly app_copyright="Fork contributions © 2026 JacobCXDev. Upstream contributors retain their copyrights."
 # shellcheck disable=SC2016 # Xcode expands this build-setting literal, not the shell.
 readonly app_requirement='identifier "dev.jacobcx.Xcodes" and info [CFBundleShortVersionString] >= "1.0.0" and anchor apple generic and certificate leaf[subject.OU] = "$(CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT)"'
 # shellcheck disable=SC2016 # Xcode expands this build-setting literal, not the shell.
@@ -147,6 +150,9 @@ for ownership_file in \
 done
 
 require_literal "maintained fork" "$readme"
+require_literal "[JacobCXDev](https://github.com/jacobcxdev) maintains this fork" "$readme"
+# shellcheck disable=SC2016 # Markdown backticks are literal README content.
+require_literal 'upstream release `v4.0.5b40`' "$readme"
 require_literal "https://github.com/XcodesOrg/XcodesApp" "$readme"
 require_literal "git clone https://github.com/jacobcxdev/XcodesApp.git" "$readme"
 require_literal "https://github.com/jacobcxdev/XcodesApp/releases/latest" "$readme"
@@ -157,6 +163,10 @@ require_trimmed_line 'let xcodesRepoURL = URL(string: "https://github.com/jacobc
 require_trimmed_line 'let bugReportURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/issues/new?assignees=&labels=bug&template=bug_report.md&title=")!' "$app_source"
 require_trimmed_line 'let featureRequestURL = URL(string: "https://github.com/jacobcxdev/XcodesApp/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=")!' "$app_source"
 require_trimmed_line 'openURL(URL(string: "https://github.com/jacobcxdev/XcodesApp/")!)' "$about_source"
+require_trimmed_line 'HStack(alignment: .top, spacing: 24) {' "$about_source"
+require_trimmed_line 'VStack(alignment: .leading, spacing: 16) {' "$about_source"
+require_trimmed_line '.frame(width: 320, alignment: .leading)' "$about_source"
+require_trimmed_line '.padding(24)' "$about_source"
 require_literal "https://github.com/jacobcxdev/XcodesApp#installation" "$release_drafter"
 require_literal "https://github.com/jacobcxdev/XcodesApp/releases/latest" "$bug_template"
 require_literal "https://github.com/jacobcxdev/XcodesApp/issues" "$feature_template"
@@ -164,7 +174,15 @@ require_literal "*   @jacobcxdev" "$codeowners"
 require_literal "Copyright (c) 2026 Jacob Clayden" "$license"
 require_literal "docs/RELEASING.md" "$readme"
 require_literal "DEVELOPER_ID_APPLICATION_P12_BASE64" "$release_documentation"
-require_literal "v4.0.4b44" "$release_documentation"
+require_literal "v4.0.5b45" "$release_documentation"
+
+if grep -n -F -- 'Jacob Clayden' "$readme" "$about_source" "$app_info_plist"; then
+    fail "Legal name leaked into public-facing fork branding"
+fi
+
+if grep -n -F -- 'Color.clear' "$about_source"; then
+    fail "About layout still relies on a zero-height spacer"
+fi
 
 for contributor in \
     '@dompepin' \
@@ -263,6 +281,8 @@ if [[ "$status" -eq 0 ]]; then
             --arg tests_id "$tests_id" \
             --arg helper_id "$helper_id" \
             --arg team_id "$team_id" \
+            --arg marketing_version "$marketing_version" \
+            --arg build_number "$build_number" \
             '([.[].target] | unique | sort) == ([$app_target, $tests_target, $helper_target] | sort)
                 and all(.[].buildSettings; .DEVELOPMENT_TEAM == $team_id
                     and .CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT == $team_id)
@@ -270,6 +290,8 @@ if [[ "$status" -eq 0 ]]; then
                     if .target == $app_target then
                         .buildSettings.PRODUCT_BUNDLE_IDENTIFIER == $app_id
                             and .buildSettings.FULL_PRODUCT_NAME == "Xcodes.app"
+                            and .buildSettings.MARKETING_VERSION == $marketing_version
+                            and .buildSettings.CURRENT_PROJECT_VERSION == $build_number
                     elif .target == $tests_target then
                         .buildSettings.PRODUCT_BUNDLE_IDENTIFIER == $tests_id
                             and .buildSettings.FULL_PRODUCT_NAME == "XcodesTests.xctest"
@@ -301,7 +323,8 @@ elif ! jq -e --arg helper_id "$helper_id" --arg requirement "$helper_requirement
     fail "Unexpected app privileged-helper requirement"
 fi
 
-if ! jq -e '.NSHumanReadableCopyright == "Copyright © 2026 Jacob Clayden"' \
+if ! jq -e --arg app_copyright "$app_copyright" \
+    '.NSHumanReadableCopyright == $app_copyright' \
     <<< "$app_info" >/dev/null; then
     fail "Unexpected app copyright"
 fi
