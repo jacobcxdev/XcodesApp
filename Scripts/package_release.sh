@@ -76,6 +76,8 @@ fi
 readonly release_version="${BASH_REMATCH[1]}"
 readonly release_build="${BASH_REMATCH[2]}"
 readonly release_dir="$product_dir/$release_tag"
+readonly release_locks_dir="$product_dir/.release-locks"
+readonly release_lock_dir="$release_locks_dir/$release_tag"
 readonly final_zip="$release_dir/Xcodes.zip"
 readonly signature_file="$release_dir/sparkle-signature.txt"
 readonly checksum_file="$release_dir/Xcodes.zip.sha256"
@@ -134,7 +136,45 @@ work_dir="$(mktemp -d "${TMPDIR:-/tmp}/xcodes-release.XXXXXX")"
 readonly work_dir
 readonly licences_backup="$work_dir/Licenses.rtf"
 publication_staging_dir=""
+publication_staging_identity=""
 published_release_dir=""
+published_release_identity=""
+release_lock_identity=""
+
+path_identity() {
+    local path="$1"
+
+    [[ -d "$path" && ! -L "$path" ]] || return 1
+    /usr/bin/stat -f '%d:%i' "$path"
+}
+
+remove_owned_directory() {
+    local path="$1"
+    local expected_identity="$2"
+    local description="$3"
+    local current_identity
+
+    current_identity="$(path_identity "$path" 2>/dev/null || true)"
+    if [[ -n "$expected_identity" && "$current_identity" == "$expected_identity" ]]; then
+        rm -rf -- "$path"
+    elif [[ -e "$path" || -L "$path" ]]; then
+        printf 'warning: refused to remove unowned %s: %s\n' "$description" "$path" >&2
+    fi
+}
+
+remove_owned_nested_staging() {
+    local owned_staging_basename="$1"
+    local nested_staging="$release_dir/$owned_staging_basename"
+    local nested_identity
+
+    nested_identity="$(path_identity "$nested_staging" 2>/dev/null || true)"
+    if [[ -n "$publication_staging_identity" && "$nested_identity" == "$publication_staging_identity" ]]; then
+        remove_owned_directory \
+            "$nested_staging" \
+            "$publication_staging_identity" \
+            "nested publication staging directory"
+    fi
+}
 
 restore_generated_source() {
     if [[ -f "$licences_backup" ]] && ! /usr/bin/cmp -s "$licences_backup" "$generated_licences_path"; then
@@ -143,11 +183,16 @@ restore_generated_source() {
 }
 
 cleanup() {
+    local current_lock_identity
+
     restore_generated_source
     if [[ -n "$publication_staging_dir" ]]; then
         case "$publication_staging_dir" in
             "$product_dir"/."$release_tag".staging.*)
-                rm -rf -- "$publication_staging_dir"
+                remove_owned_directory \
+                    "$publication_staging_dir" \
+                    "$publication_staging_identity" \
+                    "publication staging directory"
                 ;;
             *)
                 printf 'warning: refused unsafe publication staging cleanup: %s\n' "$publication_staging_dir" >&2
@@ -157,12 +202,24 @@ cleanup() {
     if [[ -n "$published_release_dir" ]]; then
         case "$published_release_dir" in
             "$release_dir")
-                rm -rf -- "$published_release_dir"
+                remove_owned_directory \
+                    "$published_release_dir" \
+                    "$published_release_identity" \
+                    "published release rollback"
                 ;;
             *)
                 printf 'warning: refused unsafe published release rollback: %s\n' "$published_release_dir" >&2
                 ;;
         esac
+    fi
+    if [[ -n "$release_lock_identity" ]]; then
+        current_lock_identity="$(path_identity "$release_lock_dir" 2>/dev/null || true)"
+        if [[ "$current_lock_identity" == "$release_lock_identity" ]]; then
+            /bin/rmdir "$release_lock_dir" 2>/dev/null || \
+                printf 'warning: owned release lock was not empty: %s\n' "$release_lock_dir" >&2
+        elif [[ -e "$release_lock_dir" || -L "$release_lock_dir" ]]; then
+            printf 'warning: refused to remove unowned release lock: %s\n' "$release_lock_dir" >&2
+        fi
     fi
     case "$work_dir" in
         "${TMPDIR:-/tmp}"/xcodes-release.*|/private"${TMPDIR:-/tmp}"/xcodes-release.*)
@@ -174,6 +231,20 @@ cleanup() {
     esac
 }
 trap cleanup EXIT
+
+[[ ! -L "$release_locks_dir" ]] || fail "release lock directory must not be a symbolic link"
+if [[ ! -e "$release_locks_dir" ]]; then
+    /bin/mkdir "$release_locks_dir" 2>/dev/null || true
+fi
+[[ -d "$release_locks_dir" && ! -L "$release_locks_dir" ]] || fail "release lock path must be a directory"
+release_locks_canonical="$(cd "$release_locks_dir" && pwd -P)"
+readonly release_locks_canonical
+[[ "$release_locks_canonical" == "$product_canonical/.release-locks" ]] || fail "release lock directory escaped Product"
+if ! /bin/mkdir "$release_lock_dir" 2>/dev/null; then
+    fail "release lock is already held for $release_tag; inspect and remove a stale lock manually"
+fi
+release_lock_identity="$(path_identity "$release_lock_dir")" || fail "could not record owned release lock identity"
+
 /bin/cp "$generated_licences_path" "$licences_backup"
 
 readonly derived_data="$work_dir/DerivedData"
@@ -397,6 +468,7 @@ printf 'tag=%s\nversion=%s\nbuild=%s\nbundle_id=%s\nhelper_bundle_id=%s\nteam_id
     "$sparkle_signature" > "$staged_manifest_file"
 
 publication_staging_dir="$(mktemp -d "$product_dir/.${release_tag}.staging.XXXXXX")"
+publication_staging_identity="$(path_identity "$publication_staging_dir")" || fail "could not record publication staging identity"
 /bin/cp "$release_zip" "$publication_staging_dir/Xcodes.zip"
 /bin/cp "$staged_signature_file" "$publication_staging_dir/sparkle-signature.txt"
 /bin/cp "$staged_checksum_file" "$publication_staging_dir/Xcodes.zip.sha256"
@@ -411,17 +483,33 @@ readonly staged_checksum
 
 [[ ! -L "$product_dir" ]] || fail "Product output directory must not be a symbolic link"
 [[ "$(cd "$product_dir" && pwd -P)" == "$product_canonical" ]] || fail "Product output directory escaped the repository"
+[[ ! -L "$release_locks_dir" && "$(cd "$release_locks_dir" && pwd -P)" == "$release_locks_canonical" ]] || fail "release lock directory changed before publication"
+[[ "$(path_identity "$release_lock_dir" 2>/dev/null || true)" == "$release_lock_identity" ]] || fail "owned release lock changed before publication"
+[[ "$(path_identity "$publication_staging_dir" 2>/dev/null || true)" == "$publication_staging_identity" ]] || fail "publication staging identity changed before publication"
 [[ ! -e "$release_dir" && ! -L "$release_dir" ]] || fail "release destination already exists or is a symbolic link: $release_dir"
-"$mv_tool" "$publication_staging_dir" "$release_dir" || fail "failed to publish complete release directory"
+staging_basename="${publication_staging_dir##*/}"
+readonly staging_basename
+if ! "$mv_tool" "$publication_staging_dir" "$release_dir"; then
+    remove_owned_nested_staging "$staging_basename"
+    fail "failed to publish complete release directory"
+fi
+destination_identity="$(path_identity "$release_dir" 2>/dev/null || true)"
+readonly destination_identity
+if [[ "$destination_identity" != "$publication_staging_identity" ]]; then
+    remove_owned_nested_staging "$staging_basename"
+    fail "release destination changed during atomic publication"
+fi
 published_release_dir="$release_dir"
-[[ -d "$release_dir" && ! -L "$release_dir" && ! -e "$publication_staging_dir" && ! -L "$publication_staging_dir" ]] || \
-    fail "atomic release directory publication did not complete"
+published_release_identity="$destination_identity"
+[[ ! -e "$publication_staging_dir" && ! -L "$publication_staging_dir" ]] || fail "atomic release directory publication did not complete"
 publication_staging_dir=""
+publication_staging_identity=""
 
 published_checksum="$("$shasum_tool" -a 256 "$final_zip" | awk '{ print $1 }')"
 readonly published_checksum
 [[ "$published_checksum" == "$checksum" ]] || fail "published ZIP checksum changed"
 published_release_dir=""
+published_release_identity=""
 
 printf 'Created %s\n' "$final_zip"
 printf 'Sparkle signature: %s\n' "$signature_file"

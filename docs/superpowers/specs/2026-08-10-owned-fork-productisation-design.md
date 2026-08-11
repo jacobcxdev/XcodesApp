@@ -55,7 +55,7 @@ Fork gets a distinct Sparkle EdDSA keypair. Public key is committed in `Info.pli
 - `https://jacobcxdev.github.io/XcodesApp/appcast.xml`
 - `https://jacobcxdev.github.io/XcodesApp/appcast_pre.xml`
 
-Packaging is one script used locally and by CI. It archives, exports Developer ID app, verifies nested signatures and helper requirements, submits ZIP to Apple notary service, requires Accepted status, staples ticket, validates with `stapler`, `codesign`, and `spctl`, creates deterministic release ZIP, and signs update with Sparkle. Temporary keychains and API-key files are cleaned on success, failure, and cancellation.
+Packaging is one script used locally and by CI. It archives, exports Developer ID app, verifies nested signatures and helper requirements, submits ZIP to Apple notary service, requires Accepted status, staples ticket, validates with `stapler`, `codesign`, and `spctl`, creates deterministic release ZIP, and signs update with Sparkle. The complete output set is staged and atomically published under `Product/<tag>/` (for example, `Product/v4.0.4b39/`), containing `Xcodes.zip`, `Xcodes.zip.sha256`, `sparkle-signature.txt`, and `release-manifest.txt`; an exclusive per-tag lock prevents cooperating publishers from racing. Temporary keychains and API-key files are cleaned on success, failure, and cancellation.
 
 ## CI and Release Flow
 
@@ -71,7 +71,7 @@ Release workflow consumes these secrets without logging values:
 - `APP_STORE_CONNECT_API_PRIVATE_KEY`
 - `SPARKLE_PRIVATE_KEY`
 
-Workflow validates tag against built `CFBundleShortVersionString` and `CFBundleVersion`, packages and notarizes app, creates GitHub release with `Xcodes.zip`, includes Sparkle signature in release notes, then rebuilds and deploys appcast to `gh-pages`. Release or appcast publication fails closed when signature, notarization, tag, asset, or secret is missing.
+Workflow validates tag against built `CFBundleShortVersionString` and `CFBundleVersion`, packages and notarizes app, uploads `Product/<tag>/Xcodes.zip` to the GitHub release as `Xcodes.zip`, reads `Product/<tag>/sparkle-signature.txt` for the release-note signature, retains `Product/<tag>/Xcodes.zip.sha256` and `Product/<tag>/release-manifest.txt` as release evidence, then rebuilds and deploys appcast to `gh-pages`. Release or appcast publication fails closed when signature, notarization, tag, asset, or secret is missing.
 
 ## GitHub Settings Boundary
 

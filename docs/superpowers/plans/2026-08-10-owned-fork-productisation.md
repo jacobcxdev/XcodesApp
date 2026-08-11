@@ -302,7 +302,8 @@ Expected: non-zero against existing scripts.
 7. Call `notarize.sh` with API-key environment.
 8. Staple and validate ticket.
 9. Re-verify `codesign --deep --strict` and `spctl -a -t install`.
-10. Write `Product/Xcodes.zip` and `Product/sparkle-signature.txt`.
+10. Acquire an exclusive per-tag lock, build the complete release output in an isolated sibling staging directory, and atomically publish it as `Product/<tag>/`.
+11. Write `Product/<tag>/Xcodes.zip`, `Product/<tag>/Xcodes.zip.sha256`, `Product/<tag>/sparkle-signature.txt`, and `Product/<tag>/release-manifest.txt` without overwriting an existing release directory; tag `v4.0.4b39` therefore publishes under `Product/v4.0.4b39/`.
 
 `notarize.sh` must require API key ID, issuer, and key path; parse JSON status with `plutil`; exit unless status is `Accepted`; never delete caller artefacts.
 
@@ -355,7 +356,7 @@ bash Scripts/test_release_scripts.sh
 
 - [ ] **Step 3: Implement tag-driven release workflow**
 
-Trigger `v*b*` tags and manual dispatch. Import P12 into temporary Keychain, write API and Sparkle keys under `$RUNNER_TEMP`, invoke package script, construct release notes containing `<!-- sparkle:edSignature=... -->`, and publish `Product/Xcodes.zip` with `gh release create`. Add `if: always()` cleanup for Keychain and key files.
+Trigger exact `vX.Y.ZbN` tags and manual dispatch. Import P12 into temporary Keychain, write API and Sparkle keys under `$RUNNER_TEMP`, invoke the package script with the exact tag, construct release notes containing `<!-- sparkle:edSignature=... -->` from `Product/<tag>/sparkle-signature.txt`, and publish `Product/<tag>/Xcodes.zip` with `gh release create`. Preserve or upload `Product/<tag>/Xcodes.zip.sha256` and `Product/<tag>/release-manifest.txt` as workflow evidence. Add `if: always()` cleanup for Keychain and key files.
 
 - [ ] **Step 4: Validate workflow syntax and contracts**
 

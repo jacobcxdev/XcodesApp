@@ -57,6 +57,8 @@ done
 for literal in \
     "release tag must match vX.Y.ZbN exactly" \
     "tracked working tree must be clean" \
+    "release lock is already held" \
+    "/usr/bin/stat -f" \
     "restore_generated_source" \
     "K2648T24P4" \
     "dev.jacobcx.Xcodes" \
@@ -263,6 +265,11 @@ PLIST
     mv)
         record_call "$@"
         [[ "${FAKE_PUBLISH_FAIL:-0}" != "1" ]] || exit 1
+        if [[ "${FAKE_PUBLISH_RACE:-0}" == "1" ]]; then
+            destination="${!#}"
+            mkdir "$destination"
+            printf 'caller sentinel\n' > "$destination/sentinel"
+        fi
         /bin/mv "$@"
         [[ "${FAKE_PUBLISHED_CORRUPT:-0}" != "1" ]] || printf 'changed after publication\n' >> "${!#}/Xcodes.zip"
         ;;
@@ -460,6 +467,20 @@ fixture="$(make_fixture failed-publication)"
 expect_failure "failed to publish complete release directory" run_package "$fixture" "v4.0.4b39" FAKE_PUBLISH_FAIL=1
 assert_no_release "$fixture"
 
+fixture="$(make_fixture publication-race)"
+expect_failure "release destination changed during atomic publication" run_package "$fixture" "v4.0.4b39" FAKE_PUBLISH_RACE=1
+[[ "$(<"$fixture/Product/v4.0.4b39/sentinel")" == "caller sentinel" ]] || fail "Publication race removed caller destination"
+[[ -z "$(find "$fixture/Product/v4.0.4b39" -maxdepth 1 -name '.v4.0.4b39.staging.*' -print -quit)" ]] || \
+    fail "Publication race left owned nested staging"
+[[ ! -e "$fixture/Product/v4.0.4b39/Xcodes.zip" ]] || fail "Publication race left partial release output"
+
+fixture="$(make_fixture release-lock-contention)"
+mkdir -p "$fixture/Product/.release-locks/v4.0.4b39"
+printf 'first publisher\n' > "$fixture/Product/.release-locks/v4.0.4b39/sentinel"
+expect_failure "release lock is already held" run_package "$fixture" "v4.0.4b39"
+[[ "$(<"$fixture/Product/.release-locks/v4.0.4b39/sentinel")" == "first publisher" ]] || fail "Contending publisher removed existing lock"
+assert_no_release "$fixture"
+
 fixture="$(make_fixture failed-published-checksum)"
 expect_failure "published ZIP checksum changed" run_package "$fixture" "v4.0.4b39" FAKE_PUBLISHED_CORRUPT=1
 assert_no_release "$fixture"
@@ -520,6 +541,7 @@ grep -Fxq "$published_checksum  Xcodes.zip" "$release_dir/Xcodes.zip.sha256" || 
 grep -Fq "xcrun notarytool submit" "$fixture/tool.log" || fail "Notary submit was not recorded"
 grep -Fq " --key $fixture/notary-key.p8 --key-id TESTKEY123 --issuer 00000000-0000-0000-0000-000000000000 --wait --output-format json" "$fixture/tool.log" || fail "Notary submit authentication contract changed"
 grep -Fq "generate_appcast --ed-key-file $fixture/sparkle-key" "$fixture/tool.log" || fail "Sparkle key correspondence was not verified"
+[[ ! -e "$fixture/Product/.release-locks/v4.0.4b39" ]] || fail "Successful release left its per-tag lock"
 [[ "$(<"$fixture/Xcodes/Resources/Licenses.rtf")" == "committed licence" ]] || fail "Release build left generated licences in tracked source"
 expect_failure "release destination already exists or is a symbolic link" run_package "$fixture" "v4.0.4b39"
 
