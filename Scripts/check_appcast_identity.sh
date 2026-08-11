@@ -13,6 +13,10 @@ readonly appcast_filter="$repo_root/AppCast/_plugins/signature_filter.rb"
 readonly appcast_test="$repo_root/AppCast/test_appcast.rb"
 readonly appcast_workflow="$repo_root/.github/workflows/appcast.yml"
 readonly workflow_check="$repo_root/Scripts/check_appcast_workflow.rb"
+readonly downloaded_release_validator="$repo_root/Scripts/validate_appcast_release.sh"
+readonly signature_verifier="$repo_root/Scripts/verify_sparkle_signature.swift"
+readonly signature_extractor="$repo_root/Scripts/extract_sparkle_signature.rb"
+readonly rendered_appcast_validator="$repo_root/Scripts/validate_rendered_appcast.rb"
 readonly lockfile="$repo_root/AppCast/Gemfile.lock"
 
 readonly stable_feed="https://jacobcxdev.github.io/XcodesApp/appcast.xml"
@@ -28,6 +32,10 @@ for required_file in \
     "$appcast_test" \
     "$appcast_workflow" \
     "$workflow_check" \
+    "$downloaded_release_validator" \
+    "$signature_verifier" \
+    "$signature_extractor" \
+    "$rendered_appcast_validator" \
     "$lockfile"; do
     if [[ ! -f "$required_file" ]]; then
         echo "Missing appcast contract file: ${required_file#"$repo_root/"}" >&2

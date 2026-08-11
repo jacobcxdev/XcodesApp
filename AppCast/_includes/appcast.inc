@@ -16,7 +16,7 @@
                     {% endfor %}
 
                     {% if zip_asset %}
-                        {% assign signature = release.body | sparkle_signature %}
+                        {% assign signature = release.body | sparkle_signature: release.tag_name %}
                         {% assign description = release.body | markdownify | escape_cdata %}
 
                         <item>

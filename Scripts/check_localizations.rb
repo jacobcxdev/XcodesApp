@@ -4,9 +4,27 @@ require "json"
 
 catalog_path = ARGV.fetch(0, File.expand_path("../Xcodes/Resources/Localizable.xcstrings", __dir__))
 catalog = JSON.parse(File.read(catalog_path))
-languages = %w[ca de el es fi fr hi it ja ko nl pl pt-BR ru tr uk zh-Hans zh-Hant].freeze
+languages = %w[ar ca de el es fi fr hi it ja ko nl pl pt-BR ru th tr uk zh-Hans zh-Hant].freeze
+established_languages = languages - %w[ar th]
 baseline_keys = %w[AutomaticallyCreateBetaSymbolicLink AutomaticallyCreateBetaSymbolicLinkDescription].freeze
-allowed_missing = baseline_keys.product(languages).map { |key, language| "#{key}:#{language}" }.sort.freeze
+arabic_thai_baseline_keys = [
+  "An error occurred",
+  "Architecture",
+  "AutomaticallyCreateBetaSymbolicLink",
+  "AutomaticallyCreateBetaSymbolicLinkDescription",
+  "Category",
+  "Dismiss",
+  "FilterArchitecturesDescription",
+  "Installed Only",
+  "Open Browser",
+  "Paste redirected URL",
+  "Signing out...",
+  "This Apple ID uses federated authentication via %@.",
+].freeze
+allowed_missing = (
+  baseline_keys.product(established_languages) +
+  arabic_thai_baseline_keys.product(%w[ar th])
+).map { |key, language| "#{key}:#{language}" }.sort.freeze
 
 translated = lambda do |localization|
   if localization.key?("stringUnit")
@@ -48,4 +66,4 @@ unless errors.empty?
   exit 1
 end
 
-puts "Localization contract passed with #{allowed_missing.length} explicitly tracked beta-link gaps"
+puts "Localization contract passed with #{allowed_missing.length} explicitly tracked gaps"

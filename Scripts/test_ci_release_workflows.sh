@@ -40,6 +40,14 @@ mutate_and_reject() {
 
 ruby "$checker"
 
+mutate_and_reject missing_ci_ruby_setup \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/ci.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["verify"]["steps"].reject! { |step| step["name"] == "Setup Ruby and appcast dependencies" }; File.write(path, YAML.dump(data) + "# pinned Ruby and Bundler setup\n")'
+mutate_and_reject wrong_ci_ruby_version \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/ci.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["verify"]["steps"].find { |item| item["name"] == "Setup Ruby and appcast dependencies" }; step && step["with"]["ruby-version"] = "ruby-head"; File.write(path, YAML.dump(data) + "# ruby-version: 3.3\n")'
+mutate_and_reject unpinned_ci_ruby_action \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/ci.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["verify"]["steps"].find { |item| item["name"] == "Setup Ruby and appcast dependencies" }; step && step["uses"] = "ruby/setup-ruby@v1"; File.write(path, YAML.dump(data) + "# full action SHA\n")'
+mutate_and_reject wrong_ci_bundler \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/ci.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["verify"]["steps"].find { |item| item["name"] == "Setup Ruby and appcast dependencies" }; step && step["with"]["bundler"] = "latest"; File.write(path, YAML.dump(data) + "# bundler: 4.0.16\n")'
 mutate_and_reject comment_permission_bypass \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["package"]["permissions"]["contents"] = "write"; File.write(path, YAML.dump(data) + "# contents: read\n")'
 mutate_and_reject widened_trigger \
@@ -84,5 +92,31 @@ mutate_and_reject mutable_appcast_indirection \
     'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["appcast"]["uses"] = "jacobcxdev/XcodesApp/.github/workflows/appcast.yml@main"; File.write(path, YAML.dump(data) + "# local reusable workflow\n")'
 mutate_and_reject glob_shell_syntax_bypass \
     'path = File.join(ARGV.fetch(0), ".github/workflows/ci.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["verify"]["steps"].find { |item| item["name"] == "Validate repository contracts" }; step["run"].sub!(/shopt -s nullglob.*?done/m, "bash -n Scripts/*.sh"); File.write(path, YAML.dump(data) + "# exact script loop\n")'
+mutate_and_reject omitted_supported_locales \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/ci.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["verify"]["steps"].find { |item| item["name"] == "Validate localisations" }; step["run"].sub!("ar,", "").sub!(",th", ""); File.write(path, YAML.dump(data) + "# ar and th supported\n")'
+mutate_and_reject missing_release_ref_binding \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["package"]["steps"].find { |item| item["name"] == "Verify immutable release authority" }; step && step["run"].sub!(/^.*GITHUB_REF.*\n/, ""); File.write(path, YAML.dump(data) + "# exact tag ref\n")'
+mutate_and_reject missing_package_job_ref_guard \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["package"]["if"] = "github.repository == '\''jacobcxdev/XcodesApp'\''"; File.write(path, YAML.dump(data) + "# exact tag ref job guard\n")'
+mutate_and_reject missing_main_ancestry \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["package"]["steps"].find { |item| item["name"] == "Verify immutable release authority" }; step && step["run"].sub!(/^.*merge-base --is-ancestor.*\n/, ""); File.write(path, YAML.dump(data) + "# origin/main ancestry\n")'
+mutate_and_reject missing_package_sha_output \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["package"]["outputs"]&.delete("package_sha"); File.write(path, YAML.dump(data) + "# immutable package SHA\n")'
+mutate_and_reject publish_tag_checkout \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Checkout packaged commit" }; step && step["with"]["ref"] = "${{ needs.package.outputs.release_tag }}"; File.write(path, YAML.dump(data) + "# exact package SHA\n")'
+mutate_and_reject missing_publish_sha_verification \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["steps"].reject! { |step| step["name"] == "Verify packaged release authority" }; File.write(path, YAML.dump(data) + "# compare tag and package SHA\n")'
+mutate_and_reject missing_publish_toctou_check \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Publish immutable GitHub release" }; step && step["run"].sub!(/^.*git fetch --force.*\n.*Tag moved after.*\n/m, ""); File.write(path, YAML.dump(data) + "# immediate tag recheck\n")'
+mutate_and_reject inserted_credential_reader \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["package"]["steps"].insert(-2, { "name" => "Read credentials", "run" => "cat $RUNNER_TEMP/sparkle-private-key" }); File.write(path, YAML.dump(data) + "# exact package steps\n")'
+mutate_and_reject inserted_release_publisher \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["steps"] << { "name" => "Publish again", "run" => "gh release create latest" }; File.write(path, YAML.dump(data) + "# exact publish steps\n")'
+mutate_and_reject package_unexpected_control \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["package"]["steps"].find { |item| item["name"] == "Build, sign, notarize, and package" }; step["continue-on-error"] = true; File.write(path, YAML.dump(data) + "# no suppressed package failure\n")'
+mutate_and_reject publish_unexpected_control \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release.yml"); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Publish immutable GitHub release" }; step["if"] = false; File.write(path, YAML.dump(data) + "# no disabled publisher\n")'
+mutate_and_reject missing_release_drafter_timeout \
+    'path = File.join(ARGV.fetch(0), ".github/workflows/release-drafter.yml"); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["update_release_draft"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded timeout\n")'
 
 printf 'CI and release workflow mutation contracts passed.\n'

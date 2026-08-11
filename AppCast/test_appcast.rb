@@ -13,8 +13,8 @@ def assert(condition, message)
   raise message unless condition
 end
 
-def assert_signature_error(filter, body, label)
-  filter.sparkle_signature(body)
+def assert_signature_error(filter, body, label, tag = nil)
+  filter.sparkle_signature(body, tag)
   raise "#{label} signature unexpectedly passed"
 rescue Jekyll::Errors::FatalException
   nil
@@ -38,6 +38,16 @@ assert_signature_error(
   "<!-- sparkle:edSignature=#{valid_signature} -->\n<!-- sparkle:edSignature=#{second_signature} -->",
   "Multiple"
 )
+
+ENV["VERIFIED_RELEASE_TAG"] = "v1.2.3b34"
+ENV["VERIFIED_SPARKLE_SIGNATURE"] = second_signature
+assert_signature_error(
+  filter,
+  "Release notes\n\n<!-- sparkle:edSignature=#{valid_signature} -->",
+  "Verified body mismatch",
+  "v1.2.3b34"
+)
+ENV["VERIFIED_SPARKLE_SIGNATURE"] = valid_signature
 assert_signature_error(
   filter,
   "<!-- sparkle:edSignature=#{valid_signature} --> <!-- trailing -->",
@@ -154,6 +164,14 @@ Dir.mktmpdir("xcodes-appcast-test.") do |fixture_root|
   assert(!stable_xml.include?("Missing ZIP"), "Release without ZIP unexpectedly emitted")
   assert(!prerelease_xml.include?("Missing ZIP"), "Release without ZIP unexpectedly emitted in prerelease feed")
   assert(stable_xml.include?("Stable notes with ]]&gt; boundary."), "CDATA boundary was not escaped")
+
+  verified_signature_path = File.join(fixture_root, "verified-signature.txt")
+  File.write(verified_signature_path, "#{valid_signature}\n")
+  rendered_validator = File.expand_path("../Scripts/validate_rendered_appcast.rb", __dir__)
+  assert(
+    system("ruby", rendered_validator, File.join(destination, "appcast.xml"), "v1.2.3b34", verified_signature_path, out: File::NULL),
+    "Rendered verified-release validation failed"
+  )
 end
 
 puts "Appcast fixture tests passed"

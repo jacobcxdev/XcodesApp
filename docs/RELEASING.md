@@ -4,7 +4,7 @@ Fork releases are built from immutable version tags by [the signed release workf
 
 ## One-time GitHub configuration
 
-Create an environment named `release` in `jacobcxdev/XcodesApp`. Add required reviewers and prevent self-review when another trusted reviewer is available. Limit deployment branches and tags to protected version tags. Keep environment administrators able to stop a compromised run.
+Create an environment named `release` in `jacobcxdev/XcodesApp`. Add required reviewers and prevent self-review when another trusted reviewer is available. The environment protection rule must allow only protected tags matching `v*`; do not allow branches or unprotected tags. The environment applies to the whole packaging job, so this exact tag restriction is the external security boundary that prevents a branch-triggered job from gaining release secrets. Keep environment administrators able to stop a compromised run.
 
 Add these environment secrets. Do not add them as repository variables or commit their values:
 
@@ -20,7 +20,7 @@ Add these environment secrets. Do not add them as repository variables or commit
 
 Use a Developer ID Application certificate for team `K2648T24P4`. Keep the `.p12`, its password, the API private key, and exported Sparkle key outside this repository. The workflow writes them with mode `077`, imports the certificate into a temporary Keychain, and removes private files and the Keychain even when packaging fails or is cancelled.
 
-Configure GitHub Actions to allow selected pinned actions. Protect the `v*` tag namespace against rewriting or deletion; the workflow applies the stricter `vX.Y.ZbN` grammar before credentials are imported. Enable GitHub Pages from the `gh-pages` branch after the first appcast workflow succeeds. Pages must serve `https://jacobcxdev.github.io/XcodesApp/appcast.xml` and `appcast_pre.xml`.
+Configure GitHub Actions to allow selected pinned actions. Protect the `v*` tag namespace against rewriting or deletion with a repository ruleset, and require release tags to target commits already on `main`; the workflow applies the stricter `vX.Y.ZbN` grammar and verifies `origin/main` ancestry before credentials are imported. Enable GitHub Pages from the `gh-pages` branch after the first appcast workflow succeeds. Pages must serve `https://jacobcxdev.github.io/XcodesApp/appcast.xml` and `appcast_pre.xml`.
 
 ## Prepare a release
 
@@ -50,9 +50,15 @@ Configure GitHub Actions to allow selected pinned actions. Protect the `v*` tag 
 
 4. Approve the protected `release` environment deployment after confirming the tag and commit.
 5. Confirm the GitHub release contains `Xcodes.zip`, `Xcodes.zip.sha256`, `sparkle-signature.txt`, and `release-manifest.txt`.
-6. Confirm the release workflow's final reusable-appcast job completes and the stable feed references the exact ZIP and Sparkle signature. Releases created with GitHub Actions' `GITHUB_TOKEN` do not emit another workflow-triggering release event, so the release workflow calls the local appcast workflow explicitly and passes the published tag. The appcast workflow verifies that exact non-draft release and its required assets before deployment.
+6. Confirm the release workflow's final reusable-appcast job completes and the stable feed references the exact ZIP and Sparkle signature. Releases created with GitHub Actions' `GITHUB_TOKEN` do not emit another workflow-triggering release event, so the release workflow calls the local appcast workflow explicitly and passes the published tag. Before Jekyll or Pages deployment, the appcast workflow downloads exactly the four release assets into a clean temporary directory, verifies the checksum and manifest, requires the release-body signature to equal the signature asset, and verifies the ZIP's Ed25519 signature against the fork-owned `SUPublicEDKey` in the checked-in app `Info.plist`.
 
 Tags using this contract are stable releases. The workflow does not infer prerelease status from the build-number suffix. Add an explicit, reviewed tag grammar and matching appcast policy before publishing prereleases.
+
+For a manual rerun, `workflow_dispatch` reruns must use `--ref v4.0.4b39` and the same `release_tag`; selecting a branch is rejected before credential files are written:
+
+```sh
+gh workflow run release.yml --ref v4.0.4b39 -f release_tag=v4.0.4b39
+```
 
 ## Local packaging dry run
 
@@ -71,7 +77,7 @@ Do not paste secret values into shell history on shared machines. Prefer a local
 
 ## Failure recovery
 
-- Packaging failure: fix the cause and rerun the same workflow with `workflow_dispatch` and the existing tag. Packaging does not publish partial `Product/<tag>/` output.
+- Packaging failure: fix the cause and rerun the same workflow with `workflow_dispatch`, the existing tag input, and that tag as the workflow ref. Packaging does not publish partial `Product/<tag>/` output.
 - Publishing failure before a GitHub release exists: rerun the same tag. The publish job revalidates the downloaded artifact before creating the release.
 - GitHub release already exists: the workflow refuses to replace it. Inspect assets and appcast state. Delete a bad release only after preserving evidence and deciding whether the immutable tag can remain valid; otherwise issue a new build number and tag.
 - Appcast failure after a valid release: rerun the appcast workflow manually with the exact published tag after fixing its source or Pages configuration. Do not replace signed release assets under an existing tag.

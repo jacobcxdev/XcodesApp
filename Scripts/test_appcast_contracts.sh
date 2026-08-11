@@ -49,7 +49,13 @@ mutate_workflow reusable_input_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["on"]["workflow_call"]["inputs"]["expected_release_tag"]["required"] = false; File.write(path, YAML.dump(data) + "# required: true\n")'
 # shellcheck disable=SC2016 # GitHub expression must remain literal in mutation comment.
 mutate_workflow concurrency_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["group"] = "appcast-bypass"; File.write(path, YAML.dump(data) + "# group: appcast-${{ github.repository }}\n")'
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["group"] = "appcast-${{ inputs.expected_release_tag || github.event.release.tag_name }}"; File.write(path, YAML.dump(data) + "# one repository-wide group\n")'
+mutate_workflow cancelling_concurrency \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["cancel-in-progress"] = true; File.write(path, YAML.dump(data) + "# cancel-in-progress: false\n")'
+mutate_workflow missing_build_timeout \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded build timeout\n")'
+mutate_workflow missing_deploy_timeout \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["deploy"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded deploy timeout\n")'
 mutate_workflow repository_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["deploy"]["if"] = "always()"; File.write(path, YAML.dump(data) + "# if: github.repository == jacobcxdev/XcodesApp\n")'
 mutate_workflow release_verification_bypass \
@@ -64,6 +70,10 @@ mutate_workflow release_asset_size_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }; step["run"].sub!(/^\s*\(all\(\.assets\[\];.*?\)\) and\n/m, ""); File.write(path, YAML.dump(data) + "# every asset size > 0\n")'
 mutate_workflow release_sole_zip_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate expected published release" }; step["run"].sub!(/\(\[\n\s*\.assets\[\].*?\] == \["Xcodes\.zip"\]\)/m, "true"); File.write(path, YAML.dump(data) + "# Xcodes.zip is sole ZIP\n")'
+mutate_workflow missing_byte_verification \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |step| step["name"] == "Download and verify release artifacts" }; File.write(path, YAML.dump(data) + "# byte-level verification\n")'
+mutate_workflow weakened_byte_verification \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Download and verify release artifacts" }; step && step["run"].sub!("bash Scripts/validate_appcast_release.sh", "true #"); File.write(path, YAML.dump(data) + "# exact validator\n")'
 mutate_workflow deploy_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["deploy"]["steps"].find { |item| item["uses"]&.start_with?("JamesIves/") }; step["with"]["branch"] = "main"; File.write(path, YAML.dump(data) + "# branch: gh-pages\n")'
 mutate_workflow action_pin_bypass \
@@ -90,6 +100,10 @@ cp "$repo_root/.github/workflows/appcast.yml" "$identity_fixture/.github/workflo
 cp \
     "$repo_root/Scripts/check_appcast_identity.sh" \
     "$repo_root/Scripts/check_appcast_workflow.rb" \
+    "$repo_root/Scripts/extract_sparkle_signature.rb" \
+    "$repo_root/Scripts/validate_appcast_release.sh" \
+    "$repo_root/Scripts/validate_rendered_appcast.rb" \
+    "$repo_root/Scripts/verify_sparkle_signature.swift" \
     "$identity_fixture/Scripts/"
 cp "$repo_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift" "$identity_fixture/Xcodes/Frontend/Preferences/"
 cp "$repo_root/Xcodes/Resources/Info.plist" "$identity_fixture/Xcodes/Resources/"

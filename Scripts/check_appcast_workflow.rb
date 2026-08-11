@@ -46,7 +46,7 @@ check.call(
 check.call(workflow["permissions"] == { "contents" => "read" }, "Top-level permissions must be contents: read")
 check.call(
   workflow["concurrency"] == {
-    "group" => "appcast-${{ inputs.expected_release_tag || github.event.release.tag_name }}",
+    "group" => "appcast-${{ github.repository }}",
     "cancel-in-progress" => false,
   },
   "Appcast concurrency contract changed"
@@ -61,7 +61,9 @@ repository_guard = "github.repository == 'jacobcxdev/XcodesApp'"
 
 check.call(build["if"] == repository_guard, "Build job must be restricted to fork repository")
 check.call(build["permissions"] == { "contents" => "read" }, "Build job permissions must be contents: read")
-check.call(build["runs-on"] == "ubuntu-latest", "Build job runner changed")
+check.call(build["runs-on"] == "macos-26", "Build job runner changed")
+check.call(build["timeout-minutes"] == 30, "Build timeout must remain bounded")
+check.call(build.keys.sort == %w[env if permissions runs-on steps timeout-minutes], "Unexpected build job capability")
 check.call(
   build["env"] == {
     "BUNDLER_VERSION" => bundler_version,
@@ -75,6 +77,8 @@ check.call(deploy["if"] == repository_guard, "Deploy job must be restricted to f
 check.call(deploy["needs"] == "build", "Deploy job must require verified build artifact")
 check.call(deploy["permissions"] == { "contents" => "write" }, "Deploy job alone must have contents: write")
 check.call(deploy["runs-on"] == "ubuntu-latest", "Deploy job runner changed")
+check.call(deploy["timeout-minutes"] == 10, "Deploy timeout must remain bounded")
+check.call(deploy.keys.sort == %w[if needs permissions runs-on steps timeout-minutes], "Unexpected deploy job capability")
 
 build_steps = build.fetch("steps", [])
 deploy_steps = deploy.fetch("steps", [])
@@ -102,6 +106,10 @@ expected_build_steps = [
     "with" => { "persist-credentials" => false },
   },
   {
+    "name" => "Verify fork appcast identity",
+    "run" => "bash Scripts/check_appcast_identity.sh",
+  },
+  {
     "name" => "Validate expected published release",
     "env" => {
       "GH_TOKEN" => "${{ github.token }}",
@@ -110,6 +118,9 @@ expected_build_steps = [
     "run" => <<~'SHELL'.strip,
       set -euo pipefail
       [[ "$EXPECTED_RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+b(0|[1-9][0-9]*)$ ]] || { echo "Expected release tag must match vX.Y.ZbN exactly" >&2; exit 1; }
+      readonly release_root="$RUNNER_TEMP/appcast-release"
+      rm -rf -- "$release_root"
+      install -d -m 700 "$release_root/$EXPECTED_RELEASE_TAG"
       release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$EXPECTED_RELEASE_TAG")"
       readonly release_json
       jq -e --arg tag "$EXPECTED_RELEASE_TAG" '
@@ -133,6 +144,30 @@ expected_build_steps = [
           | .name
         ] == ["Xcodes.zip"])
       ' <<< "$release_json" >/dev/null
+      jq -er '.body | strings' <<< "$release_json" > "$release_root/release-body.txt"
+    SHELL
+  },
+  {
+    "name" => "Download and verify release artifacts",
+    "env" => {
+      "GH_TOKEN" => "${{ github.token }}",
+      "EXPECTED_RELEASE_TAG" => "${{ inputs.expected_release_tag || github.event.release.tag_name }}",
+    },
+    "run" => <<~'SHELL'.strip,
+      set -euo pipefail
+      readonly release_root="$RUNNER_TEMP/appcast-release"
+      readonly release_dir="$release_root/$EXPECTED_RELEASE_TAG"
+      for asset in Xcodes.zip Xcodes.zip.sha256 sparkle-signature.txt release-manifest.txt; do
+        gh release download "$EXPECTED_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir "$release_dir"
+      done
+      readonly verifier="$RUNNER_TEMP/verify-sparkle-signature"
+      xcrun swiftc -parse-as-library Scripts/verify_sparkle_signature.swift -o "$verifier"
+      SPARKLE_SIGNATURE_VERIFIER="$verifier" bash Scripts/validate_appcast_release.sh \
+        "$release_dir" "$EXPECTED_RELEASE_TAG" "$release_root/release-body.txt"
+      signature="$(<"$release_dir/sparkle-signature.txt")"
+      readonly signature
+      printf 'VERIFIED_RELEASE_TAG=%s\nVERIFIED_SPARKLE_SIGNATURE=%s\n' \
+        "$EXPECTED_RELEASE_TAG" "$signature" >> "$GITHUB_ENV"
     SHELL
   },
   {
@@ -162,7 +197,12 @@ expected_build_steps = [
   },
   {
     "name" => "Validate rendered appcasts",
-    "run" => "xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml",
+    "run" => <<~'SHELL'.strip,
+      set -euo pipefail
+      xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml
+      ruby Scripts/validate_rendered_appcast.rb \
+        AppCast/_site/appcast.xml "$VERIFIED_RELEASE_TAG" "$RUNNER_TEMP/appcast-release/$VERIFIED_RELEASE_TAG/sparkle-signature.txt"
+    SHELL
   },
   {
     "name" => "Upload verified appcasts",
@@ -254,8 +294,13 @@ check.call(
 )
 
 xml_validation = build_steps.find { |step| step["name"] == "Validate rendered appcasts" } || {}
-expected_xml_validation = "xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml"
-check.call(xml_validation["run"] == expected_xml_validation, "Both rendered appcasts must pass xmllint before upload")
+expected_xml_validation = <<~'SHELL'.strip
+  set -euo pipefail
+  xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml
+  ruby Scripts/validate_rendered_appcast.rb \
+    AppCast/_site/appcast.xml "$VERIFIED_RELEASE_TAG" "$RUNNER_TEMP/appcast-release/$VERIFIED_RELEASE_TAG/sparkle-signature.txt"
+SHELL
+check.call(xml_validation["run"]&.strip == expected_xml_validation, "Both rendered appcasts must pass xmllint before upload")
 
 upload = build_steps.find { |step| step["uses"]&.start_with?("actions/upload-artifact@") } || {}
 check.call(

@@ -5,7 +5,7 @@ module Jekyll
     SIGNATURE_MARKER = "sparkle:edSignature="
     SIGNATURE_COMMENT = /\A[\t ]*<!-- sparkle:edSignature=(?<signature>[A-Za-z0-9+\/]+={0,2}) -->[\t ]*(?:\r?\n)?\z/
 
-    def sparkle_signature(release_body)
+    def sparkle_signature(release_body, release_tag = nil)
       candidate_lines = release_body.to_s.lines.select { |line| line.include?(SIGNATURE_MARKER) }
       signature_match = SIGNATURE_COMMENT.match(candidate_lines.first.to_s)
 
@@ -19,6 +19,15 @@ module Jekyll
       unless decoded_signature.bytesize == 64 && Base64.strict_encode64(decoded_signature) == signature
         raise Jekyll::Errors::FatalException,
               "Sparkle Ed25519 signature must be canonical Base64 encoding of exactly 64 bytes."
+      end
+
+      if release_tag && release_tag == ENV["VERIFIED_RELEASE_TAG"]
+        verified_signature = ENV.fetch("VERIFIED_SPARKLE_SIGNATURE", "")
+        unless signature == verified_signature
+          raise Jekyll::Errors::FatalException,
+                "Release body signature changed after downloaded release verification."
+        end
+        return verified_signature
       end
 
       signature

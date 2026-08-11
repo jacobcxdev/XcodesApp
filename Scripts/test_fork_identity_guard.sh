@@ -32,7 +32,11 @@ cp \
     "$repo_root/Scripts/check_appcast_workflow.rb" \
     "$repo_root/Scripts/check_ci_release_workflows.rb" \
     "$repo_root/Scripts/check_fork_identity.sh" \
+    "$repo_root/Scripts/extract_sparkle_signature.rb" \
     "$repo_root/Scripts/uninstall_privileged_helper.sh" \
+    "$repo_root/Scripts/validate_appcast_release.sh" \
+    "$repo_root/Scripts/validate_rendered_appcast.rb" \
+    "$repo_root/Scripts/verify_sparkle_signature.swift" \
     "$fixture_root/Scripts/"
 cp \
     "$repo_root/README.md" \
@@ -51,6 +55,7 @@ cp \
 cp "$repo_root/.github/workflows/appcast.yml" "$fixture_root/.github/workflows/"
 cp \
     "$repo_root/.github/workflows/ci.yml" \
+    "$repo_root/.github/workflows/release-drafter.yml" \
     "$repo_root/.github/workflows/release.yml" \
     "$fixture_root/.github/workflows/"
 cp "$repo_root/docs/RELEASING.md" "$fixture_root/docs/"
