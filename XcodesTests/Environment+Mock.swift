@@ -45,6 +45,15 @@ extension Files {
             fileExistsAtPath: { _ in return true },
             moveItem: { _, _ in return },
             linkItem: { _, _ in return },
+            canonicalURL: { $0.standardizedFileURL },
+            fileSystemIdentity: { url in
+                FileSystemIdentity(
+                    deviceID: 0,
+                    inode: UInt64(bitPattern: Int64(url.path.hashValue)),
+                    isDirectory: true,
+                    isSymbolicLink: false
+                )
+            },
             contentsAtPath: { path in
                 if path.contains("Info.plist") {
                     let url = Bundle.xcodesTests.url(forResource: "Stub-0.0.0.Info", withExtension: "plist")!

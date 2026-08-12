@@ -889,6 +889,35 @@ class AppStateTests: XCTestCase {
         XCTAssertEqual(deletedIdentifiers.read { $0 }, [installedRuntime.uuid])
     }
 
+    func test_DeleteRuntime_MatchesArchitecturesRegardlessOfOrder() async throws {
+        let runtime = try Self.downloadableRuntime(
+            identifier: "com.apple.dmg.iPhoneSimulatorSDK26_5",
+            build: "23F72",
+            version: "26.5",
+            architectures: [.arm64, .x86_64]
+        )
+        let installedRuntime = CoreSimulatorImage(
+            uuid: "97772E90-7BD1-4882-9C51-782E62E0AF4F",
+            path: ["relative": "/Library/Developer/CoreSimulator/Images/iOS_26_5.dmg"],
+            runtimeInfo: CoreSimulatorRuntimeInfo(
+                build: "23F72",
+                supportedArchitectures: [.x86_64, .arm64]
+            )
+        )
+        let deletedIdentifiers = TestLockedBox<[String]>([])
+        subject.downloadableRuntimes = [runtime]
+        subject.installedRuntimes = [installedRuntime]
+        subject.runtimeService = Self.runtimeService(deleteRuntimeOutput: { identifier in
+            deletedIdentifiers.withValue { $0.append(identifier) }
+            return ProcessOutput(status: 0, out: "", err: "")
+        })
+
+        let displayedRuntime = try XCTUnwrap(subject.installedPlatformRuntimes().first)
+        try await subject.deleteRuntime(runtime: displayedRuntime)
+
+        XCTAssertEqual(deletedIdentifiers.read { $0 }, [installedRuntime.uuid])
+    }
+
     func test_SetInstallationStep_UpdatesExactArchitectureVariant() {
         let version = Version("27.0.0")!
         let armXcode = Xcode(
@@ -994,6 +1023,86 @@ class AppStateTests: XCTestCase {
             $0 == extractionDirectory || $0.path.hasPrefix(extractionDirectory.path + "/")
         })
         XCTAssertTrue(removedURLs.read { $0 }.contains(extractionDirectory))
+    }
+
+    func test_XcodeExtractionWorkspaceRefusesCleanupThroughReplacedParentSymlink() throws {
+        let previousFiles = Current.files
+        Current.files = Files()
+        defer { Current.files = previousFiles }
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let parent = root.appendingPathComponent("parent", isDirectory: true)
+        let movedParent = root.appendingPathComponent("moved-parent", isDirectory: true)
+        let outside = root.appendingPathComponent("outside", isDirectory: true)
+        try fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: root) }
+
+        let archive = parent.appendingPathComponent("Xcode-27.xip")
+        try Data("archive".utf8).write(to: archive)
+        let workspace = try XcodeExtractionWorkspace.create(for: archive)
+        let outsideWorkspace = outside.appendingPathComponent(
+            workspace.directoryURL.lastPathComponent,
+            isDirectory: true
+        )
+        try fileManager.createDirectory(at: outsideWorkspace, withIntermediateDirectories: false)
+        let sentinel = outsideWorkspace.appendingPathComponent("sentinel")
+        try Data("preserve".utf8).write(to: sentinel)
+
+        try fileManager.moveItem(at: parent, to: movedParent)
+        try fileManager.createSymbolicLink(at: parent, withDestinationURL: outside)
+
+        XCTAssertThrowsError(try workspace.remove())
+        XCTAssertTrue(fileManager.fileExists(atPath: sentinel.path))
+        XCTAssertTrue(
+            fileManager.fileExists(
+                atPath: movedParent
+                    .appendingPathComponent(workspace.directoryURL.lastPathComponent)
+                    .path
+            )
+        )
+    }
+
+    func test_XcodeExtractionWorkspaceRefusesCleanupAfterDirectoryReplacement() throws {
+        let previousFiles = Current.files
+        Current.files = Files()
+        defer { Current.files = previousFiles }
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: root) }
+
+        let archive = root.appendingPathComponent("Xcode-27.xip")
+        try Data("archive".utf8).write(to: archive)
+        let workspace = try XcodeExtractionWorkspace.create(for: archive)
+        let displacedWorkspace = root.appendingPathComponent("displaced-workspace", isDirectory: true)
+        try fileManager.moveItem(at: workspace.directoryURL, to: displacedWorkspace)
+        try fileManager.createDirectory(at: workspace.directoryURL, withIntermediateDirectories: false)
+        let sentinel = workspace.directoryURL.appendingPathComponent("sentinel")
+        try Data("preserve".utf8).write(to: sentinel)
+
+        XCTAssertThrowsError(try workspace.remove())
+        XCTAssertTrue(fileManager.fileExists(atPath: sentinel.path))
+        XCTAssertTrue(fileManager.fileExists(atPath: displacedWorkspace.path))
+    }
+
+    func test_XcodeExtractionWorkspaceRemovesUnchangedOwnedDirectory() throws {
+        let previousFiles = Current.files
+        Current.files = Files()
+        defer { Current.files = previousFiles }
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: root) }
+
+        let archive = root.appendingPathComponent("Xcode-27.xip")
+        try Data("archive".utf8).write(to: archive)
+        let workspace = try XcodeExtractionWorkspace.create(for: archive)
+
+        try workspace.remove()
+
+        XCTAssertFalse(fileManager.fileExists(atPath: workspace.directoryURL.path))
+        XCTAssertTrue(fileManager.fileExists(atPath: archive.path))
     }
 
     func test_DownloadRuntimeViaXcodeBuild_ClearsRuntimeTaskWhenComplete() async throws {

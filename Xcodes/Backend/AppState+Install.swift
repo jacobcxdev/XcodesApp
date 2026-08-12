@@ -13,46 +13,83 @@ struct XcodeExtractionWorkspace: Sendable {
     let directoryURL: URL
     let stagedArchiveURL: URL
     private let parentURL: URL
+    private let parentIdentity: FileSystemIdentity
+    private let directoryIdentity: FileSystemIdentity
+    private let files: Files
 
-    private init(directoryURL: URL, stagedArchiveURL: URL, parentURL: URL) {
+    private init(
+        directoryURL: URL,
+        stagedArchiveURL: URL,
+        parentURL: URL,
+        parentIdentity: FileSystemIdentity,
+        directoryIdentity: FileSystemIdentity,
+        files: Files
+    ) {
         self.directoryURL = directoryURL
         self.stagedArchiveURL = stagedArchiveURL
         self.parentURL = parentURL
+        self.parentIdentity = parentIdentity
+        self.directoryIdentity = directoryIdentity
+        self.files = files
     }
 
     static func create(for archiveURL: URL) throws -> Self {
+        let files = Current.files
         let archiveURL = archiveURL.standardizedFileURL
-        let parentURL = archiveURL.deletingLastPathComponent()
+        let parentURL = files.canonicalURL(archiveURL.deletingLastPathComponent())
+        let parentIdentity = try files.fileSystemIdentity(parentURL)
+        guard parentIdentity.isDirectory, parentIdentity.isSymbolicLink == false else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
+
         let directoryURL = parentURL.appendingPathComponent(directoryPrefix + UUID().uuidString, isDirectory: true)
         let stagedArchiveURL = directoryURL.appendingPathComponent(archiveURL.lastPathComponent)
 
-        try Current.files.createDirectory(
+        try files.createDirectory(
             at: directoryURL,
             withIntermediateDirectories: false
         )
-        do {
-            try Current.files.linkItem(at: archiveURL, to: stagedArchiveURL)
-        } catch {
-            try? Current.files.removeItem(at: directoryURL)
-            throw error
-        }
 
-        return Self(
-            directoryURL: directoryURL,
-            stagedArchiveURL: stagedArchiveURL,
-            parentURL: parentURL
-        )
-    }
-
-    func remove() throws {
-        let directoryURL = directoryURL.standardizedFileURL
-        guard directoryURL.deletingLastPathComponent() == parentURL,
-              directoryURL.lastPathComponent.hasPrefix(Self.directoryPrefix),
-              stagedArchiveURL.standardizedFileURL.deletingLastPathComponent() == directoryURL
+        let directoryIdentity = try files.fileSystemIdentity(directoryURL)
+        guard directoryIdentity.isDirectory,
+              directoryIdentity.isSymbolicLink == false,
+              try files.fileSystemIdentity(parentURL) == parentIdentity
         else {
             throw CocoaError(.fileWriteInvalidFileName)
         }
-        try Current.files.removeItem(at: directoryURL)
+
+        let workspace = Self(
+            directoryURL: directoryURL,
+            stagedArchiveURL: stagedArchiveURL,
+            parentURL: parentURL,
+            parentIdentity: parentIdentity,
+            directoryIdentity: directoryIdentity,
+            files: files
+        )
+
+        do {
+            try files.linkItem(at: archiveURL, to: stagedArchiveURL)
+        } catch {
+            try? workspace.remove()
+            throw error
+        }
+
+        return workspace
+    }
+
+    func remove() throws {
+        let currentParentURL = files.canonicalURL(directoryURL.deletingLastPathComponent())
+        let currentDirectoryURL = files.canonicalURL(directoryURL)
+        guard currentParentURL == parentURL,
+              currentDirectoryURL == directoryURL,
+              directoryURL.lastPathComponent.hasPrefix(Self.directoryPrefix),
+              stagedArchiveURL.standardizedFileURL.deletingLastPathComponent() == directoryURL,
+              try files.fileSystemIdentity(parentURL) == parentIdentity,
+              try files.fileSystemIdentity(directoryURL) == directoryIdentity
+        else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
+        try files.removeItem(at: directoryURL)
     }
 }
 

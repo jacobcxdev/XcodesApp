@@ -276,33 +276,31 @@ extension AppState {
     }
 
     func runtimeInstallPath(xcode: Xcode, runtime: DownloadableRuntime) -> Path? {
-        RuntimeInstallationLookupService()
-            .installPath(for: runtime, in: installedRuntimes)
+        guard let relativePath = coreSimulatorInfo(runtime: runtime)?.path["relative"] else {
+            return nil
+        }
+
+        return Path(url: URL(fileURLWithPath: relativePath.replacingOccurrences(of: "file://", with: "")))
     }
 
     func coreSimulatorInfo(runtime: DownloadableRuntime) -> CoreSimulatorImage? {
-        RuntimeInstallationLookupService()
-            .coreSimulatorImage(for: runtime, in: installedRuntimes)
+        let runtimeIdentity = RuntimeIdentity(runtime)
+        return installedRuntimes.first { installedRuntime in
+            let installedIdentity = RuntimeIdentity(installedRuntime)
+            return installedIdentity.build == runtimeIdentity.build &&
+                (runtimeIdentity.architectures.isEmpty ||
+                 installedIdentity.architectures == runtimeIdentity.architectures)
+        }
     }
 
     func installedPlatformRuntimes() -> [DownloadableRuntime] {
-        struct RuntimeIdentity: Hashable {
-            let build: String
-            let architectures: [String]
-        }
-
         var seen = Set<RuntimeIdentity>()
         return installedRuntimes.compactMap { installedRuntime in
-            let architectures = installedRuntime.runtimeInfo.supportedArchitectures
-            let identity = RuntimeIdentity(
-                build: installedRuntime.runtimeInfo.build,
-                architectures: (architectures ?? []).map(\.rawValue).sorted()
-            )
+            let identity = RuntimeIdentity(installedRuntime)
             guard seen.insert(identity).inserted else { return nil }
 
             return downloadableRuntimes.first {
-                $0.simulatorVersion.buildUpdate == identity.build &&
-                    ($0.architectures ?? []).map(\.rawValue).sorted() == identity.architectures
+                RuntimeIdentity($0) == identity
             } ?? downloadableRuntimes.first {
                 $0.simulatorVersion.buildUpdate == identity.build &&
                     ($0.architectures == nil || $0.architectures?.isEmpty == true)
@@ -359,6 +357,21 @@ extension AppState {
         }
 
         return error.localizedDescription
+    }
+}
+
+private struct RuntimeIdentity: Hashable {
+    let build: String
+    let architectures: [String]
+
+    init(_ runtime: DownloadableRuntime) {
+        build = runtime.simulatorVersion.buildUpdate
+        architectures = (runtime.architectures ?? []).map(\.rawValue).sorted()
+    }
+
+    init(_ runtime: CoreSimulatorImage) {
+        build = runtime.runtimeInfo.build
+        architectures = (runtime.runtimeInfo.supportedArchitectures ?? []).map(\.rawValue).sorted()
     }
 }
 

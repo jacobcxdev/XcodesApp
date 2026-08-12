@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import Path
 import KeychainAccess
@@ -96,6 +97,25 @@ public struct Files: Sendable {
         try linkItem(srcURL, dstURL)
     }
 
+    var canonicalURL: @Sendable (URL) -> URL = {
+        $0.resolvingSymlinksInPath().standardizedFileURL
+    }
+
+    var fileSystemIdentity: @Sendable (URL) throws -> FileSystemIdentity = { url in
+        var fileStatus = stat()
+        guard lstat(url.path, &fileStatus) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+
+        let fileType = fileStatus.st_mode & S_IFMT
+        return FileSystemIdentity(
+            deviceID: UInt64(fileStatus.st_dev),
+            inode: UInt64(fileStatus.st_ino),
+            isDirectory: fileType == S_IFDIR,
+            isSymbolicLink: fileType == S_IFLNK
+        )
+    }
+
     public var contentsAtPath: @Sendable (String) -> Data? = { FileManager.default.contents(atPath: $0) }
 
     public func contents(atPath path: String) -> Data? {
@@ -146,6 +166,13 @@ public struct Files: Sendable {
     public func write(_ data: Data, to url: URL) throws {
         try write(data, url)
     }
+}
+
+struct FileSystemIdentity: Equatable, Sendable {
+    let deviceID: UInt64
+    let inode: UInt64
+    let isDirectory: Bool
+    let isSymbolicLink: Bool
 }
 
 private func _installedXcodes(destination: Path) -> [InstalledXcode] {
