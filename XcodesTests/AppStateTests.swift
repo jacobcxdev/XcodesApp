@@ -1,6 +1,8 @@
+import AppKit
 import Combine
 import AsyncNetworkService
 @preconcurrency import Path
+import struct SwiftUI.KeyboardShortcut
 import Version
 import XCTest
 import XcodesLoginKit
@@ -35,8 +37,97 @@ class AppStateTests: XCTestCase {
         subject = AppState()
     }
 
+    func test_NewlyAvailableXcodes_IgnoresInitialLoad() {
+        let initial = makeAvailableXcode(version: "27.0.0")
+
+        XCTAssertTrue(AppState.newlyAvailableXcodes(old: [], new: [initial]).isEmpty)
+    }
+
+    func test_NewlyAvailableXcodes_DetectsIdentityWhenCountDoesNotGrow() {
+        let removed = makeAvailableXcode(version: "26.4.0")
+        let retained = makeAvailableXcode(version: "26.5.0")
+        let added = makeAvailableXcode(version: "27.0.0")
+
+        let result = AppState.newlyAvailableXcodes(old: [removed, retained], new: [retained, added])
+
+        XCTAssertEqual(result.map(\.xcodeID), [added.xcodeID])
+    }
+
+    func test_NewlyAvailableXcodes_IgnoresDuplicateIdentity() {
+        let existing = makeAvailableXcode(version: "27.0.0", filename: "Xcode.xip")
+        let duplicate = makeAvailableXcode(version: "27.0.0", filename: "Xcode-copy.xip")
+
+        XCTAssertTrue(AppState.newlyAvailableXcodes(old: [existing], new: [existing, duplicate]).isEmpty)
+    }
+
+    func test_NewlyAvailableXcodes_TreatsArchitectureAsIdentity() {
+        let universal = makeAvailableXcode(
+            version: "27.0.0",
+            architectures: [.arm64, .x86_64]
+        )
+        let appleSilicon = makeAvailableXcode(
+            version: "27.0.0",
+            architectures: [.arm64]
+        )
+
+        let result = AppState.newlyAvailableXcodes(old: [universal], new: [universal, appleSilicon])
+
+        XCTAssertEqual(result.map(\.xcodeID), [appleSilicon.xcodeID])
+    }
+
+    func test_CommandShortcuts_AreDistinctAndLinkUsesL() {
+        XCTAssertEqual(
+            Set(XcodeCommandShortcuts.all).count,
+            XcodeCommandShortcuts.all.count
+        )
+        XCTAssertEqual(
+            XcodeCommandShortcuts.createSymbolicLink,
+            KeyboardShortcut("l", modifiers: [.command, .option])
+        )
+    }
+
+    func test_InstallNotificationTitle_DoesNotDuplicateMajorVersion() {
+        XCTAssertEqual(
+            AppState.installNotificationTitle(for: Version("27.0.0-Beta.4")!),
+            "27.0 Beta 4"
+        )
+        XCTAssertEqual(AppState.installNotificationTitle(for: Version("26.5.0")!), "26.5")
+    }
+
+    func test_CopyPath_WritesOnlyPlainText() throws {
+        let path = try XCTUnwrap(Path("/Applications/Xcode 27.app"))
+        let xcode = Xcode(
+            version: Version("27.0.0")!,
+            installState: .installed(path),
+            selected: false,
+            icon: nil
+        )
+        let pasteboard = NSPasteboard(name: .init("AppStateTests-\(UUID().uuidString)"))
+        defer { pasteboard.releaseGlobally() }
+
+        subject.copyPath(xcode: xcode, pasteboard: pasteboard)
+
+        XCTAssertEqual(pasteboard.string(forType: .string), path.string)
+        XCTAssertNil(pasteboard.string(forType: .URL))
+        XCTAssertEqual(pasteboard.readObjects(forClasses: [NSURL.self])?.isEmpty, true)
+    }
+
     func test_KeychainUsesPurposeSpecificAppleAccountService() {
         XCTAssertEqual(Keychain.service, "dev.jacobcx.Xcodes.apple-account")
+    }
+
+    private func makeAvailableXcode(
+        version: String,
+        filename: String = "Xcode.xip",
+        architectures: [Architecture]? = nil
+    ) -> AvailableXcode {
+        AvailableXcode(
+            version: Version(version)!,
+            url: URL(string: "https://example.com/\(filename)")!,
+            filename: filename,
+            releaseDate: nil,
+            architectures: architectures
+        )
     }
 
     func test_AutoInstallWaitsForInitialInstalledXcodeScan() {

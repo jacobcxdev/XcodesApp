@@ -170,7 +170,7 @@ class AppState: ObservableObject {
     @Published var authenticationState: AuthenticationState = .unauthenticated
     @Published var availableXcodes: [AvailableXcode] = [] {
         willSet {
-            if newValue.count > availableXcodes.count && availableXcodes.count != 0 {
+            if Self.newlyAvailableXcodes(old: availableXcodes, new: newValue).isEmpty == false {
                 Current.notificationManager.scheduleNotification(title: localizeString("Notification.NewXcodeVersion.Title"), body: localizeString("Notification.NewXcodeVersion.Body"), category: .normal)
             }
             updateAllXcodes(
@@ -185,6 +185,16 @@ class AppState: ObservableObject {
             }
         }
     }
+
+    static func newlyAvailableXcodes(
+        old oldXcodes: [AvailableXcode],
+        new newXcodes: [AvailableXcode]
+    ) -> [AvailableXcode] {
+        guard oldXcodes.isEmpty == false else { return [] }
+        let existingIDs = Set(oldXcodes.map(\.xcodeID))
+        return newXcodes.filter { existingIDs.contains($0.xcodeID) == false }
+    }
+
     @Published var allXcodes: [Xcode] = []
     @Published var selectedXcodePath: String? {
         willSet {
@@ -911,11 +921,11 @@ class AppState: ObservableObject {
         }
     }
 
-    func open(xcode: Xcode, openInRosetta: Bool? = false) {
+    func open(xcode: Xcode, openInRosetta: Bool = false) {
         switch xcode.installState {
         case let .installed(path):
             let config = NSWorkspace.OpenConfiguration.init()
-            if (openInRosetta ?? false) {
+            if openInRosetta {
                 config.architecture = CPU_TYPE_X86_64
             }
             config.allowsRunningApplicationSubstitution = false
@@ -926,12 +936,11 @@ class AppState: ObservableObject {
         }
     }
 
-    func copyPath(xcode: Xcode) {
+    func copyPath(xcode: Xcode, pasteboard: NSPasteboard = .general) {
         guard let installedXcodePath = xcode.installedPath else { return }
 
-        NSPasteboard.general.declareTypes([.URL, .string], owner: nil)
-        NSPasteboard.general.writeObjects([installedXcodePath.url as NSURL])
-        NSPasteboard.general.setString(installedXcodePath.string, forType: .string)
+        pasteboard.clearContents()
+        pasteboard.setString(installedXcodePath.string, forType: .string)
     }
 
     func copyReleaseNote(from url: URL?) {

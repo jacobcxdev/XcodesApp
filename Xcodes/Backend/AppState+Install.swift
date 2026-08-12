@@ -10,6 +10,10 @@ import XcodesLoginKit
 /// Downloads and installs Xcodes
 extension AppState {
 
+    static func installNotificationTitle(for version: Version) -> String {
+        version.appleDescription
+    }
+
     // check to see if we should auto install for the user
     public func autoInstallIfNeeded() {
         guard let storageValue = Current.defaults.get(forKey: "autoInstallation") as? Int, let autoInstallType = AutoInstallationType(rawValue: storageValue) else { return }
@@ -471,7 +475,7 @@ extension AppState {
 
         let xcode = allXcodes[index]
         if postNotification {
-            Current.notificationManager.scheduleNotification(title: xcode.version.major.description + "." + xcode.version.appleDescription, body: step.description, category: .normal)
+            Current.notificationManager.scheduleNotification(title: Self.installNotificationTitle(for: xcode.version), body: step.description, category: .normal)
         }
     }
 
