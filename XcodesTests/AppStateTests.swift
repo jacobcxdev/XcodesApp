@@ -850,6 +850,152 @@ class AppStateTests: XCTestCase {
         XCTAssertEqual(runtimes.first?.architectures, [.arm64])
     }
 
+    func test_InstalledPlatformRuntimes_CollapsesDownloadVariantsForInstalledImage() async throws {
+        let universalRuntime = try Self.downloadableRuntime(
+            identifier: "com.apple.dmg.iPhoneSimulatorSDK26_5",
+            build: "23F72",
+            version: "26.5",
+            fileSize: 10_600_000_000,
+            architectures: [.arm64, .x86_64]
+        )
+        let armRuntime = try Self.downloadableRuntime(
+            identifier: "com.apple.dmg.iPhoneSimulatorSDK26_5_arm64",
+            build: "23F72",
+            version: "26.5",
+            fileSize: 8_520_000_000,
+            architectures: [.arm64]
+        )
+        let installedRuntime = CoreSimulatorImage(
+            uuid: "97772E90-7BD1-4882-9C51-782E62E0AF4F",
+            path: ["relative": "/Library/Developer/CoreSimulator/Images/iOS_26_5.dmg"],
+            runtimeInfo: CoreSimulatorRuntimeInfo(
+                build: "23F72",
+                supportedArchitectures: [.arm64]
+            )
+        )
+        subject.downloadableRuntimes = [universalRuntime, armRuntime]
+        subject.installedRuntimes = [installedRuntime]
+
+        let runtimes = subject.installedPlatformRuntimes()
+
+        XCTAssertEqual(runtimes.count, 1)
+        XCTAssertEqual(runtimes.first?.identifier, armRuntime.identifier)
+        let deletedIdentifiers = TestLockedBox<[String]>([])
+        subject.runtimeService = Self.runtimeService(deleteRuntimeOutput: { identifier in
+            deletedIdentifiers.withValue { $0.append(identifier) }
+            return ProcessOutput(status: 0, out: "", err: "")
+        })
+        try await subject.deleteRuntime(runtime: armRuntime)
+        XCTAssertEqual(deletedIdentifiers.read { $0 }, [installedRuntime.uuid])
+    }
+
+    func test_SetInstallationStep_UpdatesExactArchitectureVariant() {
+        let version = Version("27.0.0")!
+        let armXcode = Xcode(
+            version: version,
+            installState: .notInstalled,
+            selected: false,
+            icon: nil,
+            architectures: [.arm64]
+        )
+        let universalXcode = Xcode(
+            version: version,
+            installState: .notInstalled,
+            selected: false,
+            icon: nil,
+            architectures: [.arm64, .x86_64]
+        )
+        let universalDownload = AvailableXcode(
+            version: version,
+            url: URL(string: "https://example.com/Xcode-27-universal.xip")!,
+            filename: "Xcode-27-universal.xip",
+            releaseDate: nil,
+            architectures: [.arm64, .x86_64]
+        )
+        subject.allXcodes = [armXcode, universalXcode]
+
+        subject.setInstallationStep(of: universalDownload, to: .unarchiving, postNotification: false)
+
+        XCTAssertEqual(subject.allXcodes[0].installState, .notInstalled)
+        XCTAssertEqual(subject.allXcodes[1].installState, .installing(.unarchiving))
+    }
+
+    func test_ConcurrentXcodeExtractionWorkspacesAreUniqueAndOwned() async throws {
+        let archive = URL(fileURLWithPath: "/tmp/xcodes/Xcode-27.xip")
+        let createdDirectories = TestLockedBox<[URL]>([])
+        let linkedItems = TestLockedBox<[(URL, URL)]>([])
+        Current.files.createDirectory = { url, _, _ in
+            createdDirectories.withValue { $0.append(url) }
+        }
+        Current.files.linkItem = { source, destination in
+            linkedItems.withValue { $0.append((source, destination)) }
+        }
+
+        async let firstWorkspace = XcodeExtractionWorkspace.create(for: archive)
+        async let secondWorkspace = XcodeExtractionWorkspace.create(for: archive)
+        let (first, second) = try await (firstWorkspace, secondWorkspace)
+
+        XCTAssertNotEqual(first.directoryURL, second.directoryURL)
+        XCTAssertEqual(first.directoryURL.deletingLastPathComponent(), archive.deletingLastPathComponent())
+        XCTAssertEqual(second.directoryURL.deletingLastPathComponent(), archive.deletingLastPathComponent())
+        XCTAssertTrue(first.stagedArchiveURL.path.hasPrefix(first.directoryURL.path + "/"))
+        XCTAssertTrue(second.stagedArchiveURL.path.hasPrefix(second.directoryURL.path + "/"))
+        XCTAssertEqual(createdDirectories.read { $0.count }, 2)
+        XCTAssertEqual(linkedItems.read { $0.map(\.0) }, [archive, archive])
+    }
+
+    func test_CancelledXcodeExtractionCleansOnlyOwnedWorkspace() async throws {
+        let archive = URL(fileURLWithPath: "/tmp/xcodes/Xcode-27.xip")
+        let workingDirectory = TestLockedBox<URL?>(nil)
+        let continuation = TestLockedBox<CheckedContinuation<ProcessOutput, Error>?>(nil)
+        let removedURLs = TestLockedBox<[URL]>([])
+        Current.files.createDirectory = { _, _, _ in }
+        Current.files.linkItem = { _, _ in }
+        Current.files.fileExistsAtPath = { path in
+            guard let directory = workingDirectory.read({ $0 }) else { return false }
+            return path.hasPrefix(directory.path + "/")
+        }
+        Current.files.removeItem = { url in
+            removedURLs.withValue { $0.append(url) }
+        }
+        Current.shell.unxip = { _, directory in
+            workingDirectory.withValue { $0 = directory }
+            return try await withCheckedThrowingContinuation { pending in
+                continuation.withValue { $0 = pending }
+            }
+        }
+
+        let installation = Task { @MainActor in
+            try await subject.installArchivedXcodeAsync(
+                AvailableXcode(
+                    version: Version("27.0.0")!,
+                    url: URL(string: "https://example.com/Xcode-27.xip")!,
+                    filename: "Xcode-27.xip",
+                    releaseDate: nil
+                ),
+                at: archive
+            )
+        }
+        for _ in 0..<100 where continuation.read({ $0 == nil }) {
+            await Task.yield()
+        }
+        let extractionDirectory = try XCTUnwrap(workingDirectory.read { $0 })
+
+        installation.cancel()
+        continuation.read { $0 }?.resume(throwing: CancellationError())
+        do {
+            _ = try await installation.value
+            XCTFail("Expected cancellation")
+        } catch is CancellationError {
+        }
+
+        XCTAssertFalse(removedURLs.read { $0 }.contains(archive))
+        XCTAssertTrue(removedURLs.read { $0 }.allSatisfy {
+            $0 == extractionDirectory || $0.path.hasPrefix(extractionDirectory.path + "/")
+        })
+        XCTAssertTrue(removedURLs.read { $0 }.contains(extractionDirectory))
+    }
+
     func test_DownloadRuntimeViaXcodeBuild_ClearsRuntimeTaskWhenComplete() async throws {
         let runtime = try Self.downloadableRuntime()
         subject.downloadableRuntimes = [runtime]
@@ -1230,6 +1376,10 @@ class AppStateTests: XCTestCase {
     }
 
     private static func downloadableRuntime(
+        identifier: String = "com.apple.CoreSimulator.SimRuntime.iOS-16-0",
+        build: String = "20A360",
+        version: String = "16.0",
+        fileSize: Int64 = 42,
         architectures: [Architecture]? = nil
     ) throws -> DownloadableRuntime {
         let encodedArchitectures: String
@@ -1242,17 +1392,17 @@ class AppStateTests: XCTestCase {
         {
           "category": "simulator",
           "simulatorVersion": {
-            "buildUpdate": "20A360",
-            "version": "16.0"
+            "buildUpdate": "\(build)",
+            "version": "\(version)"
           },
           "source": "https://example.com/iOS_16_Runtime.dmg",
           "architectures": \(encodedArchitectures),
           "dictionaryVersion": 1,
           "contentType": "diskImage",
           "platform": "com.apple.platform.iphoneos",
-          "identifier": "com.apple.CoreSimulator.SimRuntime.iOS-16-0",
-          "version": "16.0",
-          "fileSize": 42,
+          "identifier": "\(identifier)",
+          "version": "\(version)",
+          "fileSize": \(fileSize),
           "hostRequirements": null,
           "name": "iOS 16.0",
           "authentication": null
@@ -1402,7 +1552,7 @@ class AppStateTests: XCTestCase {
     }
 
     func test_Install_NotEnoughFreeSpace() async throws {
-        Current.shell.unxip = { _ in
+        Current.shell.unxip = { _, _ in
             throw ProcessExecutionError(
                     process: Process(),
                     standardOutput: "xip: signing certificate was \"Development Update\" (validation not attempted)", 

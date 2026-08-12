@@ -45,7 +45,13 @@ private final class CurrentEnvironmentStorage: Sendable {
 public struct Shell: Sendable {
     private static let shared = XcodesShell()
 
-    public var unxip = Shell.shared.unxip
+    public var unxip: @Sendable (URL, URL) async throws -> ProcessOutput = { source, workingDirectory in
+        try await Process.runAsync(
+            URL(fileURLWithPath: "/usr/bin/xip"),
+            workingDirectory: workingDirectory,
+            ["--expand", source.path]
+        )
+    }
     public var spctlAssess = Shell.shared.spctlAssess
     public var codesignVerify = Shell.shared.codesignVerify
     public var buildVersion = Shell.shared.buildVersion
@@ -61,9 +67,9 @@ public struct Shell: Sendable {
     }
     
     
-    public var unxipExperiment: @Sendable (URL) async throws -> ProcessOutput = { url in
+    public var unxipExperiment: @Sendable (URL, URL) async throws -> ProcessOutput = { url, workingDirectory in
         let unxipPath = Path(url: Bundle.main.url(forAuxiliaryExecutable: "unxip")!)!
-        return try await Process.runAsync(unxipPath.url, workingDirectory: url.deletingLastPathComponent(), ["\(url.path)"])
+        return try await Process.runAsync(unxipPath.url, workingDirectory: workingDirectory, ["\(url.path)"])
     }
     
     public var downloadRuntime: @Sendable (String, String, String?) -> AsyncThrowingStream<Progress, Error> = { platform, version, architecture in
@@ -82,6 +88,12 @@ public struct Files: Sendable {
 
     public func moveItem(at srcURL: URL, to dstURL: URL) throws {
         try moveItem(srcURL, dstURL)
+    }
+
+    public var linkItem: @Sendable (URL, URL) throws -> Void = { try FileManager.default.linkItem(at: $0, to: $1) }
+
+    public func linkItem(at srcURL: URL, to dstURL: URL) throws {
+        try linkItem(srcURL, dstURL)
     }
 
     public var contentsAtPath: @Sendable (String) -> Data? = { FileManager.default.contents(atPath: $0) }

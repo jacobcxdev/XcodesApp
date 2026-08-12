@@ -286,7 +286,28 @@ extension AppState {
     }
 
     func installedPlatformRuntimes() -> [DownloadableRuntime] {
-        downloadableRuntimes.filter { coreSimulatorInfo(runtime: $0) != nil }
+        struct RuntimeIdentity: Hashable {
+            let build: String
+            let architectures: [String]
+        }
+
+        var seen = Set<RuntimeIdentity>()
+        return installedRuntimes.compactMap { installedRuntime in
+            let architectures = installedRuntime.runtimeInfo.supportedArchitectures
+            let identity = RuntimeIdentity(
+                build: installedRuntime.runtimeInfo.build,
+                architectures: (architectures ?? []).map(\.rawValue).sorted()
+            )
+            guard seen.insert(identity).inserted else { return nil }
+
+            return downloadableRuntimes.first {
+                $0.simulatorVersion.buildUpdate == identity.build &&
+                    ($0.architectures ?? []).map(\.rawValue).sorted() == identity.architectures
+            } ?? downloadableRuntimes.first {
+                $0.simulatorVersion.buildUpdate == identity.build &&
+                    ($0.architectures == nil || $0.architectures?.isEmpty == true)
+            }
+        }
     }
 
     func deleteRuntime(runtime: DownloadableRuntime) async throws {

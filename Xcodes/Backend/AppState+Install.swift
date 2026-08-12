@@ -7,6 +7,55 @@ import DockProgress
 import XcodesKit
 import XcodesLoginKit
 
+struct XcodeExtractionWorkspace: Sendable {
+    private static let directoryPrefix = ".xcodes-extract-"
+
+    let directoryURL: URL
+    let stagedArchiveURL: URL
+    private let parentURL: URL
+
+    private init(directoryURL: URL, stagedArchiveURL: URL, parentURL: URL) {
+        self.directoryURL = directoryURL
+        self.stagedArchiveURL = stagedArchiveURL
+        self.parentURL = parentURL
+    }
+
+    static func create(for archiveURL: URL) throws -> Self {
+        let archiveURL = archiveURL.standardizedFileURL
+        let parentURL = archiveURL.deletingLastPathComponent()
+        let directoryURL = parentURL.appendingPathComponent(directoryPrefix + UUID().uuidString, isDirectory: true)
+        let stagedArchiveURL = directoryURL.appendingPathComponent(archiveURL.lastPathComponent)
+
+        try Current.files.createDirectory(
+            at: directoryURL,
+            withIntermediateDirectories: false
+        )
+        do {
+            try Current.files.linkItem(at: archiveURL, to: stagedArchiveURL)
+        } catch {
+            try? Current.files.removeItem(at: directoryURL)
+            throw error
+        }
+
+        return Self(
+            directoryURL: directoryURL,
+            stagedArchiveURL: stagedArchiveURL,
+            parentURL: parentURL
+        )
+    }
+
+    func remove() throws {
+        let directoryURL = directoryURL.standardizedFileURL
+        guard directoryURL.deletingLastPathComponent() == parentURL,
+              directoryURL.lastPathComponent.hasPrefix(Self.directoryPrefix),
+              stagedArchiveURL.standardizedFileURL.deletingLastPathComponent() == directoryURL
+        else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
+        try Current.files.removeItem(at: directoryURL)
+    }
+}
+
 /// Downloads and installs Xcodes
 extension AppState {
 
@@ -52,7 +101,7 @@ extension AppState {
                 try Task.checkCancellation()
                 let installedXcode = try await installArchivedXcodeAsync(xcode, at: url)
 
-                guard let index = allXcodes.firstIndex(where: { $0.version.isEquivalent(to: installedXcode.version) }) else {
+                guard let index = xcodeIndex(for: xcode) else {
                     return installedXcode
                 }
                 allXcodes[index].installState = .installed(installedXcode.path)
@@ -135,15 +184,15 @@ extension AppState {
                 }
 
                 let isAlreadyDownloading: Bool
-                if let xcode = self.allXcodes.first(where: { $0.version.isEquivalent(to: availableXcode.version) }),
-                   case .installing(.downloading) = xcode.installState
+                if let index = self.xcodeIndex(for: availableXcode),
+                   case .installing(.downloading) = self.allXcodes[index].installState
                 {
                     isAlreadyDownloading = true
                 } else {
                     isAlreadyDownloading = false
                 }
 
-                self.setInstallationStep(of: availableXcode.version, to: .downloading(progress: progress), postNotification: !isAlreadyDownloading)
+                self.setInstallationStep(of: availableXcode, to: .downloading(progress: progress), postNotification: !isAlreadyDownloading)
                 self.addDockProgressChildIfNeeded(progress, withPendingUnitCount: AppState.totalProgressUnits - AppState.unxipProgressWeight)
             }
         })
@@ -216,29 +265,32 @@ extension AppState {
         unxipProgress.completedUnitCount = 0
         addDockProgressChildIfNeeded(unxipProgress, withPendingUnitCount: AppState.unxipProgressWeight)
 
+        let workspace = try XcodeExtractionWorkspace.create(for: archiveURL)
+        defer { try? workspace.remove() }
+
         let installedXcode: InstalledXcode
         do {
             installedXcode = try await xcodeArchiveInstallService.installArchivedXcode(
                 availableXcode,
-                at: archiveURL,
-                cleanArchive: { try Current.files.trashItem(at: $0) }
+                at: workspace.stagedArchiveURL,
+                cleanArchive: { _ in try Current.files.trashItem(at: archiveURL) }
             ) { step in
                 switch step {
                 case .unarchive(.unarchiving):
-                    await self.setInstallationStep(of: availableXcode.version, to: .unarchiving)
+                    await self.setInstallationStep(of: availableXcode, to: .unarchiving)
                 case let .unarchive(.moving(destination)):
-                    await self.setInstallationStep(of: availableXcode.version, to: .moving(destination: destination))
+                    await self.setInstallationStep(of: availableXcode, to: .moving(destination: destination))
                 case .cleaningArchive:
-                    await self.setInstallationStep(of: availableXcode.version, to: .trashingArchive)
+                    await self.setInstallationStep(of: availableXcode, to: .trashingArchive)
                 case .checkingSecurity:
-                    await self.setInstallationStep(of: availableXcode.version, to: .checkingSecurity)
+                    await self.setInstallationStep(of: availableXcode, to: .checkingSecurity)
                 }
             }
         } catch {
-            throw mapXcodeArchiveInstallError(error, availableXcode: availableXcode)
+            throw mapXcodeArchiveInstallError(error, availableXcode: availableXcode, archiveURL: archiveURL)
         }
 
-        setInstallationStep(of: availableXcode.version, to: .finishing)
+        setInstallationStep(of: availableXcode, to: .finishing)
         do {
             try await performPostInstallStepsAsync(for: installedXcode)
         } catch {
@@ -252,7 +304,12 @@ extension AppState {
 
     private var xcodeUnarchiveService: XcodeUnarchiveService {
         XcodeUnarchiveService(
-            unarchive: { _ = try await self.unxipOrUnxipExperimentAsync($0) },
+            unarchive: {
+                _ = try await self.unxipOrUnxipExperimentAsync(
+                    $0,
+                    workingDirectory: $0.deletingLastPathComponent()
+                )
+            },
             fileExists: { path in Current.files.fileExists(atPath: path) },
             moveItem: { source, destination in try Current.files.moveItem(at: source, to: destination) },
             removeItem: { url in try Current.files.removeItem(at: url) }
@@ -275,7 +332,11 @@ extension AppState {
         )
     }
 
-    private func mapXcodeArchiveInstallError(_ error: Error, availableXcode: AvailableXcode) -> Error {
+    private func mapXcodeArchiveInstallError(
+        _ error: Error,
+        availableXcode: AvailableXcode,
+        archiveURL: URL
+    ) -> Error {
         switch error {
         case let error as XcodeArchiveInstallError:
             switch error {
@@ -286,11 +347,11 @@ extension AppState {
             }
         case let error as XcodeUnarchiveError:
             switch error {
-            case let .damagedXIP(url):
-                return InstallationError.damagedXIP(url: url)
-            case let .notEnoughFreeSpaceToExpandArchive(url):
+            case .damagedXIP:
+                return InstallationError.damagedXIP(url: archiveURL)
+            case .notEnoughFreeSpaceToExpandArchive:
                 return InstallationError.notEnoughFreeSpaceToExpandArchive(
-                    archivePath: Path(url: url)!,
+                    archivePath: Path(url: archiveURL)!,
                     version: availableXcode.version
                 )
             }
@@ -311,13 +372,13 @@ extension AppState {
         }
     }
 
-    func unxipOrUnxipExperimentAsync(_ source: URL) async throws -> ProcessOutput {
+    func unxipOrUnxipExperimentAsync(_ source: URL, workingDirectory: URL) async throws -> ProcessOutput {
         if unxipExperiment {
             // All hard work done by https://github.com/saagarjha/unxip
             // Compiled to binary with `swiftc -parse-as-library -O unxip.swift`
-            return try await Current.shell.unxipExperiment(source)
+            return try await Current.shell.unxipExperiment(source, workingDirectory)
         } else {
-            return try await Current.shell.unxip(source)
+            return try await Current.shell.unxip(source, workingDirectory)
         }
     }
 
@@ -469,8 +530,16 @@ extension AppState {
 
     // MARK: -
 
-    func setInstallationStep(of version: Version, to step: XcodeInstallationStep, postNotification: Bool = true) {
-        guard let index = allXcodes.firstIndex(where: { $0.version.isEquivalent(to: version) }) else { return }
+    private func xcodeIndex(for availableXcode: AvailableXcode) -> Int? {
+        allXcodes.firstIndex {
+            $0.id == availableXcode.xcodeID ||
+                ($0.version.isEquivalent(to: availableXcode.version) &&
+                    $0.id.architectures == availableXcode.xcodeID.architectures)
+        }
+    }
+
+    func setInstallationStep(of availableXcode: AvailableXcode, to step: XcodeInstallationStep, postNotification: Bool = true) {
+        guard let index = xcodeIndex(for: availableXcode) else { return }
         allXcodes[index].installState = .installing(step)
 
         let xcode = allXcodes[index]

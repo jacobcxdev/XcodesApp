@@ -750,7 +750,7 @@ class AppState: ObservableObject {
                 }
             }
             do {
-                setInstallationStep(of: availableXcode.version, to: .authenticating)
+                setInstallationStep(of: availableXcode, to: .authenticating)
                 try await signInIfNeededAsync()
                 try await waitForAuthenticationTerminalState()
                 try await validateDeveloperDownloads()
