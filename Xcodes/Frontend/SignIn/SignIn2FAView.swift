@@ -15,7 +15,14 @@ struct SignIn2FAView: View {
             
             HStack {
                 Spacer()
-                PinCodeTextField(code: $code, numberOfDigits: authOptions.securityCode!.length) {
+                PinCodeTextField(
+                    code: $code,
+                    numberOfDigits: authOptions.securityCode!.length,
+                    accessibilityLabel: String(
+                        format: localizeString("DigitCodeDescription"),
+                        authOptions.securityCode!.length
+                    )
+                ) {
                     appState.submitSecurityCode(.device(code: $0), sessionData: sessionData)
                 }
                 Spacer()

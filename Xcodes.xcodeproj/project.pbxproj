@@ -31,6 +31,7 @@
 		BDBAB7452B9FF55800694B0B /* TrailingIconLabelStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDBAB7442B9FF55800694B0B /* TrailingIconLabelStyle.swift */; };
 		CA11E7BA2598476C00D2EE1C /* XcodeCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11E7B92598476C00D2EE1C /* XcodeCommands.swift */; };
 		CA2518EC25A7FF2B00F08414 /* AppStateUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA2518EB25A7FF2B00F08414 /* AppStateUpdateTests.swift */; };
+		D10000010000000000000001 /* PinCodeInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10000020000000000000001 /* PinCodeInputTests.swift */; };
 		CA378F992466567600A58CE0 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA378F982466567600A58CE0 /* AppState.swift */; };
 		CA39711924495F0E00AFFB77 /* AppStoreButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA39711824495F0E00AFFB77 /* AppStoreButtonStyle.swift */; };
 		CA42DD7325AEB04300BC0B0C /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA42DD7225AEB04300BC0B0C /* Logger.swift */; };
@@ -207,6 +208,7 @@
 		BDBAB7442B9FF55800694B0B /* TrailingIconLabelStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailingIconLabelStyle.swift; sourceTree = "<group>"; };
 		CA11E7B92598476C00D2EE1C /* XcodeCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XcodeCommands.swift; sourceTree = "<group>"; };
 		CA2518EB25A7FF2B00F08414 /* AppStateUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateUpdateTests.swift; sourceTree = "<group>"; };
+		D10000020000000000000001 /* PinCodeInputTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinCodeInputTests.swift; sourceTree = "<group>"; };
 		CA378F982466567600A58CE0 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		CA39711824495F0E00AFFB77 /* AppStoreButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreButtonStyle.swift; sourceTree = "<group>"; };
 		CA42DD7225AEB04300BC0B0C /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
@@ -591,6 +593,7 @@
 				CAC281E6259FA45A00B8AB0B /* Environment+Mock.swift */,
 				CAD2E7B72449575100113D76 /* AppStateTests.swift */,
 				CA2518EB25A7FF2B00F08414 /* AppStateUpdateTests.swift */,
+				D10000020000000000000001 /* PinCodeInputTests.swift */,
 				CAD2E7B92449575100113D76 /* Info.plist */,
 			);
 			path = XcodesTests;
@@ -966,6 +969,7 @@
 				CAC281E7259FA45A00B8AB0B /* Environment+Mock.swift in Sources */,
 				CAC281E2259FA44600B8AB0B /* Bundle+XcodesTests.swift in Sources */,
 				CA2518EC25A7FF2B00F08414 /* AppStateUpdateTests.swift in Sources */,
+				D10000010000000000000001 /* PinCodeInputTests.swift in Sources */,
 				CAB3AB0E25BCA6C200BF1B04 /* AppStateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
