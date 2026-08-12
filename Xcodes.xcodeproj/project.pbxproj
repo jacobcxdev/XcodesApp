@@ -120,6 +120,8 @@
 		E8B20CBF2A2EDEC20057D816 /* SDKs+Xcode.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B20CBE2A2EDEC20057D816 /* SDKs+Xcode.swift */; };
 		E8C0EB1C291EF9A10081528A /* AppState+Runtimes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8C0EB1B291EF9A10081528A /* AppState+Runtimes.swift */; };
 		E8CBDB8927ADE32300B22292 /* unxip in Copy aria2c */ = {isa = PBXBuildFile; fileRef = E8CBDB8627ADD92000B22292 /* unxip */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		E8CBDB902EE5010000B22292 /* unxip-3.3.tar.gz in Resources */ = {isa = PBXBuildFile; fileRef = E8CBDB8E2EE5010000B22292 /* unxip-3.3.tar.gz */; };
+		E8CBDB912EE5010000B22292 /* unxip-3.3.provenance.json in Resources */ = {isa = PBXBuildFile; fileRef = E8CBDB8F2EE5010000B22292 /* unxip-3.3.provenance.json */; };
 		E8CBDB8B27AE02FF00B22292 /* ExperiementsPreferencePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8CBDB8A27AE02FF00B22292 /* ExperiementsPreferencePane.swift */; };
 		E8D655C0288DD04700A139C2 /* SelectedActionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D655BF288DD04700A139C2 /* SelectedActionType.swift */; };
 		E8DA461125FAF7FB002E85EF /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8DA461025FAF7FB002E85EF /* NotificationsView.swift */; };
@@ -310,6 +312,8 @@
 		E8B20CBE2A2EDEC20057D816 /* SDKs+Xcode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SDKs+Xcode.swift"; sourceTree = "<group>"; };
 		E8C0EB1B291EF9A10081528A /* AppState+Runtimes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppState+Runtimes.swift"; sourceTree = "<group>"; };
 		E8CBDB8627ADD92000B22292 /* unxip */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = unxip; sourceTree = "<group>"; };
+		E8CBDB8E2EE5010000B22292 /* unxip-3.3.tar.gz */ = {isa = PBXFileReference; lastKnownFileType = archive.gzip; path = "unxip-3.3.tar.gz"; sourceTree = "<group>"; };
+		E8CBDB8F2EE5010000B22292 /* unxip-3.3.provenance.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "unxip-3.3.provenance.json"; sourceTree = "<group>"; };
 		E8CBDB8A27AE02FF00B22292 /* ExperiementsPreferencePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperiementsPreferencePane.swift; sourceTree = "<group>"; };
 		E8D655BF288DD04700A139C2 /* SelectedActionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedActionType.swift; sourceTree = "<group>"; };
 		E8DA461025FAF7FB002E85EF /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
@@ -529,6 +533,8 @@
 				CAD2E7AE2449575000113D76 /* Xcodes.entitlements */,
 				CA8FB64D256E17B100469DA5 /* XcodesTest.entitlements */,
 				E8CBDB8627ADD92000B22292 /* unxip */,
+				E8CBDB8E2EE5010000B22292 /* unxip-3.3.tar.gz */,
+				E8CBDB8F2EE5010000B22292 /* unxip-3.3.provenance.json */,
 				9DD4FFCA2B13EC1800C974F1 /* Localizable.xcstrings */,
 			);
 			path = Resources;
@@ -798,6 +804,8 @@
 				E8EEAD1D2E79174F00BE67E8 /* XcodesIcon.icon in Resources */,
 				CA9FF83F2594FBC000E47BAF /* Licenses.rtf in Resources */,
 				CAA858DB25A3E11F00ACF8C0 /* aria2-release-1.35.0.tar.gz in Resources */,
+				E8CBDB902EE5010000B22292 /* unxip-3.3.tar.gz in Resources */,
+				E8CBDB912EE5010000B22292 /* unxip-3.3.provenance.json in Resources */,
 				CAD2E7A62449575000113D76 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

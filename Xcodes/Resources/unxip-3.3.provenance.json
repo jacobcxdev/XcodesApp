@@ -1,0 +1,18 @@
+{
+  "project": "saagarjha/unxip",
+  "version": "3.3",
+  "tag": "v3.3",
+  "commit": "6c3990517fcc4c1db6952fccf4c562fb14097601",
+  "sourceArchiveURL": "https://github.com/saagarjha/unxip/archive/6c3990517fcc4c1db6952fccf4c562fb14097601.tar.gz",
+  "sourceArchiveSHA256": "eca2c807d4a221610e80ec80649624aa04669bc0b76d3c7a341a540b935a2d1a",
+  "releaseAssetURL": "https://github.com/saagarjha/unxip/releases/download/v3.3/unxip",
+  "releaseAssetSHA256": "475dbffffd70e06715f966b8788f8dd36772f330b3360ff6ef6ff1fccd2f14fe",
+  "releaseAssetArchitectures": [
+    "arm64",
+    "x86_64"
+  ],
+  "releaseAssetSigningTeam": "X4A9GH5NN2",
+  "releaseAssetSigningIdentity": "Developer ID Application: Saagar Jha (X4A9GH5NN2)",
+  "releasePublishedAt": "2026-01-09T02:10:54Z",
+  "tagSignature": "unsigned"
+}
