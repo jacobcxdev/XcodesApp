@@ -101,7 +101,7 @@ Dir.mktmpdir("xcodes-appcast-test.") do |fixture_root|
   FileUtils.mkdir_p(File.join(fixture_root, "_data"))
   FileUtils.cp(File.join(source_root, "_includes", "appcast.inc"), File.join(fixture_root, "_includes"))
   FileUtils.cp(File.join(source_root, "appcast.xml"), fixture_root)
-  FileUtils.cp(File.join(source_root, "appcast_pre.xml"), fixture_root)
+  FileUtils.cp(File.join(source_root, "appcast-prereleases.xml"), fixture_root)
   releases_path = File.join(fixture_root, "_data", "validated_releases.json")
   File.write(releases_path, JSON.pretty_generate(releases))
 
@@ -117,7 +117,7 @@ Dir.mktmpdir("xcodes-appcast-test.") do |fixture_root|
   Jekyll::Site.new(config).process
 
   stable_path = File.join(destination, "appcast.xml")
-  prerelease_path = File.join(destination, "appcast_pre.xml")
+  prerelease_path = File.join(destination, "appcast-prereleases.xml")
   stable_xml = File.read(stable_path)
   prerelease_xml = File.read(prerelease_path)
   stable = REXML::Document.new(stable_xml)

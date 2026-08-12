@@ -69,7 +69,7 @@ Ultimately, we've decided to align with Apple's usage of "active" and "make acti
 
 We're familiar with using GitHub releases to distribute pre-built, code signed and notarized versions of `xcodes` via direct download and Homebrew. Ideally we could use GitHub releases here too with an update mechanism more suitable for an app bundle. For distribution outside the Mac App Store, the most popular choice for updates is [Sparkle](https://sparkle-project.org). The v2 branch has been in beta for a long time, but since Xcodes.app isn't (currently) sandboxed, we can use the production-ready v1 releases.
 
-Based on [this blog post](https://yiqiu.me/2015/11/19/sparkle-update-on-github/), we can use GitHub Pages to generate the appcast for Sparkle to point at releases in our repo. We've made a few changes, like putting the source for the Jekyll site on the main branch, and including the EdDSA signature in the appcast. Generating the appcast file manually would be more straightforward, but we can always edit the files on the gh_pages branch manually if we need to, and it's one less step for a release manager to perform when they're already creating the release in the repo.
+Appcasts still point at immutable GitHub release assets, but XcodesApp does not own a GitHub Pages site or deployment branch. The release workflow validates complete release history, renders both Sparkle feeds, and publishes only those verified XML files through the central documentation repository. That repository serves them from the stable repository-ID path under `https://docs.jacobcx.dev/repo/1330187036/updates/`.
 
 We're deliberately not capturing system profile data with Sparkle right now, because we don't want it and because it would require additional infrastructure.
 
