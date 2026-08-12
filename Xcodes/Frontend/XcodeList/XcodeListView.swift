@@ -21,16 +21,18 @@ struct XcodeListView: View {
     }
     
     private var visibleXcodes: [XcodeListEntry] {
-        appState.allXcodes
+        let entries = appState.allXcodes
             .enumerated()
             .map { XcodeListEntry(index: $0.offset, xcode: $0.element) }
-            .applying(XcodeListFilters(
-                versionFilter: category.versionFilter,
-                architectureFilters: architecture.architectureFilters,
-                allowedMajorVersions: allowedMajorVersions,
-                searchText: searchText,
-                installedOnly: isInstalledOnly
-            ), item: \.listItem)
+
+        return category.applying(
+            to: entries,
+            architectureFilters: architecture.architectureFilters,
+            allowedMajorVersions: allowedMajorVersions,
+            searchText: searchText,
+            installedOnly: isInstalledOnly,
+            item: \.listItem
+        )
     }
 
     private func latestReleaseForSelectedPrerelease(_ xcode: Xcode) -> Xcode? {

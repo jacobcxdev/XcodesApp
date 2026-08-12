@@ -90,7 +90,7 @@ struct XcodesApp: App {
         switch alertType {
         case let .deletePlatform(runtime):
             return Alert(
-                title: Text(String(format: localizeString("Alert.DeletePlatform.Title"), runtime.name)),
+                title: Text(String(format: localizeString("Alert.DeletePlatform.Title"), runtime.runtime.name)),
                   primaryButton: .destructive(
                     Text("Alert.DeletePlatform.PrimaryButton"),
                     action: {

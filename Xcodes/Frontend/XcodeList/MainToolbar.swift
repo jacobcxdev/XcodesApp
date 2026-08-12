@@ -40,6 +40,17 @@ struct MainToolbarModifier: ViewModifier {
                             .tag(XcodeListCategory.release)
                         Label("BetaOnly", systemImage: "line.horizontal.3.decrease.circle.fill")
                             .tag(XcodeListCategory.beta)
+                        Label {
+                            HStack(spacing: 4) {
+                                Text("Release")
+                                Text(verbatim: "+")
+                                Text("Beta")
+                            }
+                            .accessibilityElement(children: .combine)
+                        } icon: {
+                            Image(systemName: "line.horizontal.3.decrease.circle.fill")
+                        }
+                        .tag(XcodeListCategory.releasePlusNewBetas)
                     }
                 }
                 .help("FilterAvailableDescription")

@@ -4,6 +4,13 @@ import OSLog
 import Path
 import Version
 
+struct InstalledPlatformRuntime: Identifiable, Hashable {
+    let runtime: DownloadableRuntime
+    let installedRuntimeUUID: String
+
+    var id: String { installedRuntimeUUID }
+}
+
 extension AppState {
     func updateDownloadableRuntimes() {
         downloadableRuntimesTask?.cancel()
@@ -276,29 +283,59 @@ extension AppState {
     }
 
     func runtimeInstallPath(xcode: Xcode, runtime: DownloadableRuntime) -> Path? {
-        RuntimeInstallationLookupService()
-            .installPath(for: runtime, in: installedRuntimes)
+        guard let relativePath = coreSimulatorInfo(runtime: runtime)?.path["relative"] else {
+            return nil
+        }
+
+        return Path(url: URL(fileURLWithPath: relativePath.replacingOccurrences(of: "file://", with: "")))
     }
 
     func coreSimulatorInfo(runtime: DownloadableRuntime) -> CoreSimulatorImage? {
-        RuntimeInstallationLookupService()
-            .coreSimulatorImage(for: runtime, in: installedRuntimes)
-    }
-
-    func installedPlatformRuntimes() -> [DownloadableRuntime] {
-        downloadableRuntimes.filter { coreSimulatorInfo(runtime: $0) != nil }
-    }
-
-    func deleteRuntime(runtime: DownloadableRuntime) async throws {
-        if let info = coreSimulatorInfo(runtime: runtime) {
-            try await runtimeService.deleteRuntime(identifier: info.uuid)
-            try await refreshInstalledRuntimes()
-        } else {
-            throw XcodesKitError("No simulator found with \(runtime.identifier)")
+        let runtimeIdentity = RuntimeIdentity(runtime)
+        return installedRuntimes.first { installedRuntime in
+            let installedIdentity = RuntimeIdentity(installedRuntime)
+            return installedIdentity.build == runtimeIdentity.build &&
+                (runtimeIdentity.architectures.isEmpty ||
+                 installedIdentity.architectures == runtimeIdentity.architectures)
         }
     }
 
-    func confirmDeleteRuntime(runtime: DownloadableRuntime) {
+    func installedPlatformRuntimes() -> [InstalledPlatformRuntime] {
+        var seenExactRuntimes = Set<RuntimeIdentity>()
+        var seenGenericBuilds = Set<String>()
+        return installedRuntimes.compactMap { installedRuntime in
+            let identity = RuntimeIdentity(installedRuntime)
+            if let runtime = downloadableRuntimes.first(where: {
+                RuntimeIdentity($0) == identity
+            }), identity.architectures.isEmpty == false {
+                guard seenExactRuntimes.insert(identity).inserted else { return nil }
+                return InstalledPlatformRuntime(
+                    runtime: runtime,
+                    installedRuntimeUUID: installedRuntime.uuid
+                )
+            }
+
+            guard let runtime = downloadableRuntimes.first(where: {
+                $0.simulatorVersion.buildUpdate == identity.build &&
+                    ($0.architectures == nil || $0.architectures?.isEmpty == true)
+            }), seenGenericBuilds.insert(identity.build).inserted
+            else {
+                return nil
+            }
+
+            return InstalledPlatformRuntime(
+                runtime: runtime,
+                installedRuntimeUUID: installedRuntime.uuid
+            )
+        }
+    }
+
+    func deleteRuntime(runtime: InstalledPlatformRuntime) async throws {
+        try await runtimeService.deleteRuntime(identifier: runtime.installedRuntimeUUID)
+        try await refreshInstalledRuntimes()
+    }
+
+    func confirmDeleteRuntime(runtime: InstalledPlatformRuntime) {
         deleteRuntimeTask?.cancel()
         let taskID = UUID()
         deleteRuntimeTaskID = taskID
@@ -338,6 +375,21 @@ extension AppState {
         }
 
         return error.localizedDescription
+    }
+}
+
+private struct RuntimeIdentity: Hashable {
+    let build: String
+    let architectures: [String]
+
+    init(_ runtime: DownloadableRuntime) {
+        build = runtime.simulatorVersion.buildUpdate
+        architectures = (runtime.architectures ?? []).map(\.rawValue).sorted()
+    }
+
+    init(_ runtime: CoreSimulatorImage) {
+        build = runtime.runtimeInfo.build
+        architectures = (runtime.runtimeInfo.supportedArchitectures ?? []).map(\.rawValue).sorted()
     }
 }
 

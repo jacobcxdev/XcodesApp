@@ -114,18 +114,18 @@ struct OpenButton: View {
     @EnvironmentObject var appState: AppState
     let xcode: Xcode?
     
-    var openInRosetta: Bool {
+    var showsOpenInRosettaOption: Bool {
         appState.showOpenInRosettaOption && HostHardware.isAppleSilicon()
     }
     
     var body: some View {
-        if openInRosetta {
+        if showsOpenInRosettaOption {
             Menu("Open") {
                 Button(action: open) {
                     Text("Open")
                 }
                 .help("Open")
-                Button(action: open) {
+                Button(action: openInRosetta) {
                     Text("Open In Rosetta")
                 }
                 .help("Open In Rosetta")
@@ -141,7 +141,12 @@ struct OpenButton: View {
     
     private func open() {
         guard let xcode = xcode else { return }
-        appState.open(xcode: xcode, openInRosetta: openInRosetta)
+        appState.open(xcode: xcode)
+    }
+
+    private func openInRosetta() {
+        guard let xcode = xcode else { return }
+        appState.open(xcode: xcode, openInRosetta: true)
     }
 }
 
@@ -264,6 +269,17 @@ struct CreateSymbolicBetaLinkButton: View {
     }
 }
 
+enum XcodeCommandShortcuts {
+    static let makeActive = KeyboardShortcut("s", modifiers: [.command, .option])
+    static let open = KeyboardShortcut(.downArrow, modifiers: .command)
+    static let reveal = KeyboardShortcut("r", modifiers: [.command, .option])
+    static let copyPath = KeyboardShortcut("c", modifiers: [.command, .option])
+    static let uninstall = KeyboardShortcut("u", modifiers: [.command, .option])
+    static let createSymbolicLink = KeyboardShortcut("l", modifiers: [.command, .option])
+
+    static let all = [makeActive, open, reveal, copyPath, uninstall, createSymbolicLink]
+}
+
 // MARK: - Commands
 
 struct InstallCommand: View {
@@ -288,7 +304,7 @@ struct SelectCommand: View {
 
     var body: some View {
         SelectButton(xcode: selectedXcode.unwrapped)
-            .keyboardShortcut("s", modifiers: [.command, .option])
+            .keyboardShortcut(XcodeCommandShortcuts.makeActive)
             .disabled(selectedXcode.unwrapped?.installState.installed != true)
     }
 }
@@ -299,7 +315,7 @@ struct OpenCommand: View {
 
     var body: some View {
         OpenButton(xcode: selectedXcode.unwrapped)
-            .keyboardShortcut(KeyboardShortcut(.downArrow, modifiers: .command))
+            .keyboardShortcut(XcodeCommandShortcuts.open)
             .disabled(selectedXcode.unwrapped?.installState.installed != true)
     }
 }
@@ -310,7 +326,7 @@ struct RevealCommand: View {
 
     var body: some View {
         RevealButton(xcode: selectedXcode.unwrapped)
-            .keyboardShortcut("r", modifiers: [.command, .option])
+            .keyboardShortcut(XcodeCommandShortcuts.reveal)
             .disabled(selectedXcode.unwrapped?.installState.installed != true)
     }
 }
@@ -321,7 +337,7 @@ struct CopyPathCommand: View {
 
     var body: some View {
         CopyPathButton(xcode: selectedXcode.unwrapped)
-            .keyboardShortcut("c", modifiers: [.command, .option])
+            .keyboardShortcut(XcodeCommandShortcuts.copyPath)
             .disabled(selectedXcode.unwrapped?.installState.installed != true)
     }
 }
@@ -332,7 +348,7 @@ struct UninstallCommand: View {
     
     var body: some View {
         UninstallButton(xcode: selectedXcode.unwrapped)
-            .keyboardShortcut("u", modifiers: [.command, .option])
+            .keyboardShortcut(XcodeCommandShortcuts.uninstall)
             .disabled(selectedXcode.unwrapped?.installState.installed != true)
     }
 }
@@ -343,7 +359,7 @@ struct CreateSymbolicLinkCommand: View {
     
     var body: some View {
         CreateSymbolicLinkButton(xcode: selectedXcode.unwrapped)
-            .keyboardShortcut("s", modifiers: [.command, .option])
+            .keyboardShortcut(XcodeCommandShortcuts.createSymbolicLink)
             .disabled(selectedXcode.unwrapped?.installState.installed != true)
     }
 }

@@ -6,59 +6,59 @@ import Version
 
 struct InfoPane: View {
     let xcode: Xcode
+
     var body: some View {
-        if #available(macOS 14.0, *) {
-            mainContent
-                .contentMargins(10, for: .scrollContent)
-        } else {
-            mainContent
-                .padding()
-        }
-    }
-    
-    private var mainContent: some View {
         ScrollView(.vertical) {
-            HStack(alignment: .top) {
-                VStack {
-                    VStack(spacing: 5) {
-                        HStack {
-                            IconView(xcode: xcode)
-                            
-                            Text(verbatim: "Xcode \(xcode.description) \(xcode.version.buildMetadataIdentifiersDisplay)")
-                                .font(.title)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .textSelection(.enabled)
-                        }
-                        InfoPaneControls(xcode: xcode)
-                    }
-                    .xcodesBackground()
-                    
-                    PlatformsView(xcode: xcode)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top) {
+                    primaryColumn
+                        .frame(minWidth: 380)
+                    secondaryColumn
+                        .frame(width: 200)
                 }
-                .frame(minWidth: 380)
-                
+
                 VStack(alignment: .leading) {
-                    ReleaseDateView(date: xcode.releaseDate, url: xcode.releaseNotesURL)
-                    CompatibilityView(requiredMacOSVersion: xcode.requiredMacOSVersion)
-                    IdenticalBuildsView(builds: xcode.identicalBuildsForCurrentVariant)
-                    SDKandCompilers
+                    primaryColumn
+                    secondaryColumn
                 }
-                .frame(width: 200)
-                
             }
         }
+        .contentMargins(10, for: .scrollContent)
     }
-    
-    @ViewBuilder
-    var SDKandCompilers: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SDKsView(sdks: xcode.sdks)
-            CompilersView(compilers: xcode.compilers)
+
+    private var primaryColumn: some View {
+        VStack {
+            VStack(spacing: 5) {
+                HStack {
+                    IconView(xcode: xcode)
+                    Text(verbatim: "Xcode \(xcode.description) \(xcode.version.buildMetadataIdentifiersDisplay)")
+                        .font(.title)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
+                }
+                InfoPaneControls(xcode: xcode)
+            }
+            .xcodesBackground()
+
+            PlatformsView(xcode: xcode)
+        }
+    }
+
+    private var secondaryColumn: some View {
+        VStack(alignment: .leading) {
+            ReleaseDateView(date: xcode.releaseDate, url: xcode.releaseNotesURL)
+            CompatibilityView(requiredMacOSVersion: xcode.requiredMacOSVersion)
+            IdenticalBuildsView(builds: xcode.identicalBuildsForCurrentVariant)
+            VStack(alignment: .leading, spacing: 16) {
+                SDKsView(sdks: xcode.sdks)
+                CompilersView(compilers: xcode.compilers)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(.background)
+            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
     }
 }
 

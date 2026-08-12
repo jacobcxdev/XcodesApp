@@ -13,8 +13,8 @@ import OrderedCollections
 
 struct PlatformsListView: View {
     @EnvironmentObject var appState: AppState
-    @State private var runtimes: OrderedDictionary<DownloadableRuntime.Platform, [DownloadableRuntime]> = [:]
-    @State private var selectedRuntime: DownloadableRuntime?
+    @State private var runtimes: OrderedDictionary<DownloadableRuntime.Platform, [InstalledPlatformRuntime]> = [:]
+    @State private var selectedRuntime: InstalledPlatformRuntime?
     
     var body: some View {
         List(selection: $selectedRuntime) {
@@ -22,13 +22,14 @@ struct PlatformsListView: View {
                 .font(.body)
             ForEach(runtimes.elements.sorted(\.key.order), id: \.key) { platform, runtimeList in
                 Section {
-                    ForEach(runtimeList, id: \.self) { runtime in
+                    ForEach(runtimeList) { installedRuntime in
+                        let runtime = installedRuntime.runtime
                         HStack {
                             Text(runtime.name)
                             Spacer()
                             Text(runtime.downloadFileSizeString)
                             Button {
-                                deleteRuntime(runtime: runtime)
+                                deleteRuntime(runtime: installedRuntime)
                             } label: {
                                 Image(systemName: "trash")
                             }
@@ -40,7 +41,7 @@ struct PlatformsListView: View {
                    
                 } header: {
                     HStack {
-                        runtimeList.first!.icon()
+                        runtimeList.first!.runtime.icon()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 20)
                         Text(platform.shortName)
@@ -62,10 +63,10 @@ struct PlatformsListView: View {
     
     func loadRuntimes() {
         let filteredRuntimes = appState.installedPlatformRuntimes()
-        runtimes = OrderedDictionary(grouping: filteredRuntimes, by: { $0.platform })
+        runtimes = OrderedDictionary(grouping: filteredRuntimes, by: { $0.runtime.platform })
     }
     
-    func deleteRuntime(runtime: DownloadableRuntime) {
+    func deleteRuntime(runtime: InstalledPlatformRuntime) {
         appState.presentedPlatformAlert = .deletePlatform(runtime: runtime)
     }
 }
