@@ -217,8 +217,10 @@ public struct Network: Sendable {
 }
 
 public struct Keychain: Sendable {
+    static let service = "dev.jacobcx.Xcodes.apple-account"
+
     private static var keychain: KeychainAccess.Keychain {
-        KeychainAccess.Keychain(service: "dev.jacobcx.Xcodes")
+        KeychainAccess.Keychain(service: service)
     }
 
     public var getString: @Sendable (String) throws -> String? = { try keychain.getString($0) }

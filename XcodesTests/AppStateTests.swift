@@ -35,6 +35,27 @@ class AppStateTests: XCTestCase {
         subject = AppState()
     }
 
+    func test_KeychainUsesPurposeSpecificAppleAccountService() {
+        XCTAssertEqual(Keychain.service, "dev.jacobcx.Xcodes.apple-account")
+    }
+
+    func test_AutoInstallWaitsForInitialInstalledXcodeScan() {
+        Current.defaults.get = { key in
+            key == "autoInstallation" ? AutoInstallationType.newestBeta.rawValue : nil
+        }
+
+        subject.availableXcodes = [
+            AvailableXcode(
+                version: Version("27.0.0-Beta.5")!,
+                url: URL(string: "https://apple.com/Xcode-27.0.0-Beta.5.xip")!,
+                filename: "Xcode-27.0.0-Beta.5.xip",
+                releaseDate: nil
+            )
+        ]
+
+        XCTAssertTrue(subject.installationTasks.isEmpty)
+    }
+
     func test_AuthenticationPolicy_MapsSession401ToNotAuthorized() {
         let error = AuthenticationRequestPolicy.mapSessionValidationError(
             NetworkError.non200StatusCode(statusCode: 401, data: Data())

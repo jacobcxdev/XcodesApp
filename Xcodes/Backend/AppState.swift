@@ -180,7 +180,9 @@ class AppState: ObservableObject {
             )
         }
         didSet {
-            autoInstallIfNeeded()
+            if hasCompletedInitialInstalledXcodeScan {
+                autoInstallIfNeeded()
+            }
         }
     }
     @Published var allXcodes: [Xcode] = []
@@ -194,6 +196,7 @@ class AppState: ObservableObject {
         }
     }
     private var installedXcodes: [InstalledXcode] = []
+    private var hasCompletedInitialInstalledXcodeScan = false
     @Published var updateTask: Task<Void, Never>?
     var updateTaskID: UUID?
     var isUpdating: Bool { updateTask != nil }
@@ -350,17 +353,6 @@ class AppState: ObservableObject {
         savedUsername != nil
     }
 
-    var bottomStatusBarMessage: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM/yyyy"
-        let finishDate = formatter.date(from: "11/06/2022")
-
-        if Date().compare(finishDate!) == .orderedAscending {
-            return String(format: localizeString("WWDC.Message"), "2022")
-        }
-        return ""
-    }
-
     // MARK: - Init
 
     init(runtimeService: RuntimeService = RuntimeService()) {
@@ -371,6 +363,8 @@ class AppState: ObservableObject {
         try? loadCacheDownloadableRuntimes()
         Task { @MainActor in
             await updateInstalledXcodesAsync()
+            hasCompletedInitialInstalledXcodeScan = true
+            autoInstallIfNeeded()
         }
         helperStatusTask = Task { @MainActor in
             await checkIfHelperIsInstalled()

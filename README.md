@@ -2,7 +2,7 @@
 
 The easiest way to install and switch between multiple versions of Xcode.
 
-This repository is Jacob Clayden's maintained fork of [XcodesOrg/XcodesApp](https://github.com/XcodesOrg/XcodesApp). It keeps the visible `Xcodes.app` name and workflow as a drop-in replacement while using fork-owned bundle, helper, update, signing, and release identities.
+This repository is a maintained fork of [XcodesOrg/XcodesApp](https://github.com/XcodesOrg/XcodesApp). Fork history includes upstream release `v4.0.5b40`. It keeps the visible `Xcodes.app` name and workflow as a drop-in replacement while using fork-owned bundle, helper, update, signing, and release identities.
 
 If you need a command-line tool, see the upstream [`xcodes`](https://github.com/XcodesOrg/xcodes) project.
 
@@ -98,7 +98,7 @@ The upstream README named these localisation contributors. This fork preserves t
 
 ## Upstream and credits
 
-Robots and Pencils, XcodesOrg, Matt Kiazyk, and many community contributors and translators created and maintained Xcodes. Repository history, licence notices, and the app's acknowledgements retain their credits. [Jacob Clayden](https://github.com/jacobcxdev) maintains this fork independently.
+Robots and Pencils, XcodesOrg, Matt Kiazyk, and many community contributors and translators created and maintained Xcodes. Repository history, licence notices, and the app's acknowledgements retain their credits. [JacobCXDev](https://github.com/jacobcxdev) maintains this fork independently.
 
 [`xcode-install`](https://github.com/xcpretty/xcode-install), [fastlane/spaceship](https://github.com/fastlane/fastlane/tree/master/spaceship), and the project's open-source dependencies deserve credit for the foundations Xcodes builds on.
 

@@ -131,7 +131,7 @@ Expected: compile failure because `ForkPreferenceMigration` does not exist.
 
 Add `ForkPreferenceMigration` with marker `dev.jacobcx.Xcodes.preferenceMigrationVersion`, version `1`, and explicit keys from `PreferenceKey` plus `terminateAfterLastWindowClosed`. Exclude `username` and unknown values. Existing destination values win. When no `localPath` exists and legacy support exists, use `~/Library/Application Support/com.robotsandpencils.XcodesApp`.
 
-Call migration at start of production `AppState.init` before loading caches. Change Keychain service to `dev.jacobcx.Xcodes`. Fresh defaults become:
+Call migration at start of production `AppState.init` before loading caches. Change Apple-account Keychain service to `dev.jacobcx.Xcodes.apple-account`. Fresh defaults become:
 
 ```swift
 Path.applicationSupport/"dev.jacobcx.Xcodes"
@@ -182,7 +182,7 @@ Expected: non-zero with current ownership links.
 
 - [ ] **Step 2: Rewrite fork-facing metadata**
 
-Keep product description and contributor credits. Add maintained-fork notice, upstream acknowledgement, fork release installation, signing/notarization statement, development requirements, and release workflow. Remove unsupported fork claims for XcodesOrg Homebrew, OpenCollective, and upstream social accounts. Set owner to Jacob Clayden and CODEOWNERS to `@jacobcxdev`.
+Keep product description and contributor credits. Add maintained-fork notice, upstream acknowledgement, fork release installation, signing/notarization statement, development requirements, and release workflow. Remove unsupported fork claims for XcodesOrg Homebrew, OpenCollective, and upstream social accounts. Use JacobCXDev for public ownership branding and CODEOWNERS `@jacobcxdev`; retain legal identity only where licensing or signing requires it.
 
 Append fork copyright to `LICENSE` without removing original copyright.
 

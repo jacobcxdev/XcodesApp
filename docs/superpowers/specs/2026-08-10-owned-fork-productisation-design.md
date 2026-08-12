@@ -2,7 +2,7 @@
 
 ## Goal
 
-Turn `jacobcxdev/XcodesApp` into Jacob Clayden's maintained, signed, independently releasable Xcodes distribution while preserving `Xcodes.app` as a user-facing drop-in replacement and keeping clean routes for upstream contributions.
+Turn `jacobcxdev/XcodesApp` into JacobCXDev's maintained, signed, independently releasable Xcodes distribution while preserving `Xcodes.app` as a user-facing drop-in replacement and keeping clean routes for upstream contributions.
 
 ## Source-Control Model
 
@@ -20,11 +20,11 @@ Visible product remains `Xcodes` and installs as `/Applications/Xcodes.app`. For
 - application bundle ID: `dev.jacobcx.Xcodes`
 - privileged helper ID and Mach service: `dev.jacobcx.Xcodes.Helper`
 - test bundle ID: `dev.jacobcx.Xcodes.Tests`
-- Keychain service: `dev.jacobcx.Xcodes`
+- Apple-account Keychain service: `dev.jacobcx.Xcodes.apple-account`
 - application-support directory: `~/Library/Application Support/dev.jacobcx.Xcodes`
 - cache directory: `~/Library/Caches/dev.jacobcx.Xcodes`
 - Apple Developer Team ID: `K2648T24P4`
-- copyright: original MIT copyright remains, with `Copyright © 2026 Jacob Clayden` added for fork work
+- copyright: original MIT copyright remains; public app branding credits JacobCXDev fork contributions without claiming upstream work
 
 All helper code requirements use fork bundle IDs and the signing certificate organisational unit supplied by Xcode. Existing upstream helper is never silently deleted.
 
@@ -34,7 +34,7 @@ First launch under fork bundle ID performs an idempotent, allowlisted migration 
 
 Migrated values are non-secret preferences only: install/cache paths, download/data-source choices, runtime and list presentation, selection actions, update preferences, and automatic-install settings. `username`, cookies, Apple credentials, updater state, and arbitrary unknown keys are excluded.
 
-If upstream has no saved `localPath` but its legacy application-support directory exists, migration records that directory as `localPath` so downloaded archives and metadata remain reusable. Fresh installs use fork-owned support and cache directories. New Keychain service starts empty, requiring Apple sign-in. Helper installation remains explicit because bundle ID, Mach service, and signing requirement changed.
+If upstream has no saved `localPath` but its legacy application-support directory exists, migration records that directory as `localPath` so downloaded archives and metadata remain reusable. Fresh installs use fork-owned support and cache directories. Purpose-specific Apple-account Keychain service starts empty, requiring Apple sign-in, without reusing app-wide bundle identity as credential label. Helper installation remains explicit because bundle ID, Mach service, and signing requirement changed.
 
 Migration writes a versioned marker only after copied values are committed. Existing fork values win over legacy values. Failures leave marker unset so a later launch can retry.
 

@@ -47,6 +47,8 @@ mutate_workflow trigger_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["on"]["release"]["types"] = ["created"]; File.write(path, YAML.dump(data) + "# types: [published]\n")'
 mutate_workflow reusable_input_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["on"]["workflow_call"]["inputs"]["tag"]["required"] = false; File.write(path, YAML.dump(data) + "# required: true\n")'
+mutate_workflow reusable_secret_bypass \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["on"]["workflow_call"]["secrets"]["INDEX_REPO_TOKEN"]["required"] = false; File.write(path, YAML.dump(data) + "# required: true\n")'
 # shellcheck disable=SC2016 # GitHub expression must remain literal in mutation comment.
 mutate_workflow concurrency_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["group"] = "appcast-${{ inputs.tag || github.event.release.tag_name }}"; File.write(path, YAML.dump(data) + "# one repository-wide group\n")'
@@ -54,10 +56,10 @@ mutate_workflow cancelling_concurrency \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["concurrency"]["cancel-in-progress"] = true; File.write(path, YAML.dump(data) + "# cancel-in-progress: false\n")'
 mutate_workflow missing_build_timeout \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded build timeout\n")'
-mutate_workflow missing_deploy_timeout \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["deploy"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded deploy timeout\n")'
+mutate_workflow missing_publish_timeout \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"].delete("timeout-minutes"); File.write(path, YAML.dump(data) + "# bounded publish timeout\n")'
 mutate_workflow repository_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["deploy"]["if"] = "always()"; File.write(path, YAML.dump(data) + "# if: github.repository == jacobcxdev/XcodesApp\n")'
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["if"] = "always()"; File.write(path, YAML.dump(data) + "# if: github.repository == jacobcxdev/XcodesApp\n")'
 mutate_workflow missing_build_ref_guard \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["if"] = "github.repository == '\''jacobcxdev/XcodesApp'\''"; File.write(path, YAML.dump(data) + "# exact tag ref guard\n")'
 mutate_workflow missing_checkout_ref \
@@ -95,12 +97,22 @@ mutate_workflow raw_api_jekyll_input \
 # shellcheck disable=SC2016 # Runtime variables must remain literal in mutation source.
 mutate_workflow wrong_rendered_release_input \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate rendered appcasts" }; step["run"].sub!("\"$VALIDATED_RELEASES_FILE\"", "raw-releases.json"); File.write(path, YAML.dump(data) + "# sanitized releases exact\n")'
-mutate_workflow deploy_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["deploy"]["steps"].find { |item| item["uses"]&.start_with?("JamesIves/") }; step["with"]["branch"] = "main"; File.write(path, YAML.dump(data) + "# branch: gh-pages\n")'
+mutate_workflow pages_publish_bypass \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["publish"]["permissions"]["contents"] = "write"; data["jobs"]["publish"]["steps"] << { "uses" => "JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445" }; File.write(path, YAML.dump(data) + "# central publication only\n")'
+mutate_workflow mutable_central_checkout \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Checkout central publisher" }; step["with"]["ref"] = "main"; File.write(path, YAML.dump(data) + "# immutable central action revision\n")'
+mutate_workflow wrong_central_repository \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Checkout central publisher" }; step["with"]["repository"] = "example/docs"; File.write(path, YAML.dump(data) + "# jacobcxdev/jacobcxdev.github.io\n")'
+mutate_workflow missing_central_checkout_token \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Checkout central publisher" }; step["with"].delete("token"); File.write(path, YAML.dump(data) + "# private central repository token\n")'
+mutate_workflow missing_central_token \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Publish through central index" }; step["with"].delete("token"); File.write(path, YAML.dump(data) + "# INDEX_REPO_TOKEN\n")'
+mutate_workflow publish_continue_on_error \
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); step = data["jobs"]["publish"]["steps"].find { |item| item["name"] == "Publish through central index" }; step["continue-on-error"] = true; File.write(path, YAML.dump(data))'
 mutate_workflow action_pin_bypass \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["uses"]&.start_with?("actions/checkout@") }["uses"] = "actions/checkout@v7"; File.write(path, YAML.dump(data) + "# actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n")'
 mutate_workflow validation_bypass \
-    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |item| item["name"] == "Validate rendered appcasts" }; File.write(path, YAML.dump(data) + "# xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast_pre.xml\n")'
+    'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].reject! { |item| item["name"] == "Validate rendered appcasts" }; File.write(path, YAML.dump(data) + "# xmllint --noout AppCast/_site/appcast.xml AppCast/_site/appcast-prereleases.xml\n")'
 mutate_workflow validation_continue_on_error \
     'path = ARGV.fetch(0); data = YAML.safe_load_file(path, aliases: false); data["jobs"]["build"]["steps"].find { |item| item["name"] == "Validate rendered appcasts" }["continue-on-error"] = true; File.write(path, YAML.dump(data))'
 mutate_workflow validation_if_false \
@@ -146,7 +158,7 @@ expect_failure public_key "$identity_fixture/Scripts/check_appcast_identity.sh" 
 cp "$repo_root/Xcodes/Resources/Info.plist" "$identity_fixture/Xcodes/Resources/Info.plist"
 
 perl -0pi -e \
-    's#static let prereleaseAppcast = "https://jacobcxdev\.github\.io/XcodesApp/appcast_pre\.xml"#static let prereleaseAppcast = "https://example.invalid/appcast_pre.xml"\n    // static let prereleaseAppcast = "https://jacobcxdev.github.io/XcodesApp/appcast_pre.xml"#' \
+    's#static let prereleaseAppcast = "https://docs\.jacobcx\.dev/repo/1330187036/updates/appcast-prereleases\.xml"#static let prereleaseAppcast = "https://example.invalid/appcast-prereleases.xml"\n    // static let prereleaseAppcast = "https://docs.jacobcx.dev/repo/1330187036/updates/appcast-prereleases.xml"#' \
     "$identity_fixture/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift"
 expect_failure prerelease_feed "$identity_fixture/Scripts/check_appcast_identity.sh" "$identity_fixture"
 

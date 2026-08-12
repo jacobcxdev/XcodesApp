@@ -207,7 +207,9 @@ jobs:
     if: github.repository == 'jacobcxdev/XcodesApp'
     needs: publish
     permissions:
-      contents: write
+      contents: read
     uses: ./.github/workflows/appcast.yml
     with:
       tag: ${{ needs.publish.outputs.release_tag }}
+    secrets:
+      INDEX_REPO_TOKEN: ${{ secrets.INDEX_REPO_TOKEN }}
