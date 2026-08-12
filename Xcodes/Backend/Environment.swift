@@ -289,13 +289,90 @@ private func securelyRemoveOwnedDirectory(
         throw CocoaError(.fileWriteInvalidFileName)
     }
 
-    guard removefileat(
+    let workspaceDescriptor = openat(
         quarantineDescriptor,
         quarantinedDirectoryName,
-        nil,
-        removefile_flags_t(REMOVEFILE_RECURSIVE)
+        O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
+    )
+    guard workspaceDescriptor >= 0 else { throw currentPOSIXError() }
+    defer { close(workspaceDescriptor) }
+
+    try removeDirectoryContents(at: workspaceDescriptor)
+    guard unlinkat(
+        quarantineDescriptor,
+        quarantinedDirectoryName,
+        AT_REMOVEDIR
     ) == 0 else {
         throw currentPOSIXError()
+    }
+}
+
+private func removeDirectoryContents(at directoryDescriptor: Int32) throws {
+    let iterationDescriptor = dup(directoryDescriptor)
+    guard iterationDescriptor >= 0 else { throw currentPOSIXError() }
+    guard let directory = fdopendir(iterationDescriptor) else {
+        let error = currentPOSIXError()
+        close(iterationDescriptor)
+        throw error
+    }
+    defer { closedir(directory) }
+
+    while true {
+        errno = 0
+        guard let entry = readdir(directory) else {
+            if errno != 0 { throw currentPOSIXError() }
+            return
+        }
+
+        let name = withUnsafePointer(to: entry.pointee.d_name) {
+            $0.withMemoryRebound(to: CChar.self, capacity: Int(MAXNAMLEN) + 1) {
+                String(cString: $0)
+            }
+        }
+        guard name != ".", name != ".." else { continue }
+
+        var entryStatus = stat()
+        guard fstatat(
+            directoryDescriptor,
+            name,
+            &entryStatus,
+            AT_SYMLINK_NOFOLLOW
+        ) == 0 else {
+            throw currentPOSIXError()
+        }
+
+        if entryStatus.st_mode & S_IFMT == S_IFDIR {
+            let childDescriptor = openat(
+                directoryDescriptor,
+                name,
+                O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
+            )
+            guard childDescriptor >= 0 else { throw currentPOSIXError() }
+
+            do {
+                var openedStatus = stat()
+                guard fstat(childDescriptor, &openedStatus) == 0 else {
+                    throw currentPOSIXError()
+                }
+                guard FileSystemIdentity(openedStatus) == FileSystemIdentity(entryStatus) else {
+                    throw CocoaError(.fileWriteInvalidFileName)
+                }
+
+                try removeDirectoryContents(at: childDescriptor)
+                close(childDescriptor)
+            } catch {
+                close(childDescriptor)
+                throw error
+            }
+
+            guard unlinkat(directoryDescriptor, name, AT_REMOVEDIR) == 0 else {
+                throw currentPOSIXError()
+            }
+        } else {
+            guard unlinkat(directoryDescriptor, name, 0) == 0 else {
+                throw currentPOSIXError()
+            }
+        }
     }
 }
 

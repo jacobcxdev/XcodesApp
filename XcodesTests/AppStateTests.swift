@@ -1170,6 +1170,13 @@ class AppStateTests: XCTestCase {
         let archive = root.appendingPathComponent("Xcode-27.xip")
         try Data("archive".utf8).write(to: archive)
         let workspace = try XcodeExtractionWorkspace.create(for: archive)
+        let nestedDirectory = workspace.directoryURL
+            .appendingPathComponent("nested", isDirectory: true)
+            .appendingPathComponent("directory", isDirectory: true)
+        try fileManager.createDirectory(at: nestedDirectory, withIntermediateDirectories: true)
+        try Data("temporary".utf8).write(
+            to: nestedDirectory.appendingPathComponent("contents")
+        )
 
         try workspace.remove()
 
