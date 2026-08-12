@@ -44,7 +44,7 @@ readonly tests_id="dev.jacobcx.Xcodes.Tests"
 readonly helper_id="dev.jacobcx.Xcodes.Helper"
 readonly team_id="K2648T24P4"
 readonly marketing_version="4.0.5"
-readonly build_number="46"
+readonly build_number="47"
 readonly app_copyright="Fork contributions © 2026 JacobCXDev. Upstream contributors retain their copyrights."
 # shellcheck disable=SC2016 # Xcode expands this build-setting literal, not the shell.
 readonly app_requirement='identifier "dev.jacobcx.Xcodes" and info [CFBundleShortVersionString] >= "1.0.0" and anchor apple generic and certificate leaf[subject.OU] = "$(CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT)"'
@@ -183,7 +183,7 @@ if [[ -e "$repo_root/Xcodes/Frontend/XcodeList/BottomStatusBar.swift" ]] \
     fail "Obsolete main-window footer remains"
 fi
 require_literal "DEVELOPER_ID_APPLICATION_P12_BASE64" "$release_documentation"
-require_literal "v4.0.5b46" "$release_documentation"
+require_literal "v4.0.5b47" "$release_documentation"
 
 if grep -n -F -- 'Jacob Clayden' "$readme" "$about_source" "$app_info_plist"; then
     fail "Legal name leaked into public-facing fork branding"
