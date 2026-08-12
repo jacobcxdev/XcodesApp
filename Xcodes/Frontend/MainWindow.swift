@@ -65,7 +65,6 @@ struct MainWindow: View {
                 }
             }
         }
-        .bottomStatusBar()
         .padding([.top], 0)
         .navigationSubtitle(subtitleText)
         .frame(minWidth: 600, maxWidth: .infinity, minHeight: 300, maxHeight: .infinity)

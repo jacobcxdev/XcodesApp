@@ -120,7 +120,6 @@
 		E8C0EB1C291EF9A10081528A /* AppState+Runtimes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8C0EB1B291EF9A10081528A /* AppState+Runtimes.swift */; };
 		E8CBDB8927ADE32300B22292 /* unxip in Copy aria2c */ = {isa = PBXBuildFile; fileRef = E8CBDB8627ADD92000B22292 /* unxip */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		E8CBDB8B27AE02FF00B22292 /* ExperiementsPreferencePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8CBDB8A27AE02FF00B22292 /* ExperiementsPreferencePane.swift */; };
-		E8D0296F284B029800647641 /* BottomStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D0296E284B029800647641 /* BottomStatusBar.swift */; };
 		E8D655C0288DD04700A139C2 /* SelectedActionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D655BF288DD04700A139C2 /* SelectedActionType.swift */; };
 		E8DA461125FAF7FB002E85EF /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8DA461025FAF7FB002E85EF /* NotificationsView.swift */; };
 		E8E98A9025D8631800EC89A0 /* InstallationStepRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFBC3FF259AC17F00E2A3D8 /* InstallationStepRowView.swift */; };
@@ -310,7 +309,6 @@
 		E8C0EB1B291EF9A10081528A /* AppState+Runtimes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppState+Runtimes.swift"; sourceTree = "<group>"; };
 		E8CBDB8627ADD92000B22292 /* unxip */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = unxip; sourceTree = "<group>"; };
 		E8CBDB8A27AE02FF00B22292 /* ExperiementsPreferencePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperiementsPreferencePane.swift; sourceTree = "<group>"; };
-		E8D0296E284B029800647641 /* BottomStatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomStatusBar.swift; sourceTree = "<group>"; };
 		E8D655BF288DD04700A139C2 /* SelectedActionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedActionType.swift; sourceTree = "<group>"; };
 		E8DA461025FAF7FB002E85EF /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
 		E8E98A9525D863D700EC89A0 /* InstallationStepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstallationStepDetailView.swift; sourceTree = "<group>"; };
@@ -462,7 +460,6 @@
 				CAE42486259A68A300B8B246 /* XcodeListCategory.swift */,
 				CAD2E7A32449574E00113D76 /* XcodeListView.swift */,
 				CAFFFED7259CDA5000903F81 /* XcodeListViewRow.swift */,
-				E8D0296E284B029800647641 /* BottomStatusBar.swift */,
 			);
 			path = XcodeList;
 			sourceTree = "<group>";
@@ -950,7 +947,6 @@
 				E8977EA325C11E1500835F80 /* PreferencesView.swift in Sources */,
 				CA9FF87B2595293E00E47BAF /* DataSource.swift in Sources */,
 				CABFAA432593104F00380FEE /* AboutView.swift in Sources */,
-				E8D0296F284B029800647641 /* BottomStatusBar.swift in Sources */,
 				E8C0EB1C291EF9A10081528A /* AppState+Runtimes.swift in Sources */,
 				E8E98A9025D8631800EC89A0 /* InstallationStepRowView.swift in Sources */,
 				CABFA9CC2592EEEA00380FEE /* Path+.swift in Sources */,
@@ -1064,7 +1060,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 41;
+				CURRENT_PROJECT_VERSION = 46;
 				DEVELOPMENT_ASSET_PATHS = "\"Xcodes/Preview Content\"";
 				DEVELOPMENT_TEAM = K2648T24P4;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -1076,7 +1072,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 4.0.4;
+				MARKETING_VERSION = 4.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.jacobcx.Xcodes;
 				PRODUCT_NAME = Xcodes;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1317,7 +1313,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 41;
+				CURRENT_PROJECT_VERSION = 46;
 				DEVELOPMENT_ASSET_PATHS = "\"Xcodes/Preview Content\"";
 				DEVELOPMENT_TEAM = K2648T24P4;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1329,7 +1325,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 4.0.4;
+				MARKETING_VERSION = 4.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.jacobcx.Xcodes;
 				PRODUCT_NAME = Xcodes;
 				SWIFT_VERSION = 6.0;
@@ -1346,7 +1342,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 41;
+				CURRENT_PROJECT_VERSION = 46;
 				DEVELOPMENT_ASSET_PATHS = "\"Xcodes/Preview Content\"";
 				DEVELOPMENT_TEAM = K2648T24P4;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1358,7 +1354,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 4.0.4;
+				MARKETING_VERSION = 4.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.jacobcx.Xcodes;
 				PRODUCT_NAME = Xcodes;
 				SWIFT_VERSION = 6.0;
