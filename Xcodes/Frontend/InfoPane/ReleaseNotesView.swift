@@ -14,12 +14,14 @@ struct ReleaseNotesView: View {
     @SwiftUI.Environment(\.openURL) var openURL: OpenURLAction
 
     var body: some View {
-        if let url = url {
+        if let url {
             Button(action: { openURL(url) }) {
-                Image(systemName: "link.circle.fill")
-                    .font(.title)
+                Label("ReleaseNotes.help", systemImage: "doc.text")
+                    .font(.callout)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.link)
             .contextMenu(menuItems: {
                 CopyReleaseNoteButton(url: url)
             })

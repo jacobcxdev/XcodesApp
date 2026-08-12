@@ -403,3 +403,103 @@ class AppStateUpdateTests: XCTestCase {
         XCTAssertEqual(Data(m2).base64EncodedString(), "R2rgqC9cMAtWiXUImOrvs4oF+ccibf8KaFsZQ22WokM=")
     }
 }
+
+final class XcodeListCategoryTests: XCTestCase {
+    func testReleasePlusNewBetasKeepsReleasesAndUnreleasedBetas() {
+        let xcodes = [
+            makeXcode("17.0.0-Beta.1"),
+            makeXcode("16.0.0"),
+            makeXcode("16.0.0-Beta.3"),
+            makeXcode("15.4.0"),
+        ]
+
+        let result = visibleXcodes(xcodes)
+
+        XCTAssertEqual(
+            result.map(\.version),
+            [Version("17.0.0-Beta.1")!, Version("16.0.0")!, Version("15.4.0")!]
+        )
+    }
+
+    func testReleasePlusNewBetasUsesSelectedArchitectureForReleaseBaseline() {
+        let xcodes = [
+            makeXcode("16.0.0", architectures: [.arm64]),
+            makeXcode("16.0.0-Beta.3", architectures: [.arm64, .x86_64]),
+        ]
+
+        let result = visibleXcodes(xcodes, architecture: .universal)
+
+        XCTAssertEqual(result.map(\.version), [Version("16.0.0-Beta.3")!])
+    }
+
+    func testReleasePlusNewBetasSuppressesBetaBeforeSearchFiltering() {
+        let xcodes = [
+            makeXcode("16.0.0"),
+            makeXcode("16.0.0-Beta.3"),
+        ]
+
+        let result = visibleXcodes(xcodes, searchText: "Beta")
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testReleasePlusNewBetasSuppressesBetaBeforeInstalledFiltering() {
+        let xcodes = [
+            makeXcode("16.0.0"),
+            makeXcode(
+                "16.0.0-Beta.3",
+                installState: .installed(Path("/Applications/Xcode-16.0-Beta.3.app")!)
+            ),
+        ]
+
+        let result = visibleXcodes(xcodes, installedOnly: true)
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testReleasePlusNewBetasKeepsStableRepresentativeForIdenticalBuild() {
+        let stableID = XcodeID(version: Version("16.0.0+16A100")!, architectures: [.arm64])
+        let betaID = XcodeID(version: Version("16.0.0-RC+16A100")!, architectures: [.arm64])
+        let identicalBuilds = [stableID, betaID]
+        let xcodes = [
+            makeXcode("16.0.0+16A100", identicalBuilds: identicalBuilds),
+            makeXcode("16.0.0-RC+16A100", identicalBuilds: identicalBuilds),
+        ]
+
+        let result = visibleXcodes(xcodes)
+
+        XCTAssertEqual(result.map(\.version), [Version("16.0.0+16A100")!])
+    }
+
+    private func visibleXcodes(
+        _ xcodes: [Xcode],
+        architecture: XcodeListArchitecture = .appleSilicon,
+        searchText: String = "",
+        installedOnly: Bool = false
+    ) -> [Xcode] {
+        XcodeListCategory.releasePlusNewBetas.applying(
+            to: xcodes,
+            architectureFilters: architecture.architectureFilters,
+            allowedMajorVersions: Int.max,
+            searchText: searchText,
+            installedOnly: installedOnly,
+            item: \.listItem
+        )
+    }
+
+    private func makeXcode(
+        _ version: String,
+        identicalBuilds: [XcodeID] = [],
+        installState: XcodeInstallState = .notInstalled,
+        architectures: [Architecture] = [.arm64]
+    ) -> Xcode {
+        Xcode(
+            version: Version(version)!,
+            identicalBuilds: identicalBuilds,
+            installState: installState,
+            selected: false,
+            icon: nil,
+            architectures: architectures
+        )
+    }
+}
