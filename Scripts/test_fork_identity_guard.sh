@@ -21,8 +21,8 @@ mkdir -p \
     "$fixture_root/AppCast/_includes" \
     "$fixture_root/AppCast/_plugins" \
     "$fixture_root/Xcodes/Frontend/About" \
+    "$fixture_root/Xcodes/Backend" \
     "$fixture_root/Xcodes/Frontend/Preferences" \
-    "$fixture_root/Xcodes/Frontend/XcodeList" \
     "$fixture_root/Xcodes/Resources" \
     "$fixture_root/docs" \
     "$fixture_root/Scripts"
@@ -69,18 +69,19 @@ cp \
     "$repo_root/AppCast/_config.yml" \
     "$repo_root/AppCast/Gemfile" \
     "$repo_root/AppCast/Gemfile.lock" \
+    "$repo_root/AppCast/appcast.xml" \
+    "$repo_root/AppCast/appcast-prereleases.xml" \
     "$repo_root/AppCast/test_appcast.rb" \
     "$fixture_root/AppCast/"
 cp "$repo_root/AppCast/_includes/appcast.inc" "$fixture_root/AppCast/_includes/"
 cp "$repo_root/AppCast/_plugins/signature_filter.rb" "$fixture_root/AppCast/_plugins/"
 cp "$repo_root/Xcodes/XcodesApp.swift" "$fixture_root/Xcodes/"
+cp "$repo_root/Xcodes/Frontend/MainWindow.swift" "$fixture_root/Xcodes/Frontend/"
 cp "$repo_root/Xcodes/Frontend/About/AboutView.swift" "$fixture_root/Xcodes/Frontend/About/"
 cp \
     "$repo_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift" \
     "$fixture_root/Xcodes/Frontend/Preferences/"
-cp \
-    "$repo_root/Xcodes/Frontend/XcodeList/BottomStatusBar.swift" \
-    "$fixture_root/Xcodes/Frontend/XcodeList/"
+cp "$repo_root/Xcodes/Backend/Environment.swift" "$fixture_root/Xcodes/Backend/"
 cp "$repo_root/Xcodes/Resources/Info.plist" "$fixture_root/Xcodes/Resources/Info.plist"
 
 "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null
@@ -98,12 +99,64 @@ cp \
     "$repo_root/Xcodes.xcodeproj/project.pbxproj" \
     "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
 perl -0pi -e \
-    's#https://jacobcxdev\.github\.io/XcodesApp/appcast\.xml#https://www.xcodes.app/appcast.xml#g' \
+    's#https://docs\.jacobcx\.dev/repo/1330187036/updates/appcast\.xml#https://www.xcodes.app/appcast.xml#g' \
     "$fixture_root/Xcodes/Resources/Info.plist" \
     "$fixture_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift"
 
 if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
     echo "Identity guard accepted a mutated Sparkle feed" >&2
+    exit 1
+fi
+
+cp \
+    "$repo_root/Xcodes.xcodeproj/project.pbxproj" \
+    "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
+perl -0pi -e \
+    's/MARKETING_VERSION = 4\.0\.5;/MARKETING_VERSION = 4.0.4;/g' \
+    "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted a stale marketing version" >&2
+    exit 1
+fi
+
+cp "$repo_root/Xcodes.xcodeproj/project.pbxproj" "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
+perl -0pi -e \
+    's/Fork contributions © 2026 JacobCXDev\. Upstream contributors retain their copyrights\./Copyright © 2026 Jacob Clayden/' \
+    "$fixture_root/Xcodes/Resources/Info.plist"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted public legal-name branding" >&2
+    exit 1
+fi
+
+cp "$repo_root/Xcodes/Resources/Info.plist" "$fixture_root/Xcodes/Resources/Info.plist"
+perl -0pi -e \
+    's/VStack\(alignment: \.leading, spacing: 16\)/VStack(alignment: .leading)/' \
+    "$fixture_root/Xcodes/Frontend/About/AboutView.swift"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted inconsistent About spacing" >&2
+    exit 1
+fi
+
+cp "$repo_root/Xcodes/Frontend/About/AboutView.swift" "$fixture_root/Xcodes/Frontend/About/"
+perl -0pi -e \
+    's/dev\.jacobcx\.Xcodes\.apple-account/dev.jacobcx.Xcodes/' \
+    "$fixture_root/Xcodes/Backend/Environment.swift"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted generic app Keychain service" >&2
+    exit 1
+fi
+
+cp "$repo_root/Xcodes/Backend/Environment.swift" "$fixture_root/Xcodes/Backend/"
+perl -0pi -e \
+    's/\.padding\(\[\.top\], 0\)/.bottomStatusBar()\n        .padding([.top], 0)/' \
+    "$fixture_root/Xcodes/Frontend/MainWindow.swift"
+
+if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
+    echo "Identity guard accepted obsolete main-window footer" >&2
     exit 1
 fi
 
