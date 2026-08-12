@@ -104,15 +104,27 @@ public struct Files: Sendable {
     var fileSystemIdentity: @Sendable (URL) throws -> FileSystemIdentity = { url in
         var fileStatus = stat()
         guard lstat(url.path, &fileStatus) == 0 else {
-            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+            throw currentPOSIXError()
         }
 
-        let fileType = fileStatus.st_mode & S_IFMT
-        return FileSystemIdentity(
-            deviceID: UInt64(fileStatus.st_dev),
-            inode: UInt64(fileStatus.st_ino),
-            isDirectory: fileType == S_IFDIR,
-            isSymbolicLink: fileType == S_IFLNK
+        return FileSystemIdentity(fileStatus)
+    }
+
+    var beforeOwnedDirectoryQuarantine: @Sendable () throws -> Void = {}
+
+    var quarantineAndRemoveOwnedDirectory: @Sendable (
+        URL,
+        FileSystemIdentity,
+        URL,
+        FileSystemIdentity,
+        @Sendable () throws -> Void
+    ) throws -> Void = { parentURL, parentIdentity, directoryURL, directoryIdentity, beforeQuarantine in
+        try securelyRemoveOwnedDirectory(
+            parentURL: parentURL,
+            parentIdentity: parentIdentity,
+            directoryURL: directoryURL,
+            directoryIdentity: directoryIdentity,
+            beforeQuarantine: beforeQuarantine
         )
     }
 
@@ -173,6 +185,122 @@ struct FileSystemIdentity: Equatable, Sendable {
     let inode: UInt64
     let isDirectory: Bool
     let isSymbolicLink: Bool
+
+    init(_ fileStatus: stat) {
+        let fileType = fileStatus.st_mode & S_IFMT
+        deviceID = UInt64(bitPattern: Int64(fileStatus.st_dev))
+        inode = UInt64(fileStatus.st_ino)
+        isDirectory = fileType == S_IFDIR
+        isSymbolicLink = fileType == S_IFLNK
+    }
+
+    init(deviceID: UInt64, inode: UInt64, isDirectory: Bool, isSymbolicLink: Bool) {
+        self.deviceID = deviceID
+        self.inode = inode
+        self.isDirectory = isDirectory
+        self.isSymbolicLink = isSymbolicLink
+    }
+}
+
+private func securelyRemoveOwnedDirectory(
+    parentURL: URL,
+    parentIdentity: FileSystemIdentity,
+    directoryURL: URL,
+    directoryIdentity: FileSystemIdentity,
+    beforeQuarantine: @Sendable () throws -> Void
+) throws {
+    guard directoryURL.deletingLastPathComponent() == parentURL,
+          directoryURL.lastPathComponent.contains("/") == false
+    else {
+        throw CocoaError(.fileWriteInvalidFileName)
+    }
+
+    let parentDescriptor = open(
+        parentURL.path,
+        O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
+    )
+    guard parentDescriptor >= 0 else { throw currentPOSIXError() }
+    defer { close(parentDescriptor) }
+
+    var currentParentStatus = stat()
+    guard fstat(parentDescriptor, &currentParentStatus) == 0 else {
+        throw currentPOSIXError()
+    }
+    guard FileSystemIdentity(currentParentStatus) == parentIdentity else {
+        throw CocoaError(.fileWriteInvalidFileName)
+    }
+
+    let directoryName = directoryURL.lastPathComponent
+    var currentDirectoryStatus = stat()
+    guard fstatat(
+        parentDescriptor,
+        directoryName,
+        &currentDirectoryStatus,
+        AT_SYMLINK_NOFOLLOW
+    ) == 0 else {
+        throw currentPOSIXError()
+    }
+    guard FileSystemIdentity(currentDirectoryStatus) == directoryIdentity else {
+        throw CocoaError(.fileWriteInvalidFileName)
+    }
+
+    let quarantineName = ".xcodes-cleanup-" + UUID().uuidString
+    guard mkdirat(parentDescriptor, quarantineName, 0o700) == 0 else {
+        throw currentPOSIXError()
+    }
+
+    let quarantineDescriptor = openat(
+        parentDescriptor,
+        quarantineName,
+        O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
+    )
+    guard quarantineDescriptor >= 0 else {
+        let error = currentPOSIXError()
+        unlinkat(parentDescriptor, quarantineName, AT_REMOVEDIR)
+        throw error
+    }
+    defer {
+        close(quarantineDescriptor)
+        unlinkat(parentDescriptor, quarantineName, AT_REMOVEDIR)
+    }
+
+    try beforeQuarantine()
+
+    let quarantinedDirectoryName = "workspace"
+    guard renameat(
+        parentDescriptor,
+        directoryName,
+        quarantineDescriptor,
+        quarantinedDirectoryName
+    ) == 0 else {
+        throw currentPOSIXError()
+    }
+
+    var quarantinedDirectoryStatus = stat()
+    guard fstatat(
+        quarantineDescriptor,
+        quarantinedDirectoryName,
+        &quarantinedDirectoryStatus,
+        AT_SYMLINK_NOFOLLOW
+    ) == 0 else {
+        throw currentPOSIXError()
+    }
+    guard FileSystemIdentity(quarantinedDirectoryStatus) == directoryIdentity else {
+        throw CocoaError(.fileWriteInvalidFileName)
+    }
+
+    guard removefileat(
+        quarantineDescriptor,
+        quarantinedDirectoryName,
+        nil,
+        removefile_flags_t(REMOVEFILE_RECURSIVE)
+    ) == 0 else {
+        throw currentPOSIXError()
+    }
+}
+
+private func currentPOSIXError() -> POSIXError {
+    POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
 }
 
 private func _installedXcodes(destination: Path) -> [InstalledXcode] {

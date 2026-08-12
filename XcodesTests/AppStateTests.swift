@@ -847,7 +847,7 @@ class AppStateTests: XCTestCase {
         let runtimes = subject.installedPlatformRuntimes()
 
         XCTAssertEqual(runtimes.count, 1)
-        XCTAssertEqual(runtimes.first?.architectures, [.arm64])
+        XCTAssertEqual(runtimes.first?.runtime.architectures, [.arm64])
     }
 
     func test_InstalledPlatformRuntimes_CollapsesDownloadVariantsForInstalledImage() async throws {
@@ -879,13 +879,13 @@ class AppStateTests: XCTestCase {
         let runtimes = subject.installedPlatformRuntimes()
 
         XCTAssertEqual(runtimes.count, 1)
-        XCTAssertEqual(runtimes.first?.identifier, armRuntime.identifier)
+        XCTAssertEqual(runtimes.first?.runtime.identifier, armRuntime.identifier)
         let deletedIdentifiers = TestLockedBox<[String]>([])
         subject.runtimeService = Self.runtimeService(deleteRuntimeOutput: { identifier in
             deletedIdentifiers.withValue { $0.append(identifier) }
             return ProcessOutput(status: 0, out: "", err: "")
         })
-        try await subject.deleteRuntime(runtime: armRuntime)
+        try await subject.deleteRuntime(runtime: try XCTUnwrap(runtimes.first))
         XCTAssertEqual(deletedIdentifiers.read { $0 }, [installedRuntime.uuid])
     }
 
@@ -916,6 +916,46 @@ class AppStateTests: XCTestCase {
         try await subject.deleteRuntime(runtime: displayedRuntime)
 
         XCTAssertEqual(deletedIdentifiers.read { $0 }, [installedRuntime.uuid])
+    }
+
+    func test_InstalledPlatformRuntimes_CollapsesArchitecturelessBuildToExactUUID() async throws {
+        let runtime = try Self.downloadableRuntime(
+            identifier: "com.apple.dmg.iPhoneSimulatorSDK26_5",
+            build: "23F72",
+            version: "26.5",
+            architectures: nil
+        )
+        let x86Runtime = CoreSimulatorImage(
+            uuid: "97772E90-7BD1-4882-9C51-782E62E0AF4F",
+            path: ["relative": "/Library/Developer/CoreSimulator/Images/iOS_26_5_x86_64.dmg"],
+            runtimeInfo: CoreSimulatorRuntimeInfo(
+                build: "23F72",
+                supportedArchitectures: [.x86_64]
+            )
+        )
+        let armRuntime = CoreSimulatorImage(
+            uuid: "F42510E4-2C1B-411A-B7CE-E0CA68E5F1E5",
+            path: ["relative": "/Library/Developer/CoreSimulator/Images/iOS_26_5_arm64.dmg"],
+            runtimeInfo: CoreSimulatorRuntimeInfo(
+                build: "23F72",
+                supportedArchitectures: [.arm64]
+            )
+        )
+        let deletedIdentifiers = TestLockedBox<[String]>([])
+        subject.downloadableRuntimes = [runtime]
+        subject.installedRuntimes = [x86Runtime, armRuntime]
+        subject.runtimeService = Self.runtimeService(deleteRuntimeOutput: { identifier in
+            deletedIdentifiers.withValue { $0.append(identifier) }
+            return ProcessOutput(status: 0, out: "", err: "")
+        })
+
+        let rows = subject.installedPlatformRuntimes()
+
+        XCTAssertEqual(rows.count, 1)
+        let row = try XCTUnwrap(rows.first)
+        XCTAssertEqual(row.id, x86Runtime.uuid)
+        try await subject.deleteRuntime(runtime: row)
+        XCTAssertEqual(deletedIdentifiers.read { $0 }, [x86Runtime.uuid])
     }
 
     func test_SetInstallationStep_UpdatesExactArchitectureVariant() {
@@ -987,6 +1027,10 @@ class AppStateTests: XCTestCase {
         Current.files.removeItem = { url in
             removedURLs.withValue { $0.append(url) }
         }
+        Current.files.quarantineAndRemoveOwnedDirectory = { _, _, directory, _, beforeQuarantine in
+            try beforeQuarantine()
+            removedURLs.withValue { $0.append(directory) }
+        }
         Current.shell.unxip = { _, directory in
             workingDirectory.withValue { $0 = directory }
             return try await withCheckedThrowingContinuation { pending in
@@ -1038,27 +1082,41 @@ class AppStateTests: XCTestCase {
         try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
         defer { try? fileManager.removeItem(at: root) }
 
+        let raceRan = TestLockedBox(false)
+        let sentinelURL = TestLockedBox<URL?>(nil)
+        Current.files.beforeOwnedDirectoryQuarantine = {
+            let raceFileManager = FileManager.default
+            let workspaceURL = try XCTUnwrap(
+                raceFileManager.contentsOfDirectory(
+                    at: parent,
+                    includingPropertiesForKeys: nil
+                ).first { $0.lastPathComponent.hasPrefix(".xcodes-extract-") }
+            )
+            let outsideWorkspace = outside.appendingPathComponent(
+                workspaceURL.lastPathComponent,
+                isDirectory: true
+            )
+            try raceFileManager.createDirectory(at: outsideWorkspace, withIntermediateDirectories: false)
+            let sentinel = outsideWorkspace.appendingPathComponent("sentinel")
+            try Data("preserve".utf8).write(to: sentinel)
+            sentinelURL.withValue { $0 = sentinel }
+
+            try raceFileManager.moveItem(at: parent, to: movedParent)
+            try raceFileManager.createSymbolicLink(at: parent, withDestinationURL: outside)
+            raceRan.withValue { $0 = true }
+        }
+
         let archive = parent.appendingPathComponent("Xcode-27.xip")
         try Data("archive".utf8).write(to: archive)
         let workspace = try XcodeExtractionWorkspace.create(for: archive)
-        let outsideWorkspace = outside.appendingPathComponent(
-            workspace.directoryURL.lastPathComponent,
-            isDirectory: true
-        )
-        try fileManager.createDirectory(at: outsideWorkspace, withIntermediateDirectories: false)
-        let sentinel = outsideWorkspace.appendingPathComponent("sentinel")
-        try Data("preserve".utf8).write(to: sentinel)
 
-        try fileManager.moveItem(at: parent, to: movedParent)
-        try fileManager.createSymbolicLink(at: parent, withDestinationURL: outside)
+        try workspace.remove()
 
-        XCTAssertThrowsError(try workspace.remove())
-        XCTAssertTrue(fileManager.fileExists(atPath: sentinel.path))
-        XCTAssertTrue(
+        XCTAssertTrue(raceRan.read { $0 })
+        XCTAssertTrue(fileManager.fileExists(atPath: try XCTUnwrap(sentinelURL.read { $0 }).path))
+        XCTAssertFalse(
             fileManager.fileExists(
-                atPath: movedParent
-                    .appendingPathComponent(workspace.directoryURL.lastPathComponent)
-                    .path
+                atPath: movedParent.appendingPathComponent(workspace.directoryURL.lastPathComponent).path
             )
         )
     }
@@ -1069,19 +1127,33 @@ class AppStateTests: XCTestCase {
         defer { Current.files = previousFiles }
         let fileManager = FileManager.default
         let root = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let outside = root.appendingPathComponent("outside", isDirectory: true)
         try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: outside, withIntermediateDirectories: false)
         defer { try? fileManager.removeItem(at: root) }
 
         let archive = root.appendingPathComponent("Xcode-27.xip")
         try Data("archive".utf8).write(to: archive)
-        let workspace = try XcodeExtractionWorkspace.create(for: archive)
         let displacedWorkspace = root.appendingPathComponent("displaced-workspace", isDirectory: true)
-        try fileManager.moveItem(at: workspace.directoryURL, to: displacedWorkspace)
-        try fileManager.createDirectory(at: workspace.directoryURL, withIntermediateDirectories: false)
-        let sentinel = workspace.directoryURL.appendingPathComponent("sentinel")
+        let sentinel = outside.appendingPathComponent("sentinel")
         try Data("preserve".utf8).write(to: sentinel)
+        let raceRan = TestLockedBox(false)
+        Current.files.beforeOwnedDirectoryQuarantine = {
+            let raceFileManager = FileManager.default
+            let workspaceURL = try XCTUnwrap(
+                raceFileManager.contentsOfDirectory(
+                    at: root,
+                    includingPropertiesForKeys: nil
+                ).first { $0.lastPathComponent.hasPrefix(".xcodes-extract-") }
+            )
+            try raceFileManager.moveItem(at: workspaceURL, to: displacedWorkspace)
+            try raceFileManager.createSymbolicLink(at: workspaceURL, withDestinationURL: outside)
+            raceRan.withValue { $0 = true }
+        }
+        let workspace = try XcodeExtractionWorkspace.create(for: archive)
 
         XCTAssertThrowsError(try workspace.remove())
+        XCTAssertTrue(raceRan.read { $0 })
         XCTAssertTrue(fileManager.fileExists(atPath: sentinel.path))
         XCTAssertTrue(fileManager.fileExists(atPath: displacedWorkspace.path))
     }
@@ -1175,15 +1247,19 @@ class AppStateTests: XCTestCase {
             })
         )
         subject.installedRuntimes = [installedRuntime]
+        let installedPlatformRuntime = InstalledPlatformRuntime(
+            runtime: runtime,
+            installedRuntimeUUID: installedRuntime.uuid
+        )
 
-        subject.confirmDeleteRuntime(runtime: runtime)
+        subject.confirmDeleteRuntime(runtime: installedPlatformRuntime)
         for _ in 0..<100 where continuations.read({ $0.count }) < 1 {
             await Task.yield()
         }
         let firstTask = try XCTUnwrap(subject.deleteRuntimeTask)
         XCTAssertEqual(deletedIdentifiers.read { $0 }, [installedRuntime.uuid])
 
-        subject.confirmDeleteRuntime(runtime: runtime)
+        subject.confirmDeleteRuntime(runtime: installedPlatformRuntime)
         for _ in 0..<100 where continuations.read({ $0.count }) < 2 {
             await Task.yield()
         }
@@ -1202,8 +1278,15 @@ class AppStateTests: XCTestCase {
 
     func test_ConfirmDeleteRuntime_PresentsPlatformAlertOnError() async throws {
         let runtime = try Self.downloadableRuntime()
+        let installedPlatformRuntime = InstalledPlatformRuntime(
+            runtime: runtime,
+            installedRuntimeUUID: "missing-runtime-uuid"
+        )
+        subject.runtimeService = Self.runtimeService(deleteRuntimeOutput: { _ in
+            throw XcodesKitError("No simulator found with \(runtime.identifier)")
+        })
 
-        subject.confirmDeleteRuntime(runtime: runtime)
+        subject.confirmDeleteRuntime(runtime: installedPlatformRuntime)
         let task = try XCTUnwrap(subject.deleteRuntimeTask)
         await task.value
 
@@ -1225,8 +1308,12 @@ class AppStateTests: XCTestCase {
         )
         subject = AppState(runtimeService: Self.runtimeService())
         subject.installedRuntimes = [installedRuntime]
+        let installedPlatformRuntime = InstalledPlatformRuntime(
+            runtime: runtime,
+            installedRuntimeUUID: installedRuntime.uuid
+        )
 
-        try await subject.deleteRuntime(runtime: runtime)
+        try await subject.deleteRuntime(runtime: installedPlatformRuntime)
 
         XCTAssertTrue(subject.installedRuntimes.isEmpty)
     }
@@ -1244,8 +1331,12 @@ class AppStateTests: XCTestCase {
             })
         )
         subject.installedRuntimes = [installedRuntime]
+        let installedPlatformRuntime = InstalledPlatformRuntime(
+            runtime: runtime,
+            installedRuntimeUUID: installedRuntime.uuid
+        )
 
-        subject.confirmDeleteRuntime(runtime: runtime)
+        subject.confirmDeleteRuntime(runtime: installedPlatformRuntime)
         let task = try XCTUnwrap(subject.deleteRuntimeTask)
         await task.value
 

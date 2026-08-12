@@ -22,7 +22,7 @@ enum XcodesAlert: Identifiable {
 }
 
 enum XcodesPlatformAlert: Identifiable {
-    case deletePlatform(runtime: DownloadableRuntime)
+    case deletePlatform(runtime: InstalledPlatformRuntime)
     case generic(title: String, message: String)
     
     var id: Int {

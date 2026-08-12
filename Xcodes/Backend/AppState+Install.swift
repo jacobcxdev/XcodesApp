@@ -89,7 +89,13 @@ struct XcodeExtractionWorkspace: Sendable {
         else {
             throw CocoaError(.fileWriteInvalidFileName)
         }
-        try files.removeItem(at: directoryURL)
+        try files.quarantineAndRemoveOwnedDirectory(
+            parentURL,
+            parentIdentity,
+            directoryURL,
+            directoryIdentity,
+            files.beforeOwnedDirectoryQuarantine
+        )
     }
 }
 
