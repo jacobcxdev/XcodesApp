@@ -12,16 +12,17 @@ struct SignInCredentialsView: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text("SignInWithApple")
+            Text("SignInToAppleAccount")
                 .bold()
                 .padding(.vertical)
             HStack {
-                Text("AppleID")
+                Text("AppleAccount")
                     .frame(minWidth: 100, alignment: .trailing)
                 TextField(text: $username) {
                     Text(verbatim: "example@icloud.com")
                 }
                 .textContentType(.username)
+                .accessibilityLabel(Text("AppleAccount"))
                 .focused($focusedField, equals: .username)
             }
             HStack {
@@ -29,6 +30,7 @@ struct SignInCredentialsView: View {
                     .frame(minWidth: 100, alignment: .trailing)
                 SecureField("Required", text: $password)
                     .textContentType(.password)
+                    .accessibilityLabel(Text("Password"))
                     .focused($focusedField, equals: .password)
             }
             if appState.authError != nil {
@@ -44,8 +46,7 @@ struct SignInCredentialsView: View {
             HStack {
                 Spacer()
                 Button("Cancel") {
-                    appState.authError = nil
-                    appState.presentedSheet = nil
+                    appState.cancelAuthentication()
                 }
                     .keyboardShortcut(.cancelAction)
                 ProgressButton(

@@ -8,11 +8,11 @@ struct SignInFederatedView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("SignInWithApple")
+            Text("SignInToAppleAccount")
                 .bold()
                 .padding(.vertical)
 
-            Text("This Apple ID uses federated authentication via \(organizationName).")
+            Text("This Apple Account uses federated authentication via \(organizationName).")
                 .fixedSize(horizontal: false, vertical: true)
 
             Button("Open Browser") {
@@ -33,8 +33,7 @@ struct SignInFederatedView: View {
             HStack {
                 Spacer()
                 Button("Cancel") {
-                    appState.authError = nil
-                    appState.presentedSheet = nil
+                    appState.cancelAuthentication()
                 }
                 .keyboardShortcut(.cancelAction)
 

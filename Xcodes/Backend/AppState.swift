@@ -22,6 +22,37 @@ enum AuthenticationRequestError: LocalizedError, Equatable {
     }
 }
 
+enum AppleAccountAuthenticationError: LocalizedError, Equatable {
+    case privacyAcknowledgementRequired
+    case notAuthorized
+    case passwordRequired
+
+    init?(_ error: Error) {
+        guard let authenticationError = error as? AuthenticationError else { return nil }
+        switch authenticationError {
+        case .appleIDAndPrivacyAcknowledgementRequired:
+            self = .privacyAcknowledgementRequired
+        case .notAuthorized:
+            self = .notAuthorized
+        case .missingPasswordForNonFederatedAccount:
+            self = .passwordRequired
+        default:
+            return nil
+        }
+    }
+
+    var errorDescription: String? {
+        switch self {
+        case .privacyAcknowledgementRequired:
+            return localizeString("AuthError.PrivacyAcknowledgementRequired")
+        case .notAuthorized:
+            return localizeString("AuthError.NotAuthorized")
+        case .passwordRequired:
+            return localizeString("AuthError.PasswordRequired")
+        }
+    }
+}
+
 struct AuthenticationRequestPolicy: Sendable {
     let maximumAttemptCount: Int
     let delayBeforeRetry: Duration
@@ -59,6 +90,16 @@ struct AuthenticationRequestPolicy: Sendable {
         guard let authenticationError = error as? AuthenticationError else { return false }
         if case .invalidUsernameOrPassword = authenticationError { return true }
         return false
+    }
+
+    static func requiresCredentialSignIn(after error: Error) -> Bool {
+        guard let authenticationError = error as? AuthenticationError else { return false }
+        switch authenticationError {
+        case .invalidSession, .notAuthorized:
+            return true
+        default:
+            return false
+        }
     }
 
     private static func isTransient(_ error: Error) -> Bool {
@@ -212,9 +253,14 @@ class AppState: ObservableObject {
     var isUpdating: Bool { updateTask != nil }
     @Published var presentedSheet: XcodesSheet? = nil
     @Published var isProcessingAuthRequest = false
+    @Published private(set) var isRestoringAuthenticationState = false
     private var authenticationRequestID: UUID?
     private var authenticationTask: Task<Void, Never>?
     private var authenticationTaskID: UUID?
+    private var authenticationRestoreTask: Task<Void, Never>?
+    private var authenticationRestoreTaskID: UUID?
+    private var signInIfNeededTask: Task<AuthenticationState, Error>?
+    private var signInIfNeededTaskID: UUID?
     @Published var xcodeBeingConfirmedForUninstallation: Xcode?
     @Published var presentedAlert: XcodesAlert?
     @Published var presentedPlatformAlert: XcodesPlatformAlert?
@@ -363,6 +409,18 @@ class AppState: ObservableObject {
         savedUsername != nil
     }
 
+    var appleAccountDisplayName: String {
+        if let savedUsername, savedUsername.isEmpty == false {
+            return savedUsername
+        }
+        if case let .authenticated(session) = authenticationState,
+           let fullName = session.user.fullName,
+           fullName.isEmpty == false {
+            return fullName
+        }
+        return localizeString("SignedIn")
+    }
+
     // MARK: - Init
 
     init(runtimeService: RuntimeService = RuntimeService()) {
@@ -382,6 +440,7 @@ class AppState: ObservableObject {
         }
         setupAutoInstallTimer()
         setupDefaults()
+        restoreAuthenticationState()
     }
 
     func setupDefaults() {
@@ -416,26 +475,70 @@ class AppState: ObservableObject {
             loadData: { request in
                 try await Current.network.dataTaskAsync(with: request)
             },
-            unauthorizedError: { AuthenticationError.notAuthorized }
+            unauthorizedError: { AppleAccountAuthenticationError.notAuthorized }
         ).validateADCSession(path: path)
     }
 
+    @discardableResult
     func validateSessionAsync(
         authenticationRequestPolicy: AuthenticationRequestPolicy = AuthenticationRequestPolicy()
-    ) async throws {
+    ) async throws -> AuthenticationState {
         do {
-            try await authenticationRequestPolicy.perform {
-                try await Current.network.validateSessionAsync()
+            return try await performAuthenticationRequest(reportsErrors: false) {
+                try await authenticationRequestPolicy.perform {
+                    try await Current.network.validateSessionAsync()
+                }
             }
         } catch {
             throw AuthenticationRequestPolicy.mapSessionValidationError(error)
         }
     }
 
-    func signInIfNeededAsync() async throws {
+    @discardableResult
+    func signInIfNeededAsync(
+        authenticationRequestPolicy: AuthenticationRequestPolicy = AuthenticationRequestPolicy()
+    ) async throws -> AuthenticationState {
+        switch authenticationState {
+        case .waitingForFederatedAuthentication, .waitingForSecondFactor:
+            return authenticationState
+        case .authenticated, .unauthenticated, .notAppleDeveloper:
+            break
+        }
+
+        if let signInIfNeededTask {
+            return try await signInIfNeededTask.value
+        }
+
+        let taskID = UUID()
+        let task = Task { @MainActor [weak self] in
+            guard let self else { throw CancellationError() }
+            return try await performSignInIfNeededAsync(
+                authenticationRequestPolicy: authenticationRequestPolicy
+            )
+        }
+        signInIfNeededTaskID = taskID
+        signInIfNeededTask = task
+        defer {
+            if signInIfNeededTaskID == taskID {
+                signInIfNeededTask = nil
+                signInIfNeededTaskID = nil
+            }
+        }
+        return try await task.value
+    }
+
+    private func performSignInIfNeededAsync(
+        authenticationRequestPolicy: AuthenticationRequestPolicy
+    ) async throws -> AuthenticationState {
         do {
-            try await validateSessionAsync()
+            return try await validateSessionAsync(
+                authenticationRequestPolicy: authenticationRequestPolicy
+            )
         } catch {
+            try Task.checkCancellation()
+            guard AuthenticationRequestPolicy.requiresCredentialSignIn(after: error) else {
+                throw error
+            }
             guard
                 let username = savedUsername,
                 let password = try? Current.keychain.getString(username)
@@ -443,26 +546,102 @@ class AppState: ObservableObject {
                 throw error
             }
 
-            _ = try await signInAsync(username: username, password: password)
+            return try await signInAsync(
+                username: username,
+                password: password,
+                persistsCredentials: false
+            )
+        }
+    }
+
+    func restoreAuthenticationState() {
+        guard authenticationRestoreTask == nil else { return }
+        guard authenticationTask == nil, isProcessingAuthRequest == false else { return }
+        switch authenticationState {
+        case .waitingForFederatedAuthentication(_), .waitingForSecondFactor(_, _, _):
+            return
+        case .authenticated, .unauthenticated, .notAppleDeveloper:
+            break
+        }
+
+        let restoreID = beginAuthenticationRestore()
+        authenticationRestoreTask = Task { @MainActor [weak self] in
+            await self?.performAuthenticationRestore(
+                id: restoreID,
+                authenticationRequestPolicy: AuthenticationRequestPolicy()
+            )
+        }
+    }
+
+    func restoreAuthenticationStateAsync(
+        authenticationRequestPolicy: AuthenticationRequestPolicy = AuthenticationRequestPolicy()
+    ) async {
+        authenticationRestoreTask?.cancel()
+        authenticationRestoreTask = nil
+        let restoreID = beginAuthenticationRestore()
+        await performAuthenticationRestore(
+            id: restoreID,
+            authenticationRequestPolicy: authenticationRequestPolicy
+        )
+    }
+
+    private func beginAuthenticationRestore() -> UUID {
+        let restoreID = UUID()
+        authenticationRestoreTaskID = restoreID
+        isRestoringAuthenticationState = true
+        return restoreID
+    }
+
+    private func performAuthenticationRestore(
+        id restoreID: UUID,
+        authenticationRequestPolicy: AuthenticationRequestPolicy
+    ) async {
+        defer {
+            if authenticationRestoreTaskID == restoreID {
+                authenticationRestoreTask = nil
+                authenticationRestoreTaskID = nil
+                isRestoringAuthenticationState = false
+            }
+        }
+
+        do {
+            _ = try await signInIfNeededAsync(
+                authenticationRequestPolicy: authenticationRequestPolicy
+            )
+        } catch is CancellationError {
+        } catch {
+            guard authenticationRestoreTaskID == restoreID else { return }
+            if AuthenticationRequestPolicy.requiresCredentialSignIn(after: error)
+                || AuthenticationRequestPolicy.shouldClearCredentials(after: error) {
+                authenticationState = .unauthenticated
+            }
+            Logger.appState.error("Restoring Apple Account session failed: \(error.legibleDescription)")
         }
     }
 
     func signIn(username: String, password: String?) {
+        cancelAuthenticationRestore()
         authError = nil
         startAuthenticationTask {
             _ = try await self.signInAsync(username: username.lowercased(), password: password)
         }
     }
 
-    func signInAsync(username: String, password: String?) async throws -> AuthenticationState {
-        if let password, !password.isEmpty {
+    func signInAsync(
+        username: String,
+        password: String?,
+        persistsCredentials: Bool = true
+    ) async throws -> AuthenticationState {
+        if persistsCredentials, let password, !password.isEmpty {
             try? Current.keychain.set(password, key: username)
         }
-        Current.defaults.set(username, forKey: "username")
+        if persistsCredentials {
+            Current.defaults.set(username, forKey: "username")
+        }
 
         return try await performAuthenticationRequest {
             try await AuthenticationRequestPolicy().perform {
-                try await self.client.authenticationState(accountName: username, password: password)
+                try await Current.network.authenticationStateAsync(username, password)
             }
         }
     }
@@ -538,6 +717,7 @@ class AppState: ObservableObject {
 
     func cancelSecurityKeyAssertationRequest() {
         self.client.cancelSecurityKeyAssertationRequest()
+        cancelAuthentication()
     }
 
     private func handleAuthenticationFlowFailure(_ error: Error) {
@@ -545,7 +725,11 @@ class AppState: ObservableObject {
             clearLoginCredentials()
         }
         Logger.appState.error("Authentication error: \(error.legibleDescription)")
-        self.authError = error
+        self.authError = Self.userFacingAuthenticationError(error)
+    }
+
+    static func userFacingAuthenticationError(_ error: Error) -> Error {
+        AppleAccountAuthenticationError(error) ?? error
     }
 
     private func handleAuthenticationFlowSuccess() {
@@ -560,8 +744,10 @@ class AppState: ObservableObject {
     }
 
     private func performAuthenticationRequest(
+        reportsErrors: Bool = true,
         _ operation: () async throws -> AuthenticationState
     ) async throws -> AuthenticationState {
+        try Task.checkCancellation()
         let requestID = UUID()
         authenticationRequestID = requestID
         isProcessingAuthRequest = true
@@ -574,12 +760,14 @@ class AppState: ObservableObject {
 
         do {
             let authenticationState = try await operation()
+            try Task.checkCancellation()
             guard authenticationRequestID == requestID else { return authenticationState }
             self.authenticationState = authenticationState
+            authError = nil
             handleAuthenticationFlowSuccess()
             return authenticationState
         } catch {
-            if authenticationRequestID == requestID {
+            if authenticationRequestID == requestID, reportsErrors {
                 handleAuthenticationFlowFailure(error)
             }
             throw error
@@ -606,10 +794,35 @@ class AppState: ObservableObject {
         }
     }
 
+    func cancelAuthentication() {
+        cancelAuthenticationRestore()
+        authenticationTask?.cancel()
+        authenticationTask = nil
+        authenticationTaskID = nil
+        authenticationRequestID = nil
+        isProcessingAuthRequest = false
+        signInIfNeededTask?.cancel()
+        signInIfNeededTask = nil
+        signInIfNeededTaskID = nil
+        authError = nil
+        presentedSheet = nil
+        authenticationState = .unauthenticated
+    }
+
     func signOut() {
+        cancelAuthentication()
         clearLoginCredentials()
         Current.network.signout()
-        authenticationState = .unauthenticated
+    }
+
+    private func cancelAuthenticationRestore() {
+        authenticationRestoreTask?.cancel()
+        authenticationRestoreTask = nil
+        authenticationRestoreTaskID = nil
+        isRestoringAuthenticationState = false
+        signInIfNeededTask?.cancel()
+        signInIfNeededTask = nil
+        signInIfNeededTaskID = nil
     }
 
     // MARK: - Helper
@@ -1063,7 +1276,7 @@ class AppState: ObservableObject {
         ).uninstall(xcode, emptyTrash: false)
     }
 
-    private func waitForAuthenticationTerminalState() async throws {
+    func waitForAuthenticationTerminalState() async throws {
         func validate(_ state: AuthenticationState) throws -> Bool {
             switch state {
             case .authenticated:
@@ -1086,17 +1299,19 @@ class AppState: ObservableObject {
             try Task.checkCancellation()
             if try validate(state) { return }
         }
+        try Task.checkCancellation()
     }
 
     private func handleInstallError(_ error: Error, id: XcodeID) {
+        let presentedError = Self.userFacingAuthenticationError(error)
         // Prevent setting the app state error if it is an invalid session, we will present the sign in view instead
         if let error = error as? AuthenticationError, case .notAuthorized = error {
-            self.error = error
+            self.error = presentedError
             self.presentedAlert = .unauthenticated
 
         } else if error as? AuthenticationError != .invalidSession {
-            self.error = error
-            self.presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: error.legibleLocalizedDescription)
+            self.error = presentedError
+            self.presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: presentedError.legibleLocalizedDescription)
         }
         if let index = self.allXcodes.firstIndex(where: { $0.id == id }) {
             self.allXcodes[index].installState = .notInstalled

@@ -60,8 +60,9 @@ extension AppState {
             } catch {
                 // Prevent setting the app state error if it is an invalid session, we will present the sign in view instead
                 if error as? AuthenticationError != .invalidSession {
-                    self.error = error
-                    self.presentedAlert = .generic(title: localizeString("Alert.Update.Error.Title"), message: error.legibleLocalizedDescription)
+                    let presentedError = Self.userFacingAuthenticationError(error)
+                    self.error = presentedError
+                    self.presentedAlert = .generic(title: localizeString("Alert.Update.Error.Title"), message: presentedError.legibleLocalizedDescription)
                 }
             }
         }
@@ -79,9 +80,8 @@ extension AppState {
 
     private func updateAvailableXcodes(from dataSource: DataSource) async throws -> [AvailableXcode] {
         if dataSource == .apple {
-            try await signInIfNeededAsync()
-            // This checks whether the Apple ID is a valid Apple Developer account.
-            try await validateSessionAsync()
+            _ = try await signInIfNeededAsync()
+            try await waitForAuthenticationTerminalState()
         }
 
         let service = XcodeListService(urlSession: Current.network.session)

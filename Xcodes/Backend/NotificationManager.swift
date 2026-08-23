@@ -4,7 +4,7 @@ import UserNotifications
 
 /// Representation of the 3 states of the Notifications permission prompt which may either have not been shown, or was shown and denied or accepted
 /// Unknown is value to indicate that we have not yet determined the status and should not be used other than as a default value before determining the actual status
-public enum NotificationPermissionPromptStatus: Int {
+public enum NotificationPermissionPromptStatus: Int, Equatable, Sendable {
     case unknown, notShown, shownAndDenied, shownAndAccepted
 }
 
@@ -31,7 +31,10 @@ public enum XcodesNotificationType: String, Identifiable, CaseIterable, CustomSt
 
 @MainActor
 public final class NotificationManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
+    typealias NotificationStatusLoader = @MainActor @Sendable () async -> NotificationPermissionPromptStatus
+
     private let notificationCenter = UNUserNotificationCenter.current()
+    private let notificationStatusLoader: NotificationStatusLoader
     private var notificationStatusTask: Task<Void, Never>?
     private var notificationStatusTaskID: UUID?
     private var requestAccessTask: Task<Void, Never>?
@@ -40,6 +43,20 @@ public final class NotificationManager: NSObject, UNUserNotificationCenterDelega
     @Published var notificationStatus = NotificationPermissionPromptStatus.unknown
     
     nonisolated public override init() {
+        self.notificationStatusLoader = {
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            return NotificationManager.systemPromptStatusFromSettings(settings)
+        }
+        super.init()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            loadNotificationStatus()
+            notificationCenter.delegate = self
+        }
+    }
+
+    nonisolated init(notificationStatusLoader: @escaping NotificationStatusLoader) {
+        self.notificationStatusLoader = notificationStatusLoader
         super.init()
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -58,15 +75,15 @@ public final class NotificationManager: NSObject, UNUserNotificationCenterDelega
         let taskID = UUID()
         notificationStatusTaskID = taskID
         notificationStatusTask = Task { [weak self] in
-            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            guard let self else { return }
+            let status = await notificationStatusLoader()
             guard !Task.isCancelled else {
-                await self?.clearNotificationStatusTask(id: taskID)
+                clearNotificationStatusTask(id: taskID)
                 return
             }
 
-            let status = NotificationManager.systemPromptStatusFromSettings(settings)
-            await self?.setNotificationStatus(status, ifNotificationStatusTaskID: taskID)
-            await self?.clearNotificationStatusTask(id: taskID)
+            setNotificationStatus(status, ifNotificationStatusTaskID: taskID)
+            clearNotificationStatusTask(id: taskID)
         }
     }
     
@@ -94,14 +111,14 @@ public final class NotificationManager: NSObject, UNUserNotificationCenterDelega
             do {
                 let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
                 guard !Task.isCancelled else {
-                    await self?.clearRequestAccessTask(id: taskID)
+                    self?.clearRequestAccessTask(id: taskID)
                     return
                 }
 
                 Logger.appState.log("User has \(granted ? "Granted" : "NOT GRANTED") notification permission")
             } catch {
                 guard !Task.isCancelled else {
-                    await self?.clearRequestAccessTask(id: taskID)
+                    self?.clearRequestAccessTask(id: taskID)
                     return
                 }
 
@@ -110,13 +127,13 @@ public final class NotificationManager: NSObject, UNUserNotificationCenterDelega
 
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             guard !Task.isCancelled else {
-                await self?.clearRequestAccessTask(id: taskID)
+                self?.clearRequestAccessTask(id: taskID)
                 return
             }
 
             let status = NotificationManager.systemPromptStatusFromSettings(settings)
-            await self?.setNotificationStatus(status, ifRequestAccessTaskID: taskID)
-            await self?.clearRequestAccessTask(id: taskID)
+            self?.setNotificationStatus(status, ifRequestAccessTaskID: taskID)
+            self?.clearRequestAccessTask(id: taskID)
         }
     }
 

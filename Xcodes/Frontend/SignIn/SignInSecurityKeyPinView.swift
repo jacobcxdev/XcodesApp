@@ -11,7 +11,6 @@ import XcodesLoginKit
 
 struct SignInSecurityKeyPinView: View {
     @EnvironmentObject var appState: AppState
-    @Binding var isPresented: Bool
     @State private var pin: String = ""
     let authOptions: AuthOptionsResponse
     let sessionData: AppleSessionData
@@ -29,7 +28,7 @@ struct SignInSecurityKeyPinView: View {
             .padding()
             
             HStack {
-                Button("Cancel", action: { isPresented = false })
+                Button("Cancel", action: appState.cancelAuthentication)
                     .keyboardShortcut(.cancelAction)
                 Spacer()
 
@@ -60,8 +59,7 @@ struct SignInSecurityKeyPinView: View {
 }
 
 #Preview { @MainActor in
-    SignInSecurityKeyPinView(isPresented: .constant(true),
-                             authOptions: AuthOptionsResponse(
+    SignInSecurityKeyPinView(authOptions: AuthOptionsResponse(
                                 trustedPhoneNumbers: nil,
                                 trustedDevices: nil,
                                 securityCode: .init(length: 6)

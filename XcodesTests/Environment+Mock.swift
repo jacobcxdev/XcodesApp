@@ -91,7 +91,8 @@ extension Network {
                     }
                 )
             },
-            validateSessionAsync: { },
+            validateSessionAsync: { .unauthenticated },
+            authenticationStateAsync: { _, _ in .unauthenticated },
             signout: { }
         )
     }

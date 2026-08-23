@@ -43,6 +43,10 @@ expect_failure new_thai_gap \
     'path = ARGV.fetch(0); data = JSON.parse(File.read(path)); data["strings"]["AutomaticallyCreateSymbolicLink"]["localizations"].delete("th"); File.write(path, JSON.pretty_generate(data))'
 expect_failure stale_baseline \
     'path = ARGV.fetch(0); data = JSON.parse(File.read(path)); data["strings"]["AutomaticallyCreateBetaSymbolicLink"]["localizations"]["de"] = { "stringUnit" => { "state" => "translated", "value" => "Beta-Link" } }; File.write(path, JSON.pretty_generate(data))'
+expect_failure legacy_apple_id_copy \
+    'path = ARGV.fetch(0); data = JSON.parse(File.read(path)); data["strings"]["AccessGranted"]["localizations"]["en"]["stringUnit"]["value"] = "Signed in with your Apple ID."; File.write(path, JSON.pretty_generate(data))'
+expect_failure shifted_grouping_translation \
+    'path = ARGV.fetch(0); data = JSON.parse(File.read(path)); data["strings"]["GroupXcodeVersionsInList"]["localizations"]["en"]["stringUnit"]["value"] = data["strings"]["GroupXcodeVersionsInList"]["localizations"]["es"]["stringUnit"]["value"]; File.write(path, JSON.pretty_generate(data))'
 
 checker_fixture="$test_root/omitted-language-checker.rb"
 cp "$checker" "$checker_fixture"
