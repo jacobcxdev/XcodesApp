@@ -179,7 +179,7 @@ struct AdvancedPreferencePane_Previews: PreviewProvider {
 // A group style for the preferences
 struct PreferencesGroupBoxStyle: GroupBoxStyle {
     func makeBody(configuration: Configuration) -> some View {
-        HStack(alignment: .top, spacing: 20) {
+        HStack(alignment: .firstTextBaseline, spacing: 20) {
             configuration.label
                 .frame(width: 180, alignment: .trailing)
             

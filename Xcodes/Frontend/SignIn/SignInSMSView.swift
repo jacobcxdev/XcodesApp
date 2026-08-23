@@ -3,7 +3,6 @@ import XcodesLoginKit
 
 struct SignInSMSView: View {
     @EnvironmentObject var appState: AppState
-    @Binding var isPresented: Bool
     @State private var code: String = ""
     let trustedPhoneNumber: AuthOptionsResponse.TrustedPhoneNumber
     let authOptions: AuthOptionsResponse
@@ -31,7 +30,7 @@ struct SignInSMSView: View {
             .padding()
             
             HStack {
-                Button("Cancel", action: { isPresented = false })
+                Button("Cancel", action: appState.cancelAuthentication)
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 ProgressButton(isInProgress: appState.isProcessingAuthRequest,
@@ -52,7 +51,6 @@ struct SignInSMSView_Previews: PreviewProvider {
     @MainActor
     static var previews: some View {
         SignInSMSView(
-            isPresented: .constant(true),
             trustedPhoneNumber: .init(id: 0, numberWithDialCode: "(•••) •••-••90"), 
             authOptions: AuthOptionsResponse(
                 trustedPhoneNumbers: nil,

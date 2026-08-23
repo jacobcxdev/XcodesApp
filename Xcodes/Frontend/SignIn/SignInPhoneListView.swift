@@ -3,7 +3,6 @@ import SwiftUI
 
 struct SignInPhoneListView: View {
     @EnvironmentObject var appState: AppState
-    @Binding var isPresented: Bool
     @State private var selectedPhoneNumberID: AuthOptionsResponse.TrustedPhoneNumber.ID?
     let authOptions: AuthOptionsResponse
     let sessionData: AppleSessionData
@@ -28,7 +27,7 @@ struct SignInPhoneListView: View {
             }
 
             HStack {
-                Button("Cancel", action: { isPresented = false })
+                Button("Cancel", action: appState.cancelAuthentication)
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 ProgressButton(isInProgress: appState.isProcessingAuthRequest,
@@ -52,7 +51,6 @@ struct SignInPhoneListView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             SignInPhoneListView(
-                isPresented: .constant(true),
                 authOptions: AuthOptionsResponse(
                     trustedPhoneNumbers: [.init(id: 0, numberWithDialCode: "(•••) •••-••90")],
                     trustedDevices: nil,
@@ -63,7 +61,6 @@ struct SignInPhoneListView_Previews: PreviewProvider {
             .environmentObject(AppState())
 
             SignInPhoneListView(
-                isPresented: .constant(true),
                 authOptions: AuthOptionsResponse(
                     trustedPhoneNumbers: [],
                     trustedDevices: nil,

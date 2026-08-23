@@ -412,7 +412,8 @@ public struct Network: Sendable {
         downloadTaskAsync(url, saveLocation, resumeData)
     }
     
-    public var validateSessionAsync: @Sendable () async throws -> Void
+    public var validateSessionAsync: @Sendable () async throws -> AuthenticationState
+    public var authenticationStateAsync: @Sendable (String, String?) async throws -> AuthenticationState
 
     public var signout: @Sendable () -> Void
 
@@ -420,7 +421,8 @@ public struct Network: Sendable {
         session: URLSession? = nil,
         loadData: (@Sendable (URLRequest) async throws -> (Data, URLResponse))? = nil,
         downloadTaskAsync: (@Sendable (URL, URL, Data?) -> (Progress, Task<(saveLocation: URL, response: URLResponse), Error>))? = nil,
-        validateSessionAsync: (@Sendable () async throws -> Void)? = nil,
+        validateSessionAsync: (@Sendable () async throws -> AuthenticationState)? = nil,
+        authenticationStateAsync: (@Sendable (String, String?) async throws -> AuthenticationState)? = nil,
         signout: (@Sendable () -> Void)? = nil
     ) {
         let loginClient: XcodesLoginKit.Client
@@ -437,7 +439,10 @@ public struct Network: Sendable {
             loginClient.urlSession.downloadTaskAsync(with: url, to: saveLocation, resumingWith: resumeData)
         }
         self.validateSessionAsync = validateSessionAsync ?? {
-            _ = try await loginClient.validateSession()
+            try await loginClient.validateSession()
+        }
+        self.authenticationStateAsync = authenticationStateAsync ?? { username, password in
+            try await loginClient.authenticationState(accountName: username, password: password)
         }
         self.signout = signout ?? {
             loginClient.signout()
@@ -452,7 +457,10 @@ public struct Network: Sendable {
             loginClient.urlSession.downloadTaskAsync(with: url, to: saveLocation, resumingWith: resumeData)
         }
         self.validateSessionAsync = {
-            _ = try await loginClient.validateSession()
+            try await loginClient.validateSession()
+        }
+        self.authenticationStateAsync = { username, password in
+            try await loginClient.authenticationState(accountName: username, password: password)
         }
         self.signout = {
             loginClient.signout()

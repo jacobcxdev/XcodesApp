@@ -19,7 +19,7 @@ If you need a command-line tool, see the upstream [`xcodes`](https://github.com/
 - Shows release notes, OS compatibility, SDKs, and compilers.
 - Installs supported simulator platforms and runtimes.
 - Supports Apple silicon and universal Xcode variants.
-- Supports Apple ID and security-key authentication where Apple requires sign-in.
+- Supports Apple Account and security-key authentication where Apple requires sign-in.
 - Supports stable and prerelease update channels through Sparkle.
 
 The optional unxip experiment builds on [saagarjha/unxip](https://github.com/saagarjha/unxip). It can reduce extraction time, at the cost of higher memory use on some systems.

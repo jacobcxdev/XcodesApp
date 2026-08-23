@@ -379,132 +379,787 @@
         }
       }
     },
-    "AccessDenied" : {
+    "AuthError.PrivacyAcknowledgementRequired" : {
+      "comment" : "Apple Account authentication",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ تم الرفض  ⚠️  فضلا قوم بفتح اعدادات الاشعارات واختار  تحديث الXcode الذي تريده ثم اعطي اذن بالسماح"
+            "value" : "سجّل الدخول إلى App Store Connect واقبل اتفاقية حساب Apple والخصوصية."
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Accés denegat ⚠️\n\nSi us plau, obre les preferències de les notificacions i selecciona Xcodes si vols garantir-li l'accés."
+            "value" : "Inicia la sessió a App Store Connect i accepta l’acord Compte d’Apple i privadesa."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Zugriff verweigert ⚠️\n\nBitte öffne Deine Benachrichtigungs-Einstellungen und wähle Xcodes aus, wenn Du den Zugriff erlauben möchtest."
+            "value" : "Melde dich bei App Store Connect an und akzeptiere die Vereinbarung „Apple Account & Datenschutz“."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Άρνηση Πρόσβασης ⚠️\n\nΑνοίξτε τις Ρυθμίσεις Γνωστοποιήσεων και επιλέξτε το Xcodes αν επιθυμείτε να επιτρέψετε την πρόσβαση."
+            "value" : "Συνδεθείτε στο App Store Connect και αποδεχτείτε τη συμφωνία Λογαριασμού Apple και απορρήτου."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Access Denied ⚠️\n\nPlease open your Notification Settings and select Xcodes if you wish to allow access."
+            "value" : "Sign in to App Store Connect and accept the Apple Account & Privacy agreement."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Acceso Denegado ⚠️\n\nPor favor abra su Configuración de notificaciones y seleccione Xcodes si desea permitir el acceso."
+            "value" : "Inicia sesión en App Store Connect y acepta el acuerdo de Cuenta de Apple y privacidad."
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Pääsy kielletty ⚠️\n\nAvaa ilmoitusasetukset ja valitse Xcodes, jos haluat sallia pääsyn."
+            "value" : "Kirjaudu App Store Connectiin ja hyväksy Apple-tili ja tietosuoja -sopimus."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Accès refusé ⚠️\n\nVeuillez ouvrir vos paramètres de notifications et sélectionnez Xcodes si vous souhaitez autoriser l'accès."
+            "value" : "Connectez-vous à App Store Connect et acceptez l’accord Compte Apple et confidentialité."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ प्रवेश निषेध ⚠️\n\nकृपया अपनी सूचना सेटिंग्स खोलें और यदि आप प्रवेश की अनुमति देना चाहते हैं तो Xcodes का चयन करें."
+            "value" : "App Store Connect में साइन इन करें और Apple अकाउंट व गोपनीयता समझौता स्वीकार करें।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Accesso Negato ⚠️\n\nApri le Impostazioni delle Notifiche e seleziona Xcodes se desideri garantirgli accesso."
+            "value" : "Accedi ad App Store Connect e accetta l’accordo Account Apple e privacy."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ アクセス拒否 ⚠️\n\nアクセス許可する場合は、通知設定を開き、Xcodesを選択してください。"
+            "value" : "App Store Connectにサインインし、Apple Accountとプライバシーに関する契約に同意してください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ 접근 권한이 부여되지 않았습니다 ⚠️\n\n 접근을 허용하려면 알림 설정을 열고 Xcodes를 선택하여 알림을 허용해주세요."
+            "value" : "App Store Connect에 로그인하고 Apple 계정 및 개인정보 보호 계약에 동의하십시오."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Toegang Geweigerd ⚠️\n\nOpen je Notificatie Instellingen en selecteer Xcodes om toegang te verlenen."
+            "value" : "Log in bij App Store Connect en accepteer de overeenkomst Apple Account en privacy."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Dostęp zabroniony ⚠️\n\nOtwórz ustawienia powiadomień i wybierz Xcodes, jeśli chcesz zezwolić na dostęp."
+            "value" : "Zaloguj się do App Store Connect i zaakceptuj umowę Konto Apple i prywatność."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Acesso negado ⚠️\n\nPor favor, abra suas configurações de notificação e selecione Xcodes se você deseja autorizar o acesso."
+            "value" : "Inicie sessão no App Store Connect e aceite o contrato de Conta Apple e Privacidade."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Отказано в доступе ⚠️\n\nПожалуйста, откройте настройки уведомлений и выберите Xcodes, чтобы разрешить доступ."
+            "value" : "Войдите в App Store Connect и примите соглашение «Учётная запись Apple и конфиденциальность»."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ การเข้าถึงถูกปฏิเสธ ⚠️\n\nโปรดเปิดการตั้งค่าการแจ้งเตือนและเลือก Xcodes หากคุณต้องการอนุญาตการเข้าถึง"
+            "value" : "ลงชื่อเข้า App Store Connect และยอมรับข้อตกลงบัญชี Apple และความเป็นส่วนตัว"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Erişim Reddedildi ⚠️\n\nEğer bildirimler için erişim vermek istiyorsanız lütfen bildirim ayarlarını açın ve Xcodes uygulamasını seçin."
+            "value" : "App Store Connect'e giriş yapın ve Apple Hesabı ve Gizlilik sözleşmesini kabul edin."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ Сповіщення Заборонено ⚠️\n\nВідкрийте будь ласка Налаштування Сповіщень та надайте дозвіл для Xcodes, якщо ви бажаєте отримувати сповіщення."
+            "value" : "Увійдіть в App Store Connect і прийміть угоду «Обліковий запис Apple і конфіденційність»."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ 没有权限 ⚠️\n\n请打开您的通知偏好设置并允许Xcodes发送通知。"
+            "value" : "登录 App Store Connect 并接受“Apple 账户与隐私”协议。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⚠️ 權限不足⚠️\n\n如果你想要啟用通知，請打開系統的通知設定並選擇 Xcodes。"
+            "value" : "登入 App Store Connect 並接受「Apple 帳號與隱私權」協議。"
+          }
+        }
+      }
+    },
+    "AuthError.NotAuthorized" : {
+      "comment" : "Apple Account authentication",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنت غير مخوّل. سجّل الدخول إلى حساب Apple أولاً."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No tens autorització. Inicia primer la sessió al compte d’Apple."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du bist nicht autorisiert. Melde dich zuerst bei deinem Apple Account an."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν έχετε εξουσιοδότηση. Συνδεθείτε πρώτα στον Λογαριασμό Apple."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You are not authorised. Sign in to your Apple Account first."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No tienes autorización. Inicia primero sesión en tu Cuenta de Apple."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sinulla ei ole käyttöoikeutta. Kirjaudu ensin Apple-tilillesi."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous n’êtes pas autorisé. Connectez-vous d’abord à votre compte Apple."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आप अधिकृत नहीं हैं। पहले अपने Apple अकाउंट में साइन इन करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non disponi dell’autorizzazione. Accedi prima al tuo Account Apple."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証されていません。最初にApple Accountにサインインしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "승인되지 않았습니다. 먼저 Apple 계정에 로그인하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je bent niet gemachtigd. Log eerst in bij je Apple Account."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brak autoryzacji. Najpierw zaloguj się na Konto Apple."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você não tem autorização. Inicie primeiro sessão na sua Conta Apple."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У вас нет авторизации. Сначала войдите в Учётную запись Apple."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "คุณไม่ได้รับอนุญาต โปรดลงชื่อเข้าบัญชี Apple ก่อน"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yetkiniz yok. Önce Apple Hesabınıza giriş yapın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У вас немає авторизації. Спочатку увійдіть в Обліковий запис Apple."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你未获授权。请先登录你的 Apple 账户。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你未獲授權。請先登入你的 Apple 帳號。"
+          }
+        }
+      }
+    },
+    "AuthError.PasswordRequired" : {
+      "comment" : "Apple Account authentication",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يستخدم حساب Apple هذا المصادقة الموحدة. أدخل كلمة السر للمتابعة."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aquest compte d’Apple no utilitza l’autenticació federada. Introdueix la contrasenya per continuar."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Apple Account verwendet keine föderierte Authentifizierung. Gib zum Fortfahren dein Passwort ein."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αυτός ο Λογαριασμός Apple δεν χρησιμοποιεί ομοσπονδιακό έλεγχο ταυτότητας. Εισαγάγετε το συνθηματικό σας για να συνεχίσετε."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Apple Account does not use federated authentication. Enter your password to continue."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta Cuenta de Apple no usa autenticación federada. Introduce tu contraseña para continuar."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tämä Apple-tili ei käytä yhdistettyä todennusta. Jatka antamalla salasanasi."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce compte Apple n’utilise pas l’authentification fédérée. Saisissez votre mot de passe pour continuer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "यह Apple अकाउंट फ़ेडरेटेड प्रमाणीकरण का उपयोग नहीं करता। जारी रखने के लिए अपना पासवर्ड डालें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo Account Apple non usa l’autenticazione federata. Inserisci la password per continuare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このApple Accountはフェデレーション認証を使用しません。続けるにはパスワードを入力してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 Apple 계정은 페더레이션 인증을 사용하지 않습니다. 계속하려면 암호를 입력하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deze Apple Account gebruikt geen gefedereerde verificatie. Voer je wachtwoord in om door te gaan."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To Konto Apple nie używa uwierzytelniania federacyjnego. Wprowadź hasło, aby kontynuować."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta Conta Apple não usa autenticação federada. Digite sua senha para continuar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Эта Учётная запись Apple не использует федеративную аутентификацию. Введите пароль, чтобы продолжить."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "บัญชี Apple นี้ไม่ได้ใช้การตรวจสอบสิทธิ์แบบรวมศูนย์ ป้อนรหัสผ่านเพื่อดำเนินการต่อ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu Apple Hesabı birleşik kimlik doğrulaması kullanmıyor. Devam etmek için parolanızı girin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цей Обліковий запис Apple не використовує федеративну автентифікацію. Введіть пароль, щоб продовжити."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此 Apple 账户不使用联合认证。请输入密码以继续。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此 Apple 帳號不使用同盟認證。請輸入密碼以繼續。"
+          }
+        }
+      }
+    },
+    "CheckingAppleAccount" : {
+      "comment" : "Apple Account authentication",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ التحقق من حساب Apple…"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "S’està comprovant el compte d’Apple…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Account wird geprüft…"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Έλεγχος Λογαριασμού Apple…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking Apple Account…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprobando Cuenta de Apple…"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarkistetaan Apple-tiliä…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérification du compte Apple…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple अकाउंट की जाँच हो रही है…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica dell’Account Apple…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Accountを確認中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple 계정 확인 중…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Account controleren…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprawdzanie Konta Apple…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificando Conta Apple…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверка Учётной записи Apple…"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กำลังตรวจสอบบัญชี Apple…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Hesabı kontrol ediliyor…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перевірка Облікового запису Apple…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在检查 Apple 账户…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在檢查 Apple 帳號…"
+          }
+        }
+      }
+    },
+    "CheckingNotificationSettings" : {
+      "comment" : "Notifications",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ التحقق من إعدادات الإشعارات…"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "S’està comprovant la configuració de notificacions…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mitteilungseinstellungen werden geprüft…"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Έλεγχος ρυθμίσεων γνωστοποιήσεων…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking Notification Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprobando ajustes de notificaciones…"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarkistetaan ilmoitusasetuksia…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérification des réglages des notifications…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सूचना सेटिंग्स की जाँच हो रही है…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica delle impostazioni delle notifiche…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通知設定を確認中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알림 설정 확인 중…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meldingsinstellingen controleren…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprawdzanie ustawień powiadomień…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificando Ajustes de Notificações…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверка настроек уведомлений…"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กำลังตรวจสอบการตั้งค่าการแจ้งเตือน…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildirim Ayarları kontrol ediliyor…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перевірка параметрів сповіщень…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在检查通知设置…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在檢查通知設定…"
+          }
+        }
+      }
+    },
+    "AccessDenied" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم إيقاف الإشعارات في إعدادات النظام."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les notificacions estan desactivades a la configuració del sistema."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mitteilungen sind in den Systemeinstellungen deaktiviert."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Οι γνωστοποιήσεις είναι απενεργοποιημένες στις Ρυθμίσεις συστήματος."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications are disabled in System Settings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las notificaciones están desactivadas en Ajustes del Sistema."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ilmoitukset on poistettu käytöstä järjestelmäasetuksissa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les notifications sont désactivées dans Réglages Système."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सिस्टम सेटिंग्स में सूचनाएँ बंद हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le notifiche sono disattivate in Impostazioni di Sistema."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システム設定で通知が無効になっています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시스템 설정에서 알림이 꺼져 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meldingen zijn uitgeschakeld in Systeeminstellingen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Powiadomienia są wyłączone w Ustawieniach systemowych."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As notificações estão desativadas nos Ajustes do Sistema."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Уведомления отключены в Системных настройках."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "การแจ้งเตือนถูกปิดอยู่ในการตั้งค่าระบบ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildirimler Sistem Ayarları'nda kapalı."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сповіщення вимкнено в Системних параметрах."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通知已在“系统设置”中关闭。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通知已在「系統設定」中關閉。"
           }
         }
       }
@@ -515,127 +1170,127 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لقد تم منح الوصول. سوف تتلقى إشعارات من Xcodes."
+            "value" : "تم تمكين الإشعارات."
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accés garantit. Rebràs notificacions d'Xcodes."
+            "value" : "Les notificacions estan activades."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zugriff erlaubt. Du empfängst jetzt Benachrichtigungen von Xcodes."
+            "value" : "Mitteilungen sind aktiviert."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Η πρόσβαση εκχωρήθηκε. Θα λαμβάνετε γνωστοποιήσεις από το Xcode's."
+            "value" : "Οι γνωστοποιήσεις είναι ενεργοποιημένες."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Access Granted. You will receive notifications from Xcodes."
+            "value" : "Notifications are enabled."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Acceso Permitido. Recibirás notificaciones de Xcodes."
+            "value" : "Las notificaciones están activadas."
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pääsy myönnetty. Saat ilmoituksia Xcodesilta."
+            "value" : "Ilmoitukset ovat käytössä."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accès autorisé. Vous recevrez des notifications de Xcodes."
+            "value" : "Les notifications sont activées."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "प्रवेश करने की अनुमति है। आपको Xcodes से सूचनाएं प्राप्त होंगी।"
+            "value" : "सूचनाएँ चालू हैं।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accesso Garantito. Riceverai notifiche da Xcodes."
+            "value" : "Le notifiche sono attive."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アクセスが許可されました。Xcodesから通知が届きます。"
+            "value" : "通知は有効です。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "접근 권한이 부여되었습니다. Xcodes에서 알림을 받게 됩니다."
+            "value" : "알림이 켜져 있습니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toegang Verleend. Je krijgt notificaties van Xcodes."
+            "value" : "Meldingen zijn ingeschakeld."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dostęp przyznany. Będziesz otrzymywać powiadomienia z Xcodes."
+            "value" : "Powiadomienia są włączone."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Acesso autorizado. Você receberá notificações de Xcodes."
+            "value" : "As notificações estão ativadas."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Доступ разрешен. Вы будете получать уведомления от Xcodes."
+            "value" : "Уведомления включены."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ได้รับอนุญาตการเข้าถึงแล้ว คุณจะได้รับการแจ้งเตือนจาก Xcodes"
+            "value" : "เปิดการแจ้งเตือนแล้ว"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erişim Tanımlandı. Xcodes'dan bildirimler alacaksınız."
+            "value" : "Bildirimler açık."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сповіщення Дозволено.\nВи будете отримувати сповіщення від Xcodes."
+            "value" : "Сповіщення ввімкнено."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已授权。您将会收到Xcodes的通知。"
+            "value" : "通知已启用。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已核准權限。你可以收到來自 Xcodes 的通知。"
+            "value" : "通知已啟用。"
           }
         }
       }
@@ -2059,127 +2714,127 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "سجّل الدخول إلى حساب Apple قبل تثبيت Xcode."
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Inicia la sessió al teu compte d’Apple abans d’instal·lar l’Xcode."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Melde dich vor der Installation von Xcode bei deinem Apple Account an."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Συνδεθείτε στον Λογαριασμό Apple πριν εγκαταστήσετε το Xcode."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Sign in to your Apple Account before installing Xcode."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Inicia sesión en tu Cuenta de Apple antes de instalar Xcode."
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Kirjaudu Apple-tilillesi ennen Xcoden asentamista."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Connectez-vous à votre compte Apple avant d’installer Xcode."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Xcode इंस्टॉल करने से पहले अपने Apple अकाउंट में साइन इन करें।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Accedi al tuo Account Apple prima di installare Xcode."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Xcodeをインストールする前にApple Accountにサインインしてください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Xcode를 설치하기 전에 Apple 계정에 로그인하십시오."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Log in bij je Apple Account voordat je Xcode installeert."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Zaloguj się na Konto Apple przed zainstalowaniem Xcode."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Você não está autorizado. Por favor, entre com o seu ID Apple primeiro."
+            "value" : "Inicie sessão na sua Conta Apple antes de instalar o Xcode."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Войдите в Учётную запись Apple перед установкой Xcode."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "คุณไม่ได้รับอนุญาต กรุณาลงชื่อเข้าใช้ด้วย Apple ID ของคุณก่อน"
+            "value" : "ลงชื่อเข้าบัญชี Apple ก่อนติดตั้ง Xcode"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Xcode'u yüklemeden önce Apple Hesabınıza giriş yapın."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "Увійдіть в Обліковий запис Apple перед інсталяцією Xcode."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "安装 Xcode 前，请登录你的 Apple 账户。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not authorized. Please Sign in with your Apple ID first."
+            "value" : "安裝 Xcode 前，請登入你的 Apple 帳號。"
           }
         }
       }
@@ -4906,132 +5561,132 @@
         }
       }
     },
-    "AppleID" : {
+    "AppleAccount" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ايميل ابل :"
+            "value" : "حساب Apple"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Compte d’Apple"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple-ID:"
+            "value" : "Apple Account"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Λογαριασμός Apple"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Apple Account"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Cuenta de Apple"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Apple-tili"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Identifiant Apple :"
+            "value" : "Compte Apple"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Apple अकाउंट"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Account Apple"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple ID:"
+            "value" : "Apple Account"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Apple 계정"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Apple Account"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Konto Apple"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Conta Apple"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple ID:"
+            "value" : "Учётная запись Apple"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "บัญชี Apple"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AppleID:"
+            "value" : "Apple Hesabı"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple ID:"
+            "value" : "Обліковий запис Apple"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple ID："
+            "value" : "Apple 账户"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple ID："
+            "value" : "Apple 帳號"
           }
         }
       }
@@ -10921,25 +11576,25 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "تجميع إصدارات Xcode في القائمة"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Agrupa les versions d’Xcode a la llista"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Xcode-Versionen in der Liste gruppieren"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Ομαδοποίηση εκδόσεων Xcode στη λίστα"
           }
         },
         "en" : {
@@ -10951,97 +11606,97 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Agrupar las versiones de Xcode en la lista"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Ryhmittele Xcode-versiot luettelossa"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Regrouper les versions de Xcode dans la liste"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "सूची में Xcode संस्करणों को समूहित करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Raggruppa le versioni di Xcode nell’elenco"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "リスト内のXcodeバージョンをグループ化"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "목록에서 Xcode 버전 그룹화"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Xcode-versies in de lijst groeperen"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Grupuj wersje Xcode na liście"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Agrupar versões do Xcode na lista"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Группировать версии Xcode в списке"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "จัดกลุ่มเวอร์ชัน Xcode ในรายการ"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Listedeki Xcode sürümlerini grupla"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "Групувати версії Xcode у списку"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "在列表中将 Xcode 版本分组"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group Xcode versions in the list"
+            "value" : "將列表中的 Xcode 版本分組"
           }
         }
       }
@@ -15741,6 +16396,12 @@
             "value" : "Είσοδος"
           }
         },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15822,7 +16483,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple ID"
+            "value" : "Увійти"
           }
         },
         "zh-Hans" : {
@@ -15839,132 +16500,132 @@
         }
       }
     },
-    "LoginDescription" : {
+    "ManageAppleAccount" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Login"
+            "value" : "إدارة حساب Apple"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Obrir l'inici de sessió"
+            "value" : "Gestiona el compte d’Apple"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Login öffnen"
+            "value" : "Apple Account verwalten"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Άνοιγμα Εισόδου"
+            "value" : "Διαχείριση Λογαριασμού Apple"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Login"
+            "value" : "Manage Apple Account"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abrir Inicio de Sesión"
+            "value" : "Gestionar Cuenta de Apple"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avaa kirjautuminen"
+            "value" : "Hallitse Apple-tiliä"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvrir une connexion"
+            "value" : "Gérer le compte Apple"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "लॉगिन खोलें"
+            "value" : "Apple अकाउंट प्रबंधित करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apri Login"
+            "value" : "Gestisci Account Apple"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ログイン画面を開く"
+            "value" : "Apple Accountを管理"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "로그인 창 열기"
+            "value" : "Apple 계정 관리"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Inloggen"
+            "value" : "Apple Account beheren"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Otwórz okno logowania"
+            "value" : "Zarządzaj Kontem Apple"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abrir login"
+            "value" : "Gerenciar Conta Apple"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Открыть окно логина"
+            "value" : "Управлять Учётной записью Apple"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "เปิดหน้าเข้าสู่ระบบ"
+            "value" : "จัดการบัญชี Apple"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Giriş Yap"
+            "value" : "Apple Hesabını Yönet"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Показати Apple ID"
+            "value" : "Керувати Обліковим записом Apple"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "打开登录窗口"
+            "value" : "管理 Apple 账户"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "打開登入"
+            "value" : "管理 Apple 帳號"
           }
         }
       }
@@ -17142,132 +17803,132 @@
         }
       }
     },
-    "Misc" : {
+    "AppBehaviour" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "سلوك التطبيق"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Comportament de l’app"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "App-Verhalten"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Συμπεριφορά εφαρμογής"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "App Behaviour"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Comportamiento de la app"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Apin toiminta"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Comportement de l’app"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "ऐप का व्यवहार"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Comportamento dell’app"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "アプリの動作"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "앱 동작"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Appgedrag"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Działanie aplikacji"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diversos"
+            "value" : "Comportamento do app"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Другое"
+            "value" : "Поведение приложения"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "อื่น ๆ"
+            "value" : "ลักษณะการทำงานของแอป"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Uygulama Davranışı"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Misc"
+            "value" : "Поведінка програми"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "杂项"
+            "value" : "App 行为"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "雜項"
+            "value" : "App 行為"
           }
         }
       }
@@ -18313,127 +18974,127 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "إعدادات الإشعار"
+            "value" : "فتح إعدادات الإشعارات…"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Preferències de notificacions"
+            "value" : "Obre la configuració de notificacions…"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Benachrichtigungs-Einstellungen"
+            "value" : "Mitteilungseinstellungen öffnen…"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ρυθμίσεις γνωστοποιήσεων"
+            "value" : "Άνοιγμα ρυθμίσεων γνωστοποιήσεων…"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notification Settings"
+            "value" : "Open Notification Settings…"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configuración de las notificaciones"
+            "value" : "Abrir ajustes de notificaciones…"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ilmoitusasetukset"
+            "value" : "Avaa ilmoitusasetukset…"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paramètres de Notification"
+            "value" : "Ouvrir les réglages des notifications…"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "सूचना सेटिंग्स"
+            "value" : "सूचना सेटिंग्स खोलें…"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impostazioni delle Notifiche"
+            "value" : "Apri impostazioni notifiche…"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "通知設定"
+            "value" : "通知設定を開く…"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "알림 설정"
+            "value" : "알림 설정 열기…"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notificatie Instellingen"
+            "value" : "Meldingsinstellingen openen…"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ustawienia powiadomień"
+            "value" : "Otwórz ustawienia powiadomień…"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurações de notificação"
+            "value" : "Abrir Ajustes de Notificações…"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Настройки уведомлений"
+            "value" : "Открыть настройки уведомлений…"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "การตั้งค่าการแจ้งเตือน"
+            "value" : "เปิดการตั้งค่าการแจ้งเตือน…"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bildirim Ayarları"
+            "value" : "Bildirim Ayarları'nı Aç…"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Налаштування Сповіщень"
+            "value" : "Відкрити параметри сповіщень…"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "通知设置"
+            "value" : "打开通知设置…"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "通知偏好設定"
+            "value" : "打開通知設定…"
           }
         }
       }
@@ -23807,133 +24468,263 @@
         }
       }
     },
-    "SignInWithApple" : {
+    "SignInToAppleAccount" : {
       "comment" : "SignIn",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تسجيل الدخول بواسطة ابل "
+            "value" : "سجّل الدخول إلى حساب Apple."
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inicia sessió amb el teu Apple ID."
+            "value" : "Inicia la sessió al teu compte d’Apple."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mit Deiner Apple-ID anmelden."
+            "value" : "Melde dich bei deinem Apple Account an."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Συνδεθείτε με το Apple ID σας."
+            "value" : "Συνδεθείτε στον Λογαριασμό Apple."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sign in with your Apple ID."
+            "value" : "Sign in to your Apple Account."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inicia sesión con tu ID de Apple."
+            "value" : "Inicia sesión en tu Cuenta de Apple."
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kirjaudu sisään Apple ID:lläsi."
+            "value" : "Kirjaudu Apple-tilillesi."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connectez-vous avec votre identifiant Apple."
+            "value" : "Connectez-vous à votre compte Apple."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "अपनी Apple ID से साइन इन करें."
+            "value" : "अपने Apple अकाउंट में साइन इन करें।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Entra con il tuo Apple ID."
+            "value" : "Accedi al tuo Account Apple."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple IDでサインインしてください。"
+            "value" : "Apple Accountにサインインしてください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple ID로 로그인하세요."
+            "value" : "Apple 계정에 로그인하십시오."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Log in met je Apple ID."
+            "value" : "Log in bij je Apple Account."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zaloguj się przy użyciu Apple ID."
+            "value" : "Zaloguj się na Konto Apple."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Entrar com o seu Apple ID."
+            "value" : "Inicie sessão na sua Conta Apple."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Войти со своим Apple ID."
+            "value" : "Войдите в Учётную запись Apple."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "เข้าสู่ระบบด้วย Apple ID"
+            "value" : "ลงชื่อเข้าบัญชี Apple"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple ID ile Giriş Yap."
+            "value" : "Apple Hesabınıza giriş yapın."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вхід з вашим Apple ID."
+            "value" : "Увійдіть в Обліковий запис Apple."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用您的Apple ID登录。"
+            "value" : "登录你的 Apple 账户。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用您的 Apple ID 登入。"
+            "value" : "登入你的 Apple 帳號。"
+          }
+        }
+      }
+    },
+    "SignedIn" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم تسجيل الدخول"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessió iniciada"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angemeldet"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Έγινε σύνδεση"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed In"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión iniciada"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kirjauduttu sisään"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecté"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साइन इन किया हुआ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso eseguito"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインイン済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingelogd"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zalogowano"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessão iniciada"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вход выполнен"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ลงชื่อเข้าแล้ว"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giriş yapıldı"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вхід виконано"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已登录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已登入"
           }
         }
       }
@@ -24334,239 +25125,257 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "إنهاء Xcodes عند إغلاق آخر نافذة"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Surt de Xcodes en tancar l’última finestra"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Xcodes nach Schließen des letzten Fensters beenden"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Τερματισμός του Xcodes όταν κλείσει το τελευταίο παράθυρο"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Quit Xcodes when the last window is closed"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Salir de Xcodes al cerrar la última ventana"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Lopeta Xcodes, kun viimeinen ikkuna suljetaan"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Quitter Xcodes à la fermeture de la dernière fenêtre"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "आखिरी विंडो बंद होने पर Xcodes छोड़ें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Esci da Xcodes alla chiusura dell’ultima finestra"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "最後のウインドウを閉じたらXcodesを終了"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "마지막 윈도우를 닫으면 Xcodes 종료"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Stop Xcodes wanneer het laatste venster wordt gesloten"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Zamknij Xcodes po zamknięciu ostatniego okna"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Encerrar o aplicativo quando a ultima janela for fechada"
+            "value" : "Encerrar o Xcodes ao fechar a última janela"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Завершить приложение после того, как будет закрыто последнее окно"
+            "value" : "Завершать Xcodes после закрытия последнего окна"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ยุติการทำงานของแอปเมื่อหน้าต่างสุดท้ายถูกปิดลง"
+            "value" : "ออกจาก Xcodes เมื่อปิดหน้าต่างสุดท้าย"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Son pencere kapanınca Xcodes'dan çık"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate App after last window is closed"
+            "value" : "Завершувати Xcodes після закриття останнього вікна"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在最后一个窗口关闭后终止App"
+            "value" : "关闭最后一个窗口时退出 Xcodes"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在最後一個窗口關閉後終止 App"
+            "value" : "關閉最後一個視窗時結束 Xcodes"
           }
         }
       }
     },
-    "This Apple ID uses federated authentication via %@." : {
+    "This Apple Account uses federated authentication via %@." : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستخدم حساب Apple هذا المصادقة الموحدة عبر %@."
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aquest Apple ID utilitza autenticació federada mitjançant %@."
+            "value" : "Aquest compte d’Apple utilitza l’autenticació federada mitjançant %@."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diese Apple-ID verwendet föderierte Authentifizierung über %@."
+            "value" : "Dieser Apple Account verwendet föderierte Authentifizierung über %@."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Αυτό το Apple ID χρησιμοποιεί ομοσπονδιακό έλεγχο ταυτότητας μέσω %@."
+            "value" : "Αυτός ο Λογαριασμός Apple χρησιμοποιεί ομοσπονδιακό έλεγχο ταυτότητας μέσω %@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Apple Account uses federated authentication via %@."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Este Apple ID usa autenticación federada mediante %@."
+            "value" : "Esta Cuenta de Apple usa autenticación federada mediante %@."
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tämä Apple ID käyttää yhdistettyä todennusta palvelun %@ kautta."
+            "value" : "Tämä Apple-tili käyttää yhdistettyä todennusta palvelun %@ kautta."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cet identifiant Apple utilise l’authentification fédérée via %@."
+            "value" : "Ce compte Apple utilise l’authentification fédérée via %@."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "यह Apple ID %@ के माध्यम से फ़ेडरेटेड प्रमाणीकरण का उपयोग करता है."
+            "value" : "यह Apple अकाउंट %@ के माध्यम से फ़ेडरेटेड प्रमाणीकरण का उपयोग करता है।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Questo ID Apple usa l’autenticazione federata tramite %@."
+            "value" : "Questo Account Apple usa l’autenticazione federata tramite %@."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このApple IDは%@経由のフェデレーション認証を使用しています。"
+            "value" : "このApple Accountは%@経由のフェデレーション認証を使用しています。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 Apple ID는 %@을(를) 통한 페더레이션 인증을 사용합니다."
+            "value" : "이 Apple 계정은 %@을(를) 통한 페더레이션 인증을 사용합니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deze Apple ID gebruikt gefedereerde verificatie via %@."
+            "value" : "Deze Apple Account gebruikt gefedereerde verificatie via %@."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ten Apple ID używa uwierzytelniania federacyjnego przez %@."
+            "value" : "To Konto Apple używa uwierzytelniania federacyjnego przez %@."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Este Apple ID usa autenticação federada via %@."
+            "value" : "Esta Conta Apple usa autenticação federada via %@."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Этот Apple ID использует федеративную аутентификацию через %@."
+            "value" : "Эта Учётная запись Apple использует федеративную аутентификацию через %@."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "บัญชี Apple นี้ใช้การตรวจสอบสิทธิ์แบบรวมศูนย์ผ่าน %@"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bu Apple ID, %@ üzerinden birleşik kimlik doğrulaması kullanıyor."
+            "value" : "Bu Apple Hesabı, %@ üzerinden birleşik kimlik doğrulaması kullanıyor."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Цей Apple ID використовує федеративну автентифікацію через %@."
+            "value" : "Цей Обліковий запис Apple використовує федеративну автентифікацію через %@."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此 Apple ID 使用通过 %@ 的联合认证。"
+            "value" : "此 Apple 账户使用通过 %@ 的联合认证。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此 Apple ID 使用透過 %@ 的同盟認證。"
+            "value" : "此 Apple 帳號使用透過 %@ 的同盟認證。"
           }
         }
       }

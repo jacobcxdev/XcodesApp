@@ -46,9 +46,10 @@ struct MainWindow: View {
             .toolbar {
                 ToolbarItemGroup {
                     Button(action: { appState.presentedSheet = .signIn }, label: {
-                        Label("Login", systemImage: "person.circle")
+                        Label("AppleAccount", systemImage: "person.circle")
                     })
-                    .help("LoginDescription")
+                    .help("ManageAppleAccount")
+                    .disabled(appState.isRestoringAuthenticationState)
                     if #available(macOS 14, *) {
                         SettingsLink(label: {
                             Label("Preferences", systemImage: "gearshape")
@@ -78,7 +79,7 @@ struct MainWindow: View {
                 secondFactorView(secondFactorData)
                     .environmentObject(appState)
             case .securityKeyTouchToConfirm:
-                SignInSecurityKeyTouchView(isPresented: $appState.presentedSheet.isNotNil)
+                SignInSecurityKeyTouchView()
                     .environmentObject(appState)
             }
         }
@@ -106,13 +107,13 @@ struct MainWindow: View {
     private func secondFactorView(_ secondFactorData: XcodesSheet.SecondFactorData) -> some View {
         switch secondFactorData.option {
         case .codeSent:
-            SignIn2FAView(isPresented: $appState.presentedSheet.isNotNil, authOptions: secondFactorData.authOptions, sessionData: secondFactorData.sessionData)
+            SignIn2FAView(authOptions: secondFactorData.authOptions, sessionData: secondFactorData.sessionData)
         case .smsSent(let trustedPhoneNumber):
-            SignInSMSView(isPresented: $appState.presentedSheet.isNotNil, trustedPhoneNumber: trustedPhoneNumber, authOptions: secondFactorData.authOptions, sessionData: secondFactorData.sessionData)
+            SignInSMSView(trustedPhoneNumber: trustedPhoneNumber, authOptions: secondFactorData.authOptions, sessionData: secondFactorData.sessionData)
         case .smsPendingChoice:
-            SignInPhoneListView(isPresented: $appState.presentedSheet.isNotNil, authOptions: secondFactorData.authOptions, sessionData: secondFactorData.sessionData)
+            SignInPhoneListView(authOptions: secondFactorData.authOptions, sessionData: secondFactorData.sessionData)
         case .securityKey:
-            SignInSecurityKeyPinView(isPresented: $appState.presentedSheet.isNotNil, authOptions: secondFactorData.authOptions, sessionData: secondFactorData.sessionData)
+            SignInSecurityKeyPinView(authOptions: secondFactorData.authOptions, sessionData: secondFactorData.sessionData)
         }
     }
 

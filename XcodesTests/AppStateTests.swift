@@ -207,6 +207,475 @@ class AppStateTests: XCTestCase {
         )
     }
 
+    func test_AuthenticationPolicy_OnlyRetriesCredentialsForInvalidSession() {
+        XCTAssertTrue(
+            AuthenticationRequestPolicy.requiresCredentialSignIn(
+                after: AuthenticationError.notAuthorized
+            )
+        )
+        XCTAssertTrue(
+            AuthenticationRequestPolicy.requiresCredentialSignIn(
+                after: AuthenticationError.invalidSession
+            )
+        )
+        XCTAssertFalse(
+            AuthenticationRequestPolicy.requiresCredentialSignIn(
+                after: AuthenticationRequestError.serviceTemporarilyUnavailable(statusCode: 503)
+            )
+        )
+    }
+
+    func test_ValidateSession_PublishesAuthenticatedState() async throws {
+        let session = try makeAppleSession()
+        Current.network.validateSessionAsync = { .authenticated(session) }
+
+        let result = try await subject.validateSessionAsync()
+
+        XCTAssertEqual(result, .authenticated(session))
+        XCTAssertEqual(subject.authenticationState, .authenticated(session))
+    }
+
+    func test_RestoreAuthenticationState_DoesNotReadKeychainForValidSession() async throws {
+        let session = try makeAppleSession()
+        let keychainReads = TestLockedBox(0)
+        Current.network.validateSessionAsync = { .authenticated(session) }
+        Current.keychain.getString = { _ in
+            keychainReads.withValue { $0 += 1 }
+            return "unused"
+        }
+
+        await subject.restoreAuthenticationStateAsync()
+
+        XCTAssertEqual(subject.authenticationState, .authenticated(session))
+        XCTAssertEqual(keychainReads.read { $0 }, 0)
+        XCTAssertFalse(subject.isRestoringAuthenticationState)
+    }
+
+    func test_RestoreAuthenticationState_UsesSavedCredentialWithoutRewritingKeychain() async throws {
+        let session = try makeAppleSession()
+        let keychainReads = TestLockedBox(0)
+        let keychainWrites = TestLockedBox(0)
+        let receivedCredentials = TestLockedBox<(String, String?)?>(nil)
+        Current.defaults.string = { key in
+            key == "username" ? "saved@example.com" : nil
+        }
+        Current.network.validateSessionAsync = {
+            throw NetworkError.non200StatusCode(statusCode: 401, data: nil)
+        }
+        Current.network.authenticationStateAsync = { username, password in
+            receivedCredentials.withValue { $0 = (username, password) }
+            return .authenticated(session)
+        }
+        Current.keychain.getString = { key in
+            keychainReads.withValue { $0 += 1 }
+            return key == "saved@example.com" ? "saved-password" : nil
+        }
+        Current.keychain.set = { _, _ in
+            keychainWrites.withValue { $0 += 1 }
+        }
+
+        await subject.restoreAuthenticationStateAsync(
+            authenticationRequestPolicy: AuthenticationRequestPolicy(
+                maximumAttemptCount: 1,
+                delayBeforeRetry: .zero
+            )
+        )
+
+        XCTAssertEqual(subject.authenticationState, .authenticated(session))
+        XCTAssertEqual(keychainReads.read { $0 }, 1)
+        XCTAssertEqual(keychainWrites.read { $0 }, 0)
+        XCTAssertEqual(receivedCredentials.read { $0 }?.0, "saved@example.com")
+        XCTAssertEqual(receivedCredentials.read { $0 }?.1, "saved-password")
+    }
+
+    func test_SignInIfNeeded_SharesConcurrentRestoration() async throws {
+        let session = try makeAppleSession()
+        let validationCalls = TestLockedBox(0)
+        let keychainReads = TestLockedBox(0)
+        let authenticationCalls = TestLockedBox(0)
+        let firstValidationStarted = expectation(description: "first validation started")
+        let firstValidation = TestLockedBox<CheckedContinuation<AuthenticationState, Error>?>(nil)
+        Current.defaults.string = { key in
+            key == "username" ? "saved@example.com" : nil
+        }
+        Current.network.validateSessionAsync = {
+            let call = validationCalls.withValue { value in
+                value += 1
+                return value
+            }
+            if call == 1 {
+                return try await withCheckedThrowingContinuation { continuation in
+                    firstValidation.withValue { $0 = continuation }
+                    firstValidationStarted.fulfill()
+                }
+            }
+            throw NetworkError.non200StatusCode(statusCode: 401, data: nil)
+        }
+        Current.keychain.getString = { _ in
+            keychainReads.withValue { $0 += 1 }
+            return "saved-password"
+        }
+        Current.network.authenticationStateAsync = { _, _ in
+            authenticationCalls.withValue { $0 += 1 }
+            return .authenticated(session)
+        }
+
+        let first = Task { @MainActor in
+            try await subject.signInIfNeededAsync()
+        }
+        await fulfillment(of: [firstValidationStarted])
+        let second = Task { @MainActor in
+            try await subject.signInIfNeededAsync()
+        }
+        for _ in 0..<20 {
+            await Task.yield()
+        }
+        firstValidation.withValue { continuation in
+            continuation?.resume(
+                throwing: NetworkError.non200StatusCode(statusCode: 401, data: nil)
+            )
+            continuation = nil
+        }
+
+        _ = try await first.value
+        _ = try await second.value
+
+        XCTAssertEqual(validationCalls.read { $0 }, 1)
+        XCTAssertEqual(keychainReads.read { $0 }, 1)
+        XCTAssertEqual(authenticationCalls.read { $0 }, 1)
+    }
+
+    func test_WaitForAuthenticationTerminalState_WaitsForFederatedAuthentication() async throws {
+        let session = try makeAppleSession()
+        subject.authenticationState = .waitingForFederatedAuthentication(
+            FederationResponse(federated: true)
+        )
+        let completed = TestLockedBox(false)
+        let task = Task { @MainActor in
+            try await subject.waitForAuthenticationTerminalState()
+            completed.withValue { $0 = true }
+        }
+
+        for _ in 0..<20 {
+            await Task.yield()
+        }
+        XCTAssertFalse(completed.read { $0 })
+
+        subject.authenticationState = .authenticated(session)
+        try await task.value
+
+        XCTAssertTrue(completed.read { $0 })
+    }
+
+    func test_WaitForAuthenticationTerminalState_ThrowsWhenCancelled() async {
+        subject.authenticationState = .waitingForFederatedAuthentication(
+            FederationResponse(federated: true)
+        )
+        let started = expectation(description: "waiter started")
+        let task = Task { @MainActor in
+            started.fulfill()
+            try await subject.waitForAuthenticationTerminalState()
+        }
+        await fulfillment(of: [started])
+        await Task.yield()
+
+        task.cancel()
+
+        do {
+            try await task.value
+            XCTFail("Expected cancellation")
+        } catch is CancellationError {
+        } catch {
+            XCTFail("Expected CancellationError, got \(error)")
+        }
+    }
+
+    func test_SignInIfNeeded_PreservesPendingAuthenticationWithoutRestarting() async throws {
+        let pending = AuthenticationState.waitingForFederatedAuthentication(
+            FederationResponse(federated: true)
+        )
+        let validationCalls = TestLockedBox(0)
+        let keychainReads = TestLockedBox(0)
+        let authenticationCalls = TestLockedBox(0)
+        subject.authenticationState = pending
+        Current.defaults.string = { key in
+            key == "username" ? "saved@example.com" : nil
+        }
+        Current.network.validateSessionAsync = {
+            validationCalls.withValue { $0 += 1 }
+            throw NetworkError.non200StatusCode(statusCode: 401, data: nil)
+        }
+        Current.keychain.getString = { _ in
+            keychainReads.withValue { $0 += 1 }
+            return "saved-password"
+        }
+        Current.network.authenticationStateAsync = { _, _ in
+            authenticationCalls.withValue { $0 += 1 }
+            return .unauthenticated
+        }
+
+        let result = try await subject.signInIfNeededAsync()
+
+        XCTAssertEqual(result, pending)
+        XCTAssertEqual(validationCalls.read { $0 }, 0)
+        XCTAssertEqual(keychainReads.read { $0 }, 0)
+        XCTAssertEqual(authenticationCalls.read { $0 }, 0)
+    }
+
+    func test_CancelAuthentication_PreventsLateCredentialFallback() async throws {
+        let validationStarted = expectation(description: "validation started")
+        let continuation = TestLockedBox<CheckedContinuation<AuthenticationState, Error>?>(nil)
+        let keychainReads = TestLockedBox(0)
+        let authenticationCalls = TestLockedBox(0)
+        Current.defaults.string = { key in
+            key == "username" ? "saved@example.com" : nil
+        }
+        Current.network.validateSessionAsync = {
+            try await withCheckedThrowingContinuation { pending in
+                continuation.withValue { $0 = pending }
+                validationStarted.fulfill()
+            }
+        }
+        Current.keychain.getString = { _ in
+            keychainReads.withValue { $0 += 1 }
+            return "saved-password"
+        }
+        Current.network.authenticationStateAsync = { _, _ in
+            authenticationCalls.withValue { $0 += 1 }
+            return .unauthenticated
+        }
+
+        let task = Task { @MainActor in
+            try await subject.signInIfNeededAsync()
+        }
+        await fulfillment(of: [validationStarted])
+        subject.cancelAuthentication()
+        continuation.withValue { pending in
+            pending?.resume(
+                throwing: NetworkError.non200StatusCode(statusCode: 401, data: nil)
+            )
+            pending = nil
+        }
+
+        do {
+            _ = try await task.value
+            XCTFail("Expected cancellation")
+        } catch is CancellationError {
+        } catch {
+            XCTFail("Expected CancellationError, got \(error)")
+        }
+        XCTAssertEqual(keychainReads.read { $0 }, 0)
+        XCTAssertEqual(authenticationCalls.read { $0 }, 0)
+        XCTAssertEqual(subject.authenticationState, .unauthenticated)
+    }
+
+    func test_CancelAuthentication_ReleasesTerminalStateWaiter() async throws {
+        subject.authenticationState = .waitingForFederatedAuthentication(
+            FederationResponse(federated: true)
+        )
+        subject.presentedSheet = .signIn
+        let task = Task { @MainActor in
+            try await subject.waitForAuthenticationTerminalState()
+        }
+        for _ in 0..<20 {
+            await Task.yield()
+        }
+
+        subject.cancelAuthentication()
+
+        do {
+            try await task.value
+            XCTFail("Expected invalid session")
+        } catch {
+            XCTAssertEqual(error as? AuthenticationError, .invalidSession)
+        }
+        XCTAssertEqual(subject.authenticationState, .unauthenticated)
+        XCTAssertNil(subject.presentedSheet)
+        XCTAssertNil(subject.authError)
+    }
+
+    func test_RestoreAuthenticationState_PreservesStateDuringTemporaryFailure() async throws {
+        let session = try makeAppleSession()
+        let keychainReads = TestLockedBox(0)
+        subject.authenticationState = .authenticated(session)
+        Current.network.validateSessionAsync = {
+            throw NetworkError.non200StatusCode(statusCode: 503, data: nil)
+        }
+        Current.keychain.getString = { _ in
+            keychainReads.withValue { $0 += 1 }
+            return "unused"
+        }
+
+        await subject.restoreAuthenticationStateAsync(
+            authenticationRequestPolicy: AuthenticationRequestPolicy(
+                maximumAttemptCount: 1,
+                delayBeforeRetry: .zero
+            )
+        )
+
+        XCTAssertEqual(subject.authenticationState, .authenticated(session))
+        XCTAssertEqual(keychainReads.read { $0 }, 0)
+        XCTAssertFalse(subject.isRestoringAuthenticationState)
+    }
+
+    func test_RestoreAuthenticationState_ShowsSignedOutAfterInvalidSessionWithoutCredential() async throws {
+        let session = try makeAppleSession()
+        subject.authenticationState = .authenticated(session)
+        Current.network.validateSessionAsync = {
+            throw NetworkError.non200StatusCode(statusCode: 401, data: nil)
+        }
+
+        await subject.restoreAuthenticationStateAsync(
+            authenticationRequestPolicy: AuthenticationRequestPolicy(
+                maximumAttemptCount: 1,
+                delayBeforeRetry: .zero
+            )
+        )
+
+        XCTAssertEqual(subject.authenticationState, .unauthenticated)
+        XCTAssertNil(subject.authError)
+        XCTAssertFalse(subject.isRestoringAuthenticationState)
+    }
+
+    func test_SignOutPreventsLateSessionRestore() async throws {
+        let session = try makeAppleSession()
+        let started = expectation(description: "session validation started")
+        let continuation = TestLockedBox<CheckedContinuation<AuthenticationState, Never>?>(nil)
+        Current.network.validateSessionAsync = {
+            await withCheckedContinuation { pending in
+                continuation.withValue { $0 = pending }
+                started.fulfill()
+            }
+        }
+
+        let restoreTask = Task { @MainActor in
+            await subject.restoreAuthenticationStateAsync()
+        }
+        await fulfillment(of: [started])
+        subject.signOut()
+        continuation.withValue { pending in
+            pending?.resume(returning: .authenticated(session))
+            pending = nil
+        }
+        await restoreTask.value
+
+        XCTAssertEqual(subject.authenticationState, .unauthenticated)
+        XCTAssertFalse(subject.isRestoringAuthenticationState)
+    }
+
+    func test_NotificationPreferencePresentation_DistinguishesUnknownAndNotShown() {
+        XCTAssertEqual(NotificationPreferencePresentation(.unknown), .checking)
+        XCTAssertEqual(NotificationPreferencePresentation(.notShown), .canEnable)
+        XCTAssertEqual(NotificationPreferencePresentation(.shownAndDenied), .disabled)
+        XCTAssertEqual(NotificationPreferencePresentation(.shownAndAccepted), .enabled)
+    }
+
+    func test_NotificationManagerPublishesLoadedPermissionStatus() async {
+        let manager = NotificationManager(
+            notificationStatusLoader: { .shownAndAccepted }
+        )
+        let statusChanged = expectation(description: "notification status changed")
+        var cancellable: AnyCancellable?
+        cancellable = manager.$notificationStatus
+            .dropFirst()
+            .sink { status in
+                if status == .shownAndAccepted {
+                    statusChanged.fulfill()
+                }
+            }
+
+        manager.loadNotificationStatus()
+        await fulfillment(of: [statusChanged])
+
+        XCTAssertEqual(manager.notificationStatus, .shownAndAccepted)
+        withExtendedLifetime(cancellable) {}
+    }
+
+    func test_AppleAccountPreferencePresentation_DoesNotFlashSignInWhileChecking() {
+        XCTAssertEqual(
+            AppleAccountPreferencePresentation(
+                isRestoring: true,
+                authenticationState: .unauthenticated
+            ),
+            .checking
+        )
+        XCTAssertEqual(
+            AppleAccountPreferencePresentation(
+                isRestoring: false,
+                authenticationState: .unauthenticated
+            ),
+            .signedOut
+        )
+        XCTAssertEqual(
+            AppleAccountPreferencePresentation(
+                isRestoring: false,
+                authenticationState: .waitingForFederatedAuthentication(
+                    FederationResponse(federated: true)
+                )
+            ),
+            .checking
+        )
+    }
+
+    func test_AppleAccountDisplayName_UsesAvailableAccountIdentity() throws {
+        let session = try makeAppleSession(fullName: "Jacob Clayden")
+        subject.authenticationState = .authenticated(session)
+        Current.defaults.string = { key in
+            key == "username" ? "jacob@example.com" : nil
+        }
+        XCTAssertEqual(subject.appleAccountDisplayName, "jacob@example.com")
+
+        Current.defaults.string = { _ in nil }
+        XCTAssertEqual(subject.appleAccountDisplayName, "Jacob Clayden")
+
+        subject.authenticationState = .authenticated(try makeAppleSession())
+        XCTAssertEqual(subject.appleAccountDisplayName, localizeString("SignedIn"))
+    }
+
+    func test_AppleAccountAuthenticationError_ReplacesLegacyTerminology() {
+        XCTAssertEqual(
+            AppleAccountAuthenticationError(AuthenticationError.notAuthorized),
+            .notAuthorized
+        )
+        XCTAssertEqual(
+            AppleAccountAuthenticationError(AuthenticationError.missingPasswordForNonFederatedAccount),
+            .passwordRequired
+        )
+        XCTAssertFalse(
+            AppleAccountAuthenticationError(AuthenticationError.notAuthorized)?.localizedDescription.contains("Apple ID") == true
+        )
+        XCTAssertFalse(
+            AppleAccountAuthenticationError(AuthenticationError.missingPasswordForNonFederatedAccount)?.localizedDescription.contains("Apple ID") == true
+        )
+        XCTAssertFalse(
+            AppState.userFacingAuthenticationError(AuthenticationError.notAuthorized)
+                .localizedDescription
+                .contains("Apple ID")
+        )
+    }
+
+    func test_ValidateADCSession_UsesAppleAccountTerminology() async throws {
+        Current.network.loadData = { request in
+            (
+                Data(),
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 401,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!
+            )
+        }
+
+        do {
+            try await subject.validateADCSession(path: "runtime-download")
+            XCTFail("Expected authorization failure")
+        } catch {
+            XCTAssertEqual(error as? AppleAccountAuthenticationError, .notAuthorized)
+            XCTAssertFalse(error.localizedDescription.contains("Apple ID"))
+        }
+    }
+
     func test_ValidateSession_RetriesTransientServiceFailure() async {
         let attempts = TestLockedBox(0)
         Current.network.validateSessionAsync = {
@@ -226,6 +695,22 @@ class AppStateTests: XCTestCase {
             )
             XCTAssertEqual(attempts.read { $0 }, 3)
         }
+    }
+
+    private func makeAppleSession(fullName: String? = nil) throws -> AppleSession {
+        var user: [String: Any] = [:]
+        if let fullName {
+            user["fullName"] = fullName
+        } else {
+            user["fullName"] = NSNull()
+        }
+        let data = try JSONSerialization.data(
+            withJSONObject: ["user": user]
+        )
+        return try JSONDecoder().decode(
+            AppleSession.self,
+            from: data
+        )
     }
     
     func test_ParseCertificateInfo_Succeeds() throws {
@@ -1507,7 +1992,7 @@ class AppStateTests: XCTestCase {
                 return true
             }
         }
-        Xcodes.Current.network.validateSessionAsync = { }
+        Xcodes.Current.network.validateSessionAsync = { .unauthenticated }
         Xcodes.Current.network.loadData = { urlRequest in
             if urlRequest.url! == URLRequest.developerDownloads.url! {
                 let downloads = Downloads(resultCode: 0, resultsString: nil, downloads: [Download(name: "Xcode 0.0.0", files: [Download.File(remotePath: "https://apple.com/xcode.xip", fileSize: 9484444)], dateModified: Date())])

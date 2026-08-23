@@ -26,4 +26,4 @@ If applicable, add screenshots to help explain your problem.
  - Xcodes fork:
  - Xcode involved:
 
-Remove Apple ID details, cookies, signing keys, and other secrets from logs and screenshots.
+Remove Apple Account details, cookies, signing keys, and other secrets from logs and screenshots.

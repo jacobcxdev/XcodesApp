@@ -31,7 +31,7 @@ Include:
 - expected and actual behaviour
 - relevant redacted logs or screenshots
 
-Never include Apple ID credentials, cookies, Keychain contents, signing keys, or other secrets.
+Never include Apple Account credentials, cookies, Keychain contents, signing keys, or other secrets.
 
 ## Licence
 
