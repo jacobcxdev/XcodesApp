@@ -24,7 +24,9 @@ struct MainWindow: View {
                 .layoutPriority(1)
                 .alert(item: $appState.xcodeBeingConfirmedForUninstallation) { xcode in
                     Alert(title: Text(String(format: localizeString("Alert.Uninstall.Title"), xcode.description)),
-                          message: Text("Alert.Uninstall.Message"),
+                          message: Text(appState.usePrivilegedHelperForFileOperations
+                            ? "Alert.Uninstall.PermanentMessage"
+                            : "Alert.Uninstall.Message"),
                           primaryButton: .destructive(Text("Uninstall"), action: { self.appState.uninstall(xcode: xcode) }),
                           secondaryButton: .cancel(Text("Cancel")))
                 }
@@ -46,7 +48,16 @@ struct MainWindow: View {
             .toolbar {
                 ToolbarItemGroup {
                     Button(action: { appState.presentedSheet = .signIn }, label: {
-                        Label("AppleAccount", systemImage: "person.circle")
+                        Label {
+                            if let authenticatedUserName {
+                                Text(verbatim: authenticatedUserName)
+                            } else {
+                                Text("AppleAccount")
+                            }
+                        } icon: {
+                            Image(systemName: "person.circle")
+                        }
+                        .labelStyle(.titleAndIcon)
                     })
                     .help("ManageAppleAccount")
                     .disabled(appState.isRestoringAuthenticationState)
@@ -93,6 +104,13 @@ struct MainWindow: View {
 
     private var xcode: Xcode? {
         appState.allXcodes.first(where: { $0.id == selectedXcodeID })
+    }
+
+    private var authenticatedUserName: String? {
+        guard case .authenticated = appState.authenticationState else {
+            return nil
+        }
+        return appState.appleAccountDisplayName
     }
 
     private var subtitleText: Text {
@@ -179,7 +197,7 @@ struct MainWindow: View {
                 title: Text("Alert.Install.Error.Title"),
                 message: Text("Alert.Install.AuthError.Message"),
                 primaryButton: .default(
-                    Text("OK"),
+                    Text("SignIn"),
                     action: {
                         appState.presentedSheet = .signIn
                     }

@@ -70,9 +70,11 @@ struct AuthenticationRequestPolicy: Sendable {
                 shouldRetry: Self.isTransient,
                 operation
             )
-        } catch let NetworkError.non200StatusCode(statusCode, _)
-            where [502, 503, 504].contains(statusCode) {
-            throw AuthenticationRequestError.serviceTemporarilyUnavailable(statusCode: statusCode)
+        } catch {
+            if let statusCode = Self.transientStatusCode(error) {
+                throw AuthenticationRequestError.serviceTemporarilyUnavailable(statusCode: statusCode)
+            }
+            throw error
         }
     }
 
@@ -103,13 +105,27 @@ struct AuthenticationRequestPolicy: Sendable {
     }
 
     private static func isTransient(_ error: Error) -> Bool {
-        guard
-            let networkError = error as? NetworkError,
-            case let .non200StatusCode(statusCode, _) = networkError
-        else {
-            return false
+        transientStatusCode(error) != nil
+    }
+
+    private static func transientStatusCode(_ error: Error) -> Int? {
+        if let networkError = error as? NetworkError,
+           case let .non200StatusCode(statusCode, _) = networkError {
+            return [502, 503, 504].contains(statusCode) ? statusCode : nil
         }
-        return [502, 503, 504].contains(statusCode)
+        if let authenticationError = error as? AuthenticationError,
+           case let .badStatusCode(statusCode, _, _) = authenticationError {
+            return [502, 503, 504].contains(statusCode) ? statusCode : nil
+        }
+        if let authenticationError = error as? AuthenticationError,
+           case let .serviceKeyResolutionFailed(attempts) = authenticationError {
+            return attempts.compactMap { attempt -> Int? in
+                guard case let .httpStatus(code, _) = attempt.failure,
+                      [502, 503, 504].contains(code) else { return nil }
+                return code
+            }.first
+        }
+        return nil
     }
 }
 
@@ -133,6 +149,7 @@ enum PreferenceKey: String {
     case enableGroupedXcodeList
     case expandedMajorXcodeVersions
     case expandedMinorXcodeVersions
+    case usePrivilegeHelperForFileOperations
 
     func isManaged() -> Bool { UserDefaults.standard.objectIsForced(forKey: self.rawValue) }
 }
@@ -211,7 +228,7 @@ class AppState: ObservableObject {
     @Published var authenticationState: AuthenticationState = .unauthenticated
     @Published var availableXcodes: [AvailableXcode] = [] {
         willSet {
-            if Self.newlyAvailableXcodes(old: availableXcodes, new: newValue).isEmpty == false {
+            if Self.newlyAvailableXcodes(oldXcodes: availableXcodes, newXcodes: newValue).isEmpty == false {
                 Current.notificationManager.scheduleNotification(title: localizeString("Notification.NewXcodeVersion.Title"), body: localizeString("Notification.NewXcodeVersion.Body"), category: .normal)
             }
             updateAllXcodes(
@@ -228,8 +245,8 @@ class AppState: ObservableObject {
     }
 
     static func newlyAvailableXcodes(
-        old oldXcodes: [AvailableXcode],
-        new newXcodes: [AvailableXcode]
+        oldXcodes: [AvailableXcode],
+        newXcodes: [AvailableXcode]
     ) -> [AvailableXcode] {
         guard oldXcodes.isEmpty == false else { return [] }
         let existingIDs = Set(oldXcodes.map(\.xcodeID))
@@ -333,6 +350,12 @@ class AppState: ObservableObject {
 
     var onSelectActionTypeDisabled: Bool { PreferenceKey.onSelectActionType.isManaged() }
 
+    @Published var usePrivilegedHelperForFileOperations = false {
+        didSet {
+            Current.defaults.set(usePrivilegedHelperForFileOperations, forKey: PreferenceKey.usePrivilegeHelperForFileOperations.rawValue)
+        }
+    }
+
     @Published var showOpenInRosettaOption = false {
         didSet {
             Current.defaults.set(showOpenInRosettaOption, forKey: "showOpenInRosettaOption")
@@ -378,6 +401,7 @@ class AppState: ObservableObject {
     internal var selectTaskID: UUID?
     internal var uninstallTask: Task<Void, Never>?
     internal var uninstallTaskID: UUID?
+    internal var uninstallXcodeID: XcodeID?
     private var autoInstallTimer: Timer?
 
     // MARK: - Dock Progress Tracking
@@ -453,6 +477,7 @@ class AppState: ObservableObject {
         showOpenInRosettaOption = Current.defaults.bool(forKey: "showOpenInRosettaOption") ?? false
         terminateAfterLastWindowClosed = Current.defaults.bool(forKey: "terminateAfterLastWindowClosed") ?? false
         enableGroupedXcodeList = Current.defaults.get(forKey: PreferenceKey.enableGroupedXcodeList.rawValue) as? Bool ?? true
+        usePrivilegedHelperForFileOperations = Current.defaults.bool(forKey: PreferenceKey.usePrivilegeHelperForFileOperations.rawValue) ?? false
     }
 
     // MARK: Timer
@@ -677,6 +702,11 @@ class AppState: ObservableObject {
     }
 
     func choosePhoneNumberForSMS(authOptions: AuthOptionsResponse, sessionData: AppleSessionData) {
+        if authOptions.trustedPhoneNumbers?.count == 1, let trustedPhoneNumber = authOptions.trustedPhoneNumbers?.first {
+            requestSMS(to: trustedPhoneNumber, authOptions: authOptions, sessionData: sessionData)
+            return
+        }
+
         self.presentedSheet = .twoFactor(.init(
             option: .smsPendingChoice,
             authOptions: authOptions,
@@ -1039,14 +1069,20 @@ class AppState: ObservableObject {
     func uninstall(xcode: Xcode) {
         guard let installedXcodePath = xcode.installedPath else { return }
 
+        if let index = allXcodes.firstIndex(where: { $0.id == xcode.id }) {
+            allXcodes[index].installState = .uninstalling(installedXcodePath)
+        }
+
         uninstallTask?.cancel()
         let taskID = UUID()
         uninstallTaskID = taskID
+        uninstallXcodeID = xcode.id
         uninstallTask = Task { @MainActor in
             defer {
                 if uninstallTaskID == taskID {
                     uninstallTask = nil
                     uninstallTaskID = nil
+                    uninstallXcodeID = nil
                 }
             }
             do {
@@ -1056,7 +1092,17 @@ class AppState: ObservableObject {
                 await updateSelectedXcodePathAsync()
                 await updateInstalledXcodesAsync()
             } catch is CancellationError {
+                if uninstallTaskID == taskID || uninstallXcodeID != xcode.id,
+                   let index = allXcodes.firstIndex(where: { $0.id == xcode.id }) {
+                    allXcodes[index].installState = Current.files.installedXcode(destination: installedXcodePath) == nil
+                        ? .notInstalled : .installed(installedXcodePath)
+                }
             } catch {
+                if uninstallTaskID == taskID || uninstallXcodeID != xcode.id,
+                   let index = allXcodes.firstIndex(where: { $0.id == xcode.id }) {
+                    allXcodes[index].installState = .installed(installedXcodePath)
+                }
+                guard uninstallTaskID == taskID else { return }
                 self.error = error
                 self.presentedAlert = .generic(title: localizeString("Alert.Uninstall.Error.Title"), message: error.legibleLocalizedDescription)
             }
@@ -1096,13 +1142,8 @@ class AppState: ObservableObject {
         }
 
         guard
-            var installedXcodePath = xcode.installedPath
+            let installedXcodePath = xcode.installedPath
         else { return }
-
-        if onSelectActionType == .rename {
-            guard let newDestinationXcodePath = renameToXcode(xcode: xcode) else { return }
-            installedXcodePath = newDestinationXcodePath
-        }
 
         selectTask?.cancel()
         let taskID = UUID()
@@ -1115,7 +1156,15 @@ class AppState: ObservableObject {
                 }
             }
             do {
+                var installedXcodePath = installedXcodePath
                 try await installHelperIfNecessaryAsync()
+                try Task.checkCancellation()
+
+                if onSelectActionType == .rename {
+                    guard let newDestinationXcodePath = await renameToXcode(xcode: xcode) else { return }
+                    installedXcodePath = newDestinationXcodePath
+                }
+
                 try Task.checkCancellation()
                 try await Current.helper.switchXcodePathAsync(installedXcodePath.string)
                 try Task.checkCancellation()
@@ -1124,7 +1173,7 @@ class AppState: ObservableObject {
                     onSelectActionType != .rename,
                     let isBeta = automaticSymbolicLinkIsBeta(for: xcode)
                 {
-                    createSymbolicLink(to: installedXcodePath, isBeta: isBeta)
+                    await createSymbolicLink(to: installedXcodePath, isBeta: isBeta)
                 }
             } catch is CancellationError {
             } catch {
@@ -1165,7 +1214,9 @@ class AppState: ObservableObject {
 
     func createSymbolicLink(xcode: Xcode, isBeta: Bool = false) {
         guard let installedXcodePath = xcode.installedPath else { return }
-        createSymbolicLink(to: installedXcodePath, isBeta: isBeta)
+        Task { @MainActor in
+            await createSymbolicLink(to: installedXcodePath, isBeta: isBeta)
+        }
     }
 
     func automaticSymbolicLinkIsBeta(for xcode: Xcode) -> Bool? {
@@ -1175,25 +1226,38 @@ class AppState: ObservableObject {
         return createSymLinkOnSelect ? false : nil
     }
 
-    func createSymbolicLink(to installedXcodePath: Path, isBeta: Bool = false) {
+    func createSymbolicLink(to installedXcodePath: Path, isBeta: Bool = false) async {
         let destinationPath = Path.installDirectory/"Xcode\(isBeta ? "-Beta" : "").app"
 
         do {
-            let service = XcodeSelectionFilesystemService(
-                fileExists: { path in
-                    (try? FileManager.default.attributesOfItem(atPath: path)) != nil
-                },
-                installedXcode: { Current.files.installedXcode(destination: $0) }
-            )
-            let result = try service.createSymbolicLink(
-                to: installedXcodePath,
-                in: Path.installDirectory,
-                isBeta: isBeta
-            )
-            if result.replacedExistingSymlink {
-                Logger.appState.info("Successfully deleted old symlink")
+            if Current.helper.usePrivilegedHelperForFileOperations {
+                if let attributes = try? FileManager.default.attributesOfItem(atPath: destinationPath.string) {
+                    guard attributes[.type] as? FileAttributeType == .typeSymbolicLink else {
+                        throw XcodeSelectionFilesystemError.destinationExistsAndIsNotSymlink(destinationPath)
+                    }
+                }
+                // The helper's createSymbolicLink deletes an existing symlink at the destination before creating the new one.
+                try await installHelperIfNecessaryAsync()
+                try await Current.helper.createSymbolicLinkAsync(installedXcodePath.string, destinationPath.string)
+                Logger.appState.info("Successfully created symbolic link with Xcode\(isBeta ? "-Beta": "").app")
+            } else {
+                let service = XcodeSelectionFilesystemService(
+                    fileExists: { path in
+                        (try? FileManager.default.attributesOfItem(atPath: path)) != nil
+                    },
+                    installedXcode: { Current.files.installedXcode(destination: $0) }
+                )
+                let result = try service.createSymbolicLink(
+                    to: installedXcodePath,
+                    in: Path.installDirectory,
+                    isBeta: isBeta
+                )
+                if result.replacedExistingSymlink {
+                    Logger.appState.info("Successfully deleted old symlink")
+                }
+                Logger.appState.info("Successfully created symbolic link with Xcode\(isBeta ? "-Beta": "").app")
             }
-            Logger.appState.info("Successfully created symbolic link with Xcode\(isBeta ? "-Beta": "").app")
+        } catch is CancellationError {
         } catch {
             Logger.appState.error("Unable to create symbolic Link")
             self.error = error
@@ -1204,19 +1268,34 @@ class AppState: ObservableObject {
         }
     }
 
-    func renameToXcode(xcode: Xcode) -> Path? {
+    func renameToXcode(xcode: Xcode) async -> Path? {
         guard let installedXcodePath = xcode.installedPath else { return nil }
 
         do {
-            let service = XcodeSelectionFilesystemService(
-                installedXcode: { Current.files.installedXcode(destination: $0) }
-            )
-            let renamedPath = try service.renameForSelection(
-                installedXcodePath: installedXcodePath,
-                in: Path.installDirectory
-            )
-            Logger.appState.debug("Renamed selected Xcode to Xcode.app")
-            return renamedPath
+            if Current.helper.usePrivilegedHelperForFileOperations {
+                let destinationPath = Path.installDirectory/"Xcode.app"
+                guard installedXcodePath != destinationPath else { return destinationPath }
+                try await installHelperIfNecessaryAsync()
+                if Current.files.fileExists(atPath: destinationPath.string),
+                   let originalXcode = Current.files.installedXcode(destination: destinationPath) {
+                    let newName = "Xcode-\(originalXcode.version.descriptionWithoutBuildMetadata).app"
+                    try await Current.helper.renameAsync(destinationPath.string, "\(Path.installDirectory)/\(newName)")
+                }
+                try await Current.helper.renameAsync(installedXcodePath.string, destinationPath.string)
+                Logger.appState.debug("Renamed selected Xcode to Xcode.app")
+                return destinationPath
+            } else {
+                let service = XcodeSelectionFilesystemService(
+                    installedXcode: { Current.files.installedXcode(destination: $0) }
+                )
+                let renamedPath = try service.renameForSelection(
+                    installedXcodePath: installedXcodePath,
+                    in: Path.installDirectory
+                )
+                Logger.appState.debug("Renamed selected Xcode to Xcode.app")
+                return renamedPath
+            }
+        } catch is CancellationError {
         } catch {
             Logger.appState.error("Unable to create rename Xcode.app back to original")
             self.error = error
@@ -1270,10 +1349,16 @@ class AppState: ObservableObject {
         ) else {
             throw FileError.fileNotFound(path.string)
         }
-        _ = try XcodeUninstallService(
-            removeItem: { url in try Current.files.removeItem(at: url) },
-            trashItem: { url in try Current.files.trashItem(at: url) }
-        ).uninstall(xcode, emptyTrash: false)
+
+        if Current.helper.usePrivilegedHelperForFileOperations {
+            try await installHelperIfNecessaryAsync()
+            try await Current.helper.removeAsync(xcode.path.string)
+        } else {
+            _ = try XcodeUninstallService(
+                removeItem: { url in try Current.files.removeItem(at: url) },
+                trashItem: { url in try Current.files.trashItem(at: url) }
+            ).uninstall(xcode, emptyTrash: false)
+        }
     }
 
     func waitForAuthenticationTerminalState() async throws {
@@ -1305,7 +1390,7 @@ class AppState: ObservableObject {
     private func handleInstallError(_ error: Error, id: XcodeID) {
         let presentedError = Self.userFacingAuthenticationError(error)
         // Prevent setting the app state error if it is an invalid session, we will present the sign in view instead
-        if let error = error as? AuthenticationError, case .notAuthorized = error {
+        if Self.isUnauthorizedInstallError(error) {
             self.error = presentedError
             self.presentedAlert = .unauthenticated
 
@@ -1316,6 +1401,23 @@ class AppState: ObservableObject {
         if let index = self.allXcodes.firstIndex(where: { $0.id == id }) {
             self.allXcodes[index].installState = .notInstalled
         }
+    }
+
+    static func isUnauthorizedInstallError(_ error: Error) -> Bool {
+        if let authenticationError = error as? AuthenticationError {
+            switch authenticationError {
+            case .notAuthorized, .badStatusCode(statusCode: 401, data: _, response: _):
+                return true
+            default:
+                break
+            }
+        }
+
+        guard let networkError = error as? NetworkError,
+              case .non200StatusCode(statusCode: 401, data: _) = networkError else {
+            return false
+        }
+        return true
     }
 
     /// removes saved username and credentials stored in keychain

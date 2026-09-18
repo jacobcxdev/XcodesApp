@@ -136,7 +136,11 @@ extension Helper {
             devToolsSecurityEnableAsync: { },
             addStaffToDevelopersGroupAsync: { },
             acceptXcodeLicenseAsync: { _ in },
-            runFirstLaunchAsync: { _ in }
+            runFirstLaunchAsync: { _ in },
+            moveAppAsync: { _, _ in },
+            createSymbolicLinkAsync: { _, _ in },
+            renameAsync: { _, _ in },
+            removeAsync: { _ in }
         )
     }
 }

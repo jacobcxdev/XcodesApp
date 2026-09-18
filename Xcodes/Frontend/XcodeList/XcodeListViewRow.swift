@@ -24,6 +24,8 @@ struct XcodeListViewRow: View {
                 HStack {
                     Text(verbatim: "\(xcode.description) \(xcode.version.buildMetadataIdentifiersDisplay)")
                         .font(.body)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     if !xcode.identicalBuildsForCurrentVariant.isEmpty {
                         Image(systemName: "square.fill.on.square.fill")
@@ -47,13 +49,16 @@ struct XcodeListViewRow: View {
                     Text(verbatim: path.string)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(path.string)
                 }
             }
 
             Spacer()
 
             selectControl(for: xcode)
-                .padding(.trailing, 16)
+                .padding(.trailing, 4)
             installControl(for: xcode)
         }
         .padding(.vertical, 4)
@@ -63,6 +68,8 @@ struct XcodeListViewRow: View {
                 InstallButton(xcode: xcode)
             case .installing:
                 CancelInstallButton(xcode: xcode)
+            case .uninstalling:
+                EmptyView()
             case let .installed(path):
                 SelectButton(xcode: xcode)
                 OpenButton(xcode: xcode)
@@ -119,7 +126,7 @@ struct XcodeListViewRow: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.yellow)
                         .help(staleSelectedHelpText)
-                case .installing:
+                case .installing, .uninstalling:
                     EmptyView()
                 }
             } else if xcode.selected {
@@ -168,6 +175,14 @@ struct XcodeListViewRow: View {
                 highlighted: selected,
                 cancel: { appState.presentedAlert = .cancelInstall(xcode: xcode) }
             )
+        case .uninstalling:
+            HStack(spacing: 4) {
+                ProgressView()
+                    .scaleEffect(0.5)
+                Text("Uninstalling")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -180,7 +195,7 @@ struct XcodeListViewRow: View {
             return Text(verbatim: "\(selectedVersion) selected, \(latestVersion) available. Click to select \(latestVersion).")
         case .notInstalled:
             return Text(verbatim: "\(selectedVersion) selected, \(latestVersion) available. Install \(latestVersion) to select it.")
-        case .installing, .none:
+        case .installing, .uninstalling, .none:
             return Text("ActiveVersionDescription")
         }
     }

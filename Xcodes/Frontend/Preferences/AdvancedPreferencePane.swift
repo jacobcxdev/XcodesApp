@@ -155,7 +155,10 @@ struct AdvancedPreferencePane: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    
+
+                    Toggle("UsePrivilegedHelperForFileOperations", isOn: $appState.usePrivilegedHelperForFileOperations)
+                        .disabled(PreferenceKey.usePrivilegeHelperForFileOperations.isManaged())
+
                     Spacer()
                 }
             }

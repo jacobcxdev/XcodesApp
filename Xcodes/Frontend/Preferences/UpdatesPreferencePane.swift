@@ -110,21 +110,21 @@ class ObservableUpdater: ObservableObject {
         automaticallyChecksForUpdatesObservation = updater.observe(
             \.automaticallyChecksForUpdates, 
             options: [.initial, .new, .old],
-            changeHandler: { [weak self] updater, change in
+            changeHandler: { [weak self] _, change in
                 guard change.newValue != change.oldValue else { return }
-                let automaticallyChecksForUpdates = updater.automaticallyChecksForUpdates
                 Task { @MainActor [weak self] in
-                    self?.automaticallyChecksForUpdates = automaticallyChecksForUpdates
+                    guard let self else { return }
+                    self.automaticallyChecksForUpdates = self.updater.automaticallyChecksForUpdates
                 }
             }
         )
         lastUpdateCheckDateObservation = updater.observe(
             \.lastUpdateCheckDate, 
             options: [.initial, .new, .old],
-            changeHandler: { [weak self] updater, change in
-                let lastUpdateCheckDate = updater.lastUpdateCheckDate
+            changeHandler: { [weak self] _, _ in
                 Task { @MainActor [weak self] in
-                    self?.lastUpdateCheckDate = lastUpdateCheckDate
+                    guard let self else { return }
+                    self.lastUpdateCheckDate = self.updater.lastUpdateCheckDate
                 }
             }
         )

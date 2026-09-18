@@ -354,7 +354,14 @@ extension AppState {
                 )
             },
             fileExists: { path in Current.files.fileExists(atPath: path) },
-            moveItem: { source, destination in try Current.files.moveItem(at: source, to: destination) },
+            moveItem: { source, destination in
+                if Current.helper.usePrivilegedHelperForFileOperations {
+                    try await self.installHelperIfNecessaryAsync()
+                    try await Current.helper.moveAppAsync(source.path, destination.path)
+                } else {
+                    try Current.files.moveItem(at: source, to: destination)
+                }
+            },
             removeItem: { url in try Current.files.removeItem(at: url) }
         )
     }

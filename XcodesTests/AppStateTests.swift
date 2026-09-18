@@ -27,6 +27,45 @@ private final class TestLockedBox<Value: Sendable>: Sendable {
     }
 }
 
+private final class MockURLProtocol: URLProtocol, @unchecked Sendable {
+    typealias Handler = @Sendable (URLRequest) throws -> (Data, HTTPURLResponse)
+
+    private nonisolated(unsafe) static var handler: Handler?
+
+    static func session(handler: @escaping Handler) -> URLSession {
+        self.handler = handler
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        return URLSession(configuration: configuration)
+    }
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = Self.handler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+
+        do {
+            let (data, response) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
+}
+
 @MainActor
 class AppStateTests: XCTestCase {
     var subject: AppState!
@@ -40,7 +79,7 @@ class AppStateTests: XCTestCase {
     func test_NewlyAvailableXcodes_IgnoresInitialLoad() {
         let initial = makeAvailableXcode(version: "27.0.0")
 
-        XCTAssertTrue(AppState.newlyAvailableXcodes(old: [], new: [initial]).isEmpty)
+        XCTAssertTrue(AppState.newlyAvailableXcodes(oldXcodes: [], newXcodes: [initial]).isEmpty)
     }
 
     func test_NewlyAvailableXcodes_DetectsIdentityWhenCountDoesNotGrow() {
@@ -48,7 +87,7 @@ class AppStateTests: XCTestCase {
         let retained = makeAvailableXcode(version: "26.5.0")
         let added = makeAvailableXcode(version: "27.0.0")
 
-        let result = AppState.newlyAvailableXcodes(old: [removed, retained], new: [retained, added])
+        let result = AppState.newlyAvailableXcodes(oldXcodes: [removed, retained], newXcodes: [retained, added])
 
         XCTAssertEqual(result.map(\.xcodeID), [added.xcodeID])
     }
@@ -57,7 +96,7 @@ class AppStateTests: XCTestCase {
         let existing = makeAvailableXcode(version: "27.0.0", filename: "Xcode.xip")
         let duplicate = makeAvailableXcode(version: "27.0.0", filename: "Xcode-copy.xip")
 
-        XCTAssertTrue(AppState.newlyAvailableXcodes(old: [existing], new: [existing, duplicate]).isEmpty)
+        XCTAssertTrue(AppState.newlyAvailableXcodes(oldXcodes: [existing], newXcodes: [existing, duplicate]).isEmpty)
     }
 
     func test_NewlyAvailableXcodes_TreatsArchitectureAsIdentity() {
@@ -70,7 +109,7 @@ class AppStateTests: XCTestCase {
             architectures: [.arm64]
         )
 
-        let result = AppState.newlyAvailableXcodes(old: [universal], new: [universal, appleSilicon])
+        let result = AppState.newlyAvailableXcodes(oldXcodes: [universal], newXcodes: [universal, appleSilicon])
 
         XCTAssertEqual(result.map(\.xcodeID), [appleSilicon.xcodeID])
     }
@@ -84,14 +123,6 @@ class AppStateTests: XCTestCase {
             XcodeCommandShortcuts.createSymbolicLink,
             KeyboardShortcut("l", modifiers: [.command, .option])
         )
-    }
-
-    func test_InstallNotificationTitle_DoesNotDuplicateMajorVersion() {
-        XCTAssertEqual(
-            AppState.installNotificationTitle(for: Version("27.0.0-Beta.4")!),
-            "27.0 Beta 4"
-        )
-        XCTAssertEqual(AppState.installNotificationTitle(for: Version("26.5.0")!), "26.5")
     }
 
     func test_CopyPath_WritesOnlyPlainText() throws {
@@ -188,6 +219,94 @@ class AppStateTests: XCTestCase {
                 .serviceTemporarilyUnavailable(statusCode: 503)
             )
             XCTAssertEqual(attempts.read { $0 }, 3)
+        }
+    }
+
+    func test_AuthenticationPolicy_HandlesAuthenticationHTTPStatusCodes() async throws {
+        for statusCode in [502, 503, 504, 401] {
+            let attempts = TestLockedBox(0)
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: URL(string: "https://idmsa.apple.com/appleauth/auth")!,
+                statusCode: statusCode,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            let failure = AuthenticationError.badStatusCode(statusCode: statusCode, data: nil, response: response)
+
+            do {
+                let _: String = try await AuthenticationRequestPolicy(delayBeforeRetry: .zero).perform {
+                    attempts.withValue { $0 += 1 }
+                    throw failure
+                }
+                XCTFail("Expected authentication HTTP error")
+            } catch {
+                if statusCode == 401 {
+                    XCTAssertEqual(error as? AuthenticationError, failure)
+                    XCTAssertEqual(attempts.read { $0 }, 1)
+                } else {
+                    XCTAssertEqual(error as? AuthenticationRequestError, .serviceTemporarilyUnavailable(statusCode: statusCode))
+                    XCTAssertEqual(attempts.read { $0 }, 3)
+                }
+                XCTAssertFalse(AuthenticationRequestPolicy.shouldClearCredentials(after: error))
+            }
+        }
+    }
+
+    func test_AuthenticationPolicy_RetriesTransientServiceKeyFailureUntilSuccess() async throws {
+        let attempts = TestLockedBox(0)
+        let failure = AuthenticationError.serviceKeyResolutionFailed(attempts: [
+            .init(source: .appStoreConnectSignOut, failure: .missingRedirect),
+            .init(source: .olympus, failure: .httpStatus(code: 503, bodyPreview: nil))
+        ])
+
+        let result = try await AuthenticationRequestPolicy(delayBeforeRetry: .zero).perform {
+            let attempt = attempts.withValue { $0 += 1; return $0 }
+            if attempt < 3 { throw failure }
+            return "authenticated"
+        }
+
+        XCTAssertEqual(result, "authenticated")
+        XCTAssertEqual(attempts.read { $0 }, 3)
+    }
+
+    func test_AuthenticationPolicy_MapsExhaustedServiceKeyFailures() async {
+        for statusCode in [502, 503, 504] {
+            let attempts = TestLockedBox(0)
+            let failure = AuthenticationError.serviceKeyResolutionFailed(attempts: [
+                .init(source: .appStoreConnectSignOut, failure: .httpStatus(code: statusCode, bodyPreview: nil)),
+                .init(source: .olympus, failure: .missingKey)
+            ])
+
+            do {
+                let _: String = try await AuthenticationRequestPolicy(delayBeforeRetry: .zero).perform {
+                    attempts.withValue { $0 += 1 }
+                    throw failure
+                }
+                XCTFail("Expected temporary service error")
+            } catch {
+                XCTAssertEqual(error as? AuthenticationRequestError, .serviceTemporarilyUnavailable(statusCode: statusCode))
+                XCTAssertEqual(attempts.read { $0 }, 3)
+                XCTAssertFalse(AuthenticationRequestPolicy.shouldClearCredentials(after: error))
+            }
+        }
+    }
+
+    func test_AuthenticationPolicy_DoesNotRetryServiceKeyParsingFailures() async {
+        let attempts = TestLockedBox(0)
+        let failure = AuthenticationError.serviceKeyResolutionFailed(attempts: [
+            .init(source: .appStoreConnectSignOut, failure: .invalidRedirect),
+            .init(source: .olympus, failure: .missingKey)
+        ])
+
+        do {
+            let _: String = try await AuthenticationRequestPolicy(delayBeforeRetry: .zero).perform {
+                attempts.withValue { $0 += 1 }
+                throw failure
+            }
+            XCTFail("Expected service-key parsing failure")
+        } catch {
+            XCTAssertEqual(error as? AuthenticationError, failure)
+            XCTAssertEqual(attempts.read { $0 }, 1)
         }
     }
 
@@ -712,6 +831,48 @@ class AppStateTests: XCTestCase {
             from: data
         )
     }
+
+    func test_InstallError_Network401IsUnauthorized() {
+        let error = NetworkError.non200StatusCode(statusCode: 401, data: Data())
+
+        XCTAssertTrue(AppState.isUnauthorizedInstallError(error))
+    }
+
+    func test_InstallError_OtherNetworkStatusIsNotUnauthorized() {
+        let error = NetworkError.non200StatusCode(statusCode: 500, data: Data())
+
+        XCTAssertFalse(AppState.isUnauthorizedInstallError(error))
+    }
+
+    func test_ChoosePhoneNumberForSMS_WithOneTrustedPhoneNumberRequestsSMS() async throws {
+        let trustedPhoneNumber = AuthOptionsResponse.TrustedPhoneNumber(id: 7, numberWithDialCode: "(•••) •••-••90")
+        let authOptions = AuthOptionsResponse(
+            trustedPhoneNumbers: [trustedPhoneNumber],
+            trustedDevices: nil,
+            securityCode: .init(length: 6)
+        )
+        let sessionData = AppleSessionData(serviceKey: "service-key", sessionID: "session-id", scnt: "scnt")
+        Current.network = Network(session: MockURLProtocol.session { request in
+            XCTAssertEqual(request.url?.absoluteString, "https://idmsa.apple.com/appleauth/auth/verify/phone")
+            XCTAssertEqual(request.httpMethod, "PUT")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-Apple-ID-Session-Id"), "session-id")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-Apple-Widget-Key"), "service-key")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "scnt"), "scnt")
+            return (Data(), HTTPURLResponse(url: request.url!, statusCode: 204, httpVersion: nil, headerFields: nil)!)
+        })
+
+        subject.choosePhoneNumberForSMS(authOptions: authOptions, sessionData: sessionData)
+        for _ in 0..<100 where subject.presentedSheet == nil && subject.authError == nil {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        XCTAssertNil(subject.authError)
+        guard case let .twoFactor(secondFactorData) = subject.presentedSheet else {
+            XCTFail("Expected the SMS code-entry sheet to be presented")
+            return
+        }
+        XCTAssertEqual(secondFactorData.option, .smsSent(trustedPhoneNumber))
+    }
     
     func test_ParseCertificateInfo_Succeeds() throws {
         let sampleRawInfo = """
@@ -927,7 +1088,7 @@ class AppStateTests: XCTestCase {
         XCTAssertNil(subject.presentedAlert)
     }
 
-    func test_CreateSymbolicLink_UsesProvidedInstalledPath() throws {
+    func test_CreateSymbolicLink_UsesProvidedInstalledPath() async throws {
         let installDirectory = try XCTUnwrap(Path(
             NSTemporaryDirectory()
                 .appending("XcodesAppStateTests-")
@@ -942,13 +1103,13 @@ class AppStateTests: XCTestCase {
             key == "installPath" ? installDirectory.string : nil
         }
 
-        subject.createSymbolicLink(to: installedXcodePath)
+        await subject.createSymbolicLink(to: installedXcodePath)
 
         let destination = try FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath.string)
         XCTAssertEqual(destination, installedXcodePath.string)
     }
 
-    func test_CreateSymbolicLink_ReplacesBrokenStableLink() throws {
+    func test_CreateSymbolicLink_ReplacesBrokenStableLink() async throws {
         let installDirectory = try XCTUnwrap(Path(
             NSTemporaryDirectory()
                 .appending("XcodesAppStateTests-")
@@ -967,13 +1128,13 @@ class AppStateTests: XCTestCase {
             key == "installPath" ? installDirectory.string : nil
         }
 
-        subject.createSymbolicLink(to: installedXcodePath)
+        await subject.createSymbolicLink(to: installedXcodePath)
 
         let destination = try FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath.string)
         XCTAssertEqual(destination, installedXcodePath.string)
     }
 
-    func test_CreateSymbolicLink_ReplacesBrokenBetaLink() throws {
+    func test_CreateSymbolicLink_ReplacesBrokenBetaLink() async throws {
         let installDirectory = try XCTUnwrap(Path(
             NSTemporaryDirectory()
                 .appending("XcodesAppStateTests-")
@@ -992,10 +1153,73 @@ class AppStateTests: XCTestCase {
             key == "installPath" ? installDirectory.string : nil
         }
 
-        subject.createSymbolicLink(to: installedXcodePath, isBeta: true)
+        await subject.createSymbolicLink(to: installedXcodePath, isBeta: true)
 
         let destination = try FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath.string)
         XCTAssertEqual(destination, installedXcodePath.string)
+    }
+
+    func test_CreateSymbolicLink_PrivilegedBetaLinkUsesHelper() async throws {
+        let installDirectory = try XCTUnwrap(Path(NSTemporaryDirectory().appending(UUID().uuidString)))
+        let installedXcodePath = installDirectory/"Xcode-27.0-Beta.5.app"
+        let calls = TestLockedBox<[[String]]>([])
+        Current.defaults.string = { key in key == "installPath" ? installDirectory.string : nil }
+        Current.defaults.bool = { key in key == PreferenceKey.usePrivilegeHelperForFileOperations.rawValue }
+        Current.helper.checkIfLatestHelperIsInstalledAsync = { true }
+        Current.helper.createSymbolicLinkAsync = { source, destination in
+            calls.withValue { $0.append([source, destination]) }
+        }
+
+        await subject.createSymbolicLink(to: installedXcodePath, isBeta: true)
+
+        XCTAssertEqual(calls.read { $0 }, [[installedXcodePath.string, (installDirectory/"Xcode-Beta.app").string]])
+        XCTAssertNil(subject.error)
+    }
+
+    func test_CreateSymbolicLink_PrivilegedLinkDoesNotReplaceRealApp() async throws {
+        let installDirectory = try XCTUnwrap(Path(NSTemporaryDirectory().appending(UUID().uuidString)))
+        let destination = installDirectory/"Xcode.app"
+        try FileManager.default.createDirectory(at: destination.url, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: installDirectory.url) }
+        let calledHelper = TestLockedBox(false)
+        Current.defaults.string = { key in key == "installPath" ? installDirectory.string : nil }
+        Current.defaults.bool = { key in key == PreferenceKey.usePrivilegeHelperForFileOperations.rawValue }
+        Current.helper.createSymbolicLinkAsync = { _, _ in calledHelper.withValue { $0 = true } }
+
+        await subject.createSymbolicLink(to: installDirectory/"Xcode-27.0.app")
+
+        XCTAssertFalse(calledHelper.read { $0 })
+        XCTAssertEqual(subject.error as? XcodeSelectionFilesystemError, .destinationExistsAndIsNotSymlink(destination))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: destination.string))
+    }
+
+    func test_CreateSymbolicLink_HelperCancellationDoesNotPresentError() async throws {
+        let directory = try XCTUnwrap(Path(NSTemporaryDirectory().appending(UUID().uuidString)))
+        Current.defaults.string = { key in key == "installPath" ? directory.string : nil }
+        Current.defaults.bool = { key in key == PreferenceKey.usePrivilegeHelperForFileOperations.rawValue }
+        Current.helper.checkIfLatestHelperIsInstalledAsync = { true }
+        Current.helper.createSymbolicLinkAsync = { _, _ in throw CancellationError() }
+
+        await subject.createSymbolicLink(to: directory/"Xcode-27.0.app")
+
+        XCTAssertNil(subject.error)
+        XCTAssertNil(subject.presentedAlert)
+    }
+
+    func test_RenameToXcode_HelperCancellationDoesNotPresentError() async throws {
+        let directory = try XCTUnwrap(Path(NSTemporaryDirectory().appending(UUID().uuidString)))
+        let xcode = Xcode(version: Version("27.0.0")!, installState: .installed(directory/"Xcode-27.0.app"), selected: false, icon: nil)
+        Current.defaults.string = { key in key == "installPath" ? directory.string : nil }
+        Current.defaults.bool = { key in key == PreferenceKey.usePrivilegeHelperForFileOperations.rawValue }
+        Current.files.fileExistsAtPath = { _ in false }
+        Current.helper.checkIfLatestHelperIsInstalledAsync = { true }
+        Current.helper.renameAsync = { _, _ in throw CancellationError() }
+
+        let destination = await subject.renameToXcode(xcode: xcode)
+
+        XCTAssertNil(destination)
+        XCTAssertNil(subject.error)
+        XCTAssertNil(subject.presentedAlert)
     }
 
     func test_AutomaticSymbolicLink_ReleaseUsesStableLinkOnly() {
@@ -1164,6 +1388,67 @@ class AppStateTests: XCTestCase {
             String(format: localizeString("Alert.Uninstall.Error.Message.FileNotFound"), missingPath.string)
         )
         XCTAssertFalse(didTryToTrashItem.read { $0 })
+    }
+
+    func test_Uninstall_CancelledPreviousItemClearsSpinner() async throws {
+        try await verifyCancelledUninstallState(repeatsSameItem: false)
+    }
+
+    func test_Uninstall_CancelledSameItemPreservesReplacementSpinner() async throws {
+        try await verifyCancelledUninstallState(repeatsSameItem: true)
+    }
+
+    private func verifyCancelledUninstallState(repeatsSameItem: Bool) async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let path = try XCTUnwrap(Path(url: directory.appendingPathComponent("Xcode-0.0.0.app", isDirectory: true)))
+        let secondPath = try XCTUnwrap(Path(url: directory.appendingPathComponent("Xcode-0.0.1.app", isDirectory: true)))
+        try FileManager.default.createDirectory(at: path.url, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: secondPath.url, withIntermediateDirectories: true)
+        let first = Xcode(version: Version("0.0.0")!, installState: .installed(path), selected: false, icon: nil)
+        let second = repeatsSameItem ? first : Xcode(
+            version: Version("0.0.1")!,
+            installState: .installed(secondPath),
+            selected: false,
+            icon: nil
+        )
+        subject.allXcodes = repeatsSameItem ? [first] : [first, second]
+        Current.defaults.bool = { key in key == PreferenceKey.usePrivilegeHelperForFileOperations.rawValue }
+        Current.helper.checkIfLatestHelperIsInstalledAsync = { true }
+        let continuations = TestLockedBox<[CheckedContinuation<Void, Error>]>([])
+        let firstStarted = expectation(description: "first uninstall reached helper")
+        let secondStarted = expectation(description: "second uninstall reached helper")
+        Current.helper.removeAsync = { _ in
+            try await withCheckedThrowingContinuation { continuation in
+                let count = continuations.withValue { $0.append(continuation); return $0.count }
+                if count == 1 { firstStarted.fulfill() }
+                if count == 2 { secondStarted.fulfill() }
+            }
+        }
+
+        subject.uninstall(xcode: first)
+        let firstTask = try XCTUnwrap(subject.uninstallTask)
+        await fulfillment(of: [firstStarted], timeout: 5)
+        XCTAssertEqual(continuations.read { $0.count }, 1)
+        subject.uninstall(xcode: second)
+        let secondTask = try XCTUnwrap(subject.uninstallTask)
+        await fulfillment(of: [secondStarted], timeout: 5)
+        let pending = continuations.read { $0 }
+        guard pending.count == 2 else {
+            pending.forEach { $0.resume(throwing: CancellationError()) }
+            return XCTFail("Expected both uninstall operations to reach helper")
+        }
+        pending[0].resume(throwing: CancellationError())
+        await firstTask.value
+
+        XCTAssertEqual(subject.allXcodes.first { $0.id == first.id }?.installState,
+                       repeatsSameItem ? .uninstalling(path) : .installed(path))
+        XCTAssertEqual(subject.allXcodes.first { $0.id == second.id }?.installState, .uninstalling(second.installedPath!))
+
+        pending[1].resume(throwing: CancellationError())
+        await secondTask.value
+        XCTAssertNil(subject.uninstallTask)
+        XCTAssertNil(subject.uninstallXcodeID)
     }
 
     func test_Uninstall_RefreshesInstalledXcodeList() async throws {
@@ -1667,6 +1952,35 @@ class AppStateTests: XCTestCase {
 
         XCTAssertFalse(fileManager.fileExists(atPath: workspace.directoryURL.path))
         XCTAssertTrue(fileManager.fileExists(atPath: archive.path))
+    }
+
+    func test_RestoreAuthenticationState_UsesPersistedSession() async throws {
+        let appleSession = try JSONDecoder().decode(
+            AppleSession.self,
+            from: Data(#"{"user":{"fullName":"Jane Developer"}}"#.utf8)
+        )
+        let expectedState = AuthenticationState.authenticated(appleSession)
+        Current.defaults.string = { key in
+            key == "username" ? "jane@example.com" : nil
+        }
+        Current.network.validateSessionAsync = { expectedState }
+
+        await subject.restoreAuthenticationStateAsync()
+
+        XCTAssertEqual(subject.authenticationState, expectedState)
+    }
+
+    func test_RestoreAuthenticationState_ValidatesSessionWithoutSavedUsername() async throws {
+        let didValidate = TestLockedBox(false)
+        Current.network.validateSessionAsync = {
+            didValidate.withValue { $0 = true }
+            return .unauthenticated
+        }
+
+        await subject.restoreAuthenticationStateAsync()
+
+        XCTAssertTrue(didValidate.read { $0 })
+        XCTAssertEqual(subject.authenticationState, .unauthenticated)
     }
 
     func test_DownloadRuntimeViaXcodeBuild_ClearsRuntimeTaskWhenComplete() async throws {
@@ -2273,6 +2587,22 @@ class AppStateTests: XCTestCase {
         } catch {
             XCTFail("Unexpected error: \(error)")
         }
+    }
+
+    func test_InstallNotificationTitle_DoesNotDuplicateMajorVersion() {
+        XCTAssertEqual(
+            AppState.installNotificationTitle(for: Version(major: 27, minor: 0, patch: 0, prereleaseIdentifiers: ["beta", "4"])),
+            "27.0 Beta 4"
+        )
+        XCTAssertEqual(
+            AppState.installNotificationTitle(for: Version(major: 26, minor: 5, patch: 0)),
+            "26.5"
+        )
+        // Stable release with patch
+        XCTAssertEqual(
+            AppState.installNotificationTitle(for: Version(major: 10, minor: 2, patch: 1)),
+            "10.2.1"
+        )
     }
 
     private func recordAllXcodeInstallStates(during operation: () async throws -> Void) async throws -> [[XcodeInstallState]] {

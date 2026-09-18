@@ -18,27 +18,30 @@ struct PlatformsView: View {
     var body: some View {
         
         let builds = xcode.sdks?.allBuilds
-        let runtimes = (builds?.flatMap { sdkBuild in
+        let availableRuntimes = (builds?.flatMap { sdkBuild in
             appState.downloadableRuntimes.filter {
-                $0.sdkBuildUpdate?.contains(sdkBuild) ?? false &&
-                ($0.architectures?.isEmpty ?? true ||
-                 ($0.architectures?.isUniversal ?? false && selectedVariant == .universal) ||
-                 ($0.architectures?.isAppleSilicon ?? false && selectedVariant == .appleSilicon)
-                )
+                $0.sdkBuildUpdate?.contains(sdkBuild) ?? false
             }
         } ?? []).removingReleaseCandidateDisplayDuplicates(installedRuntimes: appState.installedRuntimes)
-        
-        let architectures = Set(runtimes.flatMap { $0.architectures ?? [] })
+
+        let availableVariants = ArchitectureVariant.allCases.filter { variant in
+            availableRuntimes.contains { $0.supports(variant) }
+        }
+        let displayedVariant = availableVariants.count == 1 ? availableVariants.first : selectedVariant
+        let runtimes = availableRuntimes.filter { runtime in
+            guard !(runtime.architectures?.isEmpty ?? true), let displayedVariant else { return true }
+            return runtime.supports(displayedVariant)
+        }
         
         VStack {
             HStack {
                 Text("Platforms")
                     .font(.title3)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                if !architectures.isEmpty {
+                if availableVariants.count > 1 {
                     Spacer()
                     Picker("Architecture", selection: $selectedVariant) {
-                        ForEach(ArchitectureVariant.allCases, id: \.self) { arch in
+                        ForEach(availableVariants, id: \.self) { arch in
                             Label(variantLabel(for: arch), systemImage: arch.iconName)
                                 .tag(arch)
                         }
@@ -71,33 +74,33 @@ struct PlatformsView: View {
     
     @ViewBuilder
     func runtimeView(runtime: DownloadableRuntime) -> some View {
-        VStack(spacing: 10) {
-            HStack {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
                 runtime.icon()
-                Text("\(runtime.visibleIdentifier)")
+                Text(runtime.visibleIdentifier)
                     .font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                pathIfAvailable(xcode: xcode, runtime: runtime)
+
+                if runtime.installState == .notInstalled,
+                   appState.runtimeInstallPath(xcode: xcode, runtime: runtime) == nil {
+                    DownloadRuntimeButton(runtime: runtime)
+                }
+            }
+
+            HStack {
                 ForEach(runtime.architectures ?? [], id: \.self) { architecture in
                     TagView(text: architecture.displayString)
+                        .fixedSize()
                 }
-               
-                pathIfAvailable(xcode: xcode, runtime: runtime)
-                
-                if runtime.installState == .notInstalled {
-                    // TODO: Update the downloadableRuntimes with the appropriate installState so we don't have to check path awkwardly
-                    if appState.runtimeInstallPath(xcode: xcode, runtime: runtime) != nil {
-                        EmptyView()
-                    } else {
-                        HStack {
-                            Spacer()
-                            DownloadRuntimeButton(runtime: runtime)
-                        }
-                    }
-                }
-					
+
                 Spacer()
                 Text(runtime.downloadFileSizeString)
                     .font(.subheadline)
-						  .frame(width: 70, alignment: .trailing)
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
             }
 			  
 			  if case let .installing(installationStep) = runtime.installState {
@@ -138,6 +141,15 @@ private struct RuntimeDisplayKey: Hashable {
 }
 
 private extension DownloadableRuntime {
+    func supports(_ variant: ArchitectureVariant) -> Bool {
+        switch variant {
+        case .universal:
+            return architectures?.isUniversal ?? false
+        case .appleSilicon:
+            return architectures?.isAppleSilicon ?? false
+        }
+    }
+
     var isReleaseCandidate: Bool {
         name.localizedCaseInsensitiveContains("Release Candidate") ||
         identifier.localizedCaseInsensitiveContains("_rc")

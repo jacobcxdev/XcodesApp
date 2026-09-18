@@ -539,4 +539,11 @@ public struct Helper: Sendable {
     var addStaffToDevelopersGroupAsync: @Sendable () async throws -> Void = { try await helperClient.addStaffToDevelopersGroupAsync() }
     var acceptXcodeLicenseAsync: @Sendable (_ absoluteXcodePath: String) async throws -> Void = { try await helperClient.acceptXcodeLicenseAsync(absoluteXcodePath: $0) }
     var runFirstLaunchAsync: @Sendable (_ absoluteXcodePath: String) async throws -> Void = { try await helperClient.runFirstLaunchAsync(absoluteXcodePath: $0) }
+    var moveAppAsync: @Sendable (_ source: String, _ destination: String) async throws -> Void = { try await helperClient.moveAppAsync(at: $0, to: $1) }
+    var createSymbolicLinkAsync: @Sendable (_ source: String, _ destination: String) async throws -> Void = { try await helperClient.createSymbolicLinkAsync(source: $0, destination: $1) }
+    var renameAsync: @Sendable (_ source: String, _ destination: String) async throws -> Void = { try await helperClient.renameAsync(source: $0, destination: $1) }
+    var removeAsync: @Sendable (_ path: String) async throws -> Void = { try await helperClient.removeAsync(path: $0) }
+    var usePrivilegedHelperForFileOperations: Bool {
+        Current.defaults.bool(forKey: PreferenceKey.usePrivilegeHelperForFileOperations.rawValue) ?? false
+    }
 }
