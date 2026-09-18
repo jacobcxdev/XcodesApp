@@ -228,11 +228,13 @@ private struct XcodeVersionGroupRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(verbatim: "Xcode \(displayName)")
                             .font(.body.weight(indentation == 0 ? .medium : .regular))
+                            .fixedSize(horizontal: false, vertical: true)
 
                         if let latestRelease {
                             Text(verbatim: "Latest: \(latestRelease.description)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 
@@ -244,7 +246,7 @@ private struct XcodeVersionGroupRow: View {
             .buttonStyle(.plain)
 
             selectControl
-                .padding(.trailing, 16)
+                .padding(.trailing, 4)
             installControl
         }
         .padding(.leading, indentation)
