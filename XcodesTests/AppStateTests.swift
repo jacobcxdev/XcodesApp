@@ -1399,11 +1399,16 @@ class AppStateTests: XCTestCase {
     }
 
     private func verifyCancelledUninstallState(repeatsSameItem: Bool) async throws {
-        let path = try XCTUnwrap(Path("/Applications/Xcode-0.0.0.app"))
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let path = try XCTUnwrap(Path(url: directory.appendingPathComponent("Xcode-0.0.0.app", isDirectory: true)))
+        let secondPath = try XCTUnwrap(Path(url: directory.appendingPathComponent("Xcode-0.0.1.app", isDirectory: true)))
+        try FileManager.default.createDirectory(at: path.url, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: secondPath.url, withIntermediateDirectories: true)
         let first = Xcode(version: Version("0.0.0")!, installState: .installed(path), selected: false, icon: nil)
         let second = repeatsSameItem ? first : Xcode(
             version: Version("0.0.1")!,
-            installState: .installed(try XCTUnwrap(Path("/Applications/Xcode-0.0.1.app"))),
+            installState: .installed(secondPath),
             selected: false,
             icon: nil
         )
@@ -1411,19 +1416,23 @@ class AppStateTests: XCTestCase {
         Current.defaults.bool = { key in key == PreferenceKey.usePrivilegeHelperForFileOperations.rawValue }
         Current.helper.checkIfLatestHelperIsInstalledAsync = { true }
         let continuations = TestLockedBox<[CheckedContinuation<Void, Error>]>([])
+        let firstStarted = expectation(description: "first uninstall reached helper")
+        let secondStarted = expectation(description: "second uninstall reached helper")
         Current.helper.removeAsync = { _ in
             try await withCheckedThrowingContinuation { continuation in
-                continuations.withValue { $0.append(continuation) }
+                let count = continuations.withValue { $0.append(continuation); return $0.count }
+                if count == 1 { firstStarted.fulfill() }
+                if count == 2 { secondStarted.fulfill() }
             }
         }
 
         subject.uninstall(xcode: first)
         let firstTask = try XCTUnwrap(subject.uninstallTask)
-        for _ in 0..<100 where continuations.read({ $0.count }) < 1 { await Task.yield() }
+        await fulfillment(of: [firstStarted], timeout: 5)
         XCTAssertEqual(continuations.read { $0.count }, 1)
         subject.uninstall(xcode: second)
         let secondTask = try XCTUnwrap(subject.uninstallTask)
-        for _ in 0..<100 where continuations.read({ $0.count }) < 2 { await Task.yield() }
+        await fulfillment(of: [secondStarted], timeout: 5)
         let pending = continuations.read { $0 }
         guard pending.count == 2 else {
             pending.forEach { $0.resume(throwing: CancellationError()) }
