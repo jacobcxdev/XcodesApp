@@ -119,6 +119,86 @@ final class HelperClient {
         Logger.helperClient.info("\(#function): finished")
     }
 
+    func moveAppAsync(at source: String, to destination: String) async throws {
+        Logger.helperClient.info(#function)
+
+        guard Current.helper.usePrivilegedHelperForFileOperations else {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                FileOperations.moveApp(at: source, to: destination) { error in
+                    if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+                }
+            }
+            return
+        }
+
+        try await performVoidHelperRequest { helper, finish in
+            helper.moveApp(at: source, to: destination) { possibleError in
+                finish(possibleError.map(Result.failure) ?? .success(()))
+            }
+        }
+        Logger.helperClient.info("\(#function): finished")
+    }
+
+    func createSymbolicLinkAsync(source: String, destination: String) async throws {
+        Logger.helperClient.info(#function)
+
+        guard Current.helper.usePrivilegedHelperForFileOperations else {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                FileOperations.createSymbolicLink(source: source, destination: destination) { error in
+                    if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+                }
+            }
+            return
+        }
+
+        try await performVoidHelperRequest { helper, finish in
+            helper.createSymbolicLink(source: source, destination: destination) { possibleError in
+                finish(possibleError.map(Result.failure) ?? .success(()))
+            }
+        }
+        Logger.helperClient.info("\(#function): finished")
+    }
+
+    func renameAsync(source: String, destination: String) async throws {
+        Logger.helperClient.info(#function)
+
+        guard Current.helper.usePrivilegedHelperForFileOperations else {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                FileOperations.rename(source: source, destination: destination) { error in
+                    if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+                }
+            }
+            return
+        }
+
+        try await performVoidHelperRequest { helper, finish in
+            helper.rename(source: source, destination: destination) { possibleError in
+                finish(possibleError.map(Result.failure) ?? .success(()))
+            }
+        }
+        Logger.helperClient.info("\(#function): finished")
+    }
+
+    func removeAsync(path: String) async throws {
+        Logger.helperClient.info(#function)
+
+        guard Current.helper.usePrivilegedHelperForFileOperations else {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                FileOperations.remove(path: path) { error in
+                    if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+                }
+            }
+            return
+        }
+
+        try await performVoidHelperRequest { helper, finish in
+            helper.remove(path: path) { possibleError in
+                finish(possibleError.map(Result.failure) ?? .success(()))
+            }
+        }
+        Logger.helperClient.info("\(#function): finished")
+    }
+
     private func performVoidHelperRequest(_ operation: @escaping @Sendable (HelperXPCProtocol, @escaping @Sendable (Result<Void, Error>) -> Void) -> Void) async throws {
         try await performHelperRequest(operation)
     }

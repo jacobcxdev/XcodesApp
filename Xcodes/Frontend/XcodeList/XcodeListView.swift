@@ -287,7 +287,7 @@ private struct XcodeVersionGroupRow: View {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.yellow)
                     .help(staleSelectedHelpText(selectedVersion: selectedVersion, latestRelease: latestSelectableRelease, selectionTarget: latestSelectionTarget))
-            case .installing, .none:
+            case .installing, .uninstalling, .none:
                 EmptyView()
             }
         } else if selectedVersion?.selected == true {
@@ -318,7 +318,7 @@ private struct XcodeVersionGroupRow: View {
             } else {
                 return Text(verbatim: "\(selectedVersion.description) selected, \(latestRelease.description) available.")
             }
-        case .installing, .none:
+        case .installing, .uninstalling, .none:
             return Text(verbatim: "\(selectedVersion.description) selected, \(latestRelease.description) available.")
         }
     }
@@ -346,7 +346,7 @@ private struct XcodeVersionGroupRow: View {
                 .textCase(.uppercase)
                 .buttonStyle(AppStoreButtonStyle(primary: false, highlighted: false))
                 .help("InstallDescription")
-            case .installing:
+            case .installing, .uninstalling:
                 EmptyView()
             }
         }

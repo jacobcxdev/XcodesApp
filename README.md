@@ -2,7 +2,7 @@
 
 The easiest way to install and switch between multiple versions of Xcode.
 
-This repository is a maintained fork of [XcodesOrg/XcodesApp](https://github.com/XcodesOrg/XcodesApp). Fork history includes upstream release `v4.0.5b40`. It keeps the visible `Xcodes.app` name and workflow as a drop-in replacement while using fork-owned bundle, helper, update, signing, and release identities.
+This repository is a maintained fork of [XcodesOrg/XcodesApp](https://github.com/XcodesOrg/XcodesApp). Fork history includes upstream release `v4.1.1b41`. It keeps the visible `Xcodes.app` name and workflow as a drop-in replacement while using fork-owned bundle, helper, update, signing, and release identities.
 
 If you need a command-line tool, see the upstream [`xcodes`](https://github.com/XcodesOrg/xcodes) project.
 
@@ -33,6 +33,8 @@ Fork releases use the same `Xcodes.app` application name as upstream. The fork h
 3. Move `Xcodes.app` to `/Applications`.
 
 The release process distributes fork assets only after Developer ID signing and notarization. GitHub Releases is the supported binary distribution path. This fork does not publish a Homebrew cask.
+
+If you installed upstream through Homebrew, run `brew uninstall --cask xcodes-app` before installing this fork. Otherwise, `brew upgrade` can replace the fork with upstream because both use `/Applications/Xcodes.app`. Do not use `--zap`; keep your existing settings. After installation, use **Xcodes → Check for Updates…** for fork updates.
 
 On first launch, non-secret preferences can migrate from upstream Xcodes. Apple credentials, cookies, Keychain items, and the privileged helper do not migrate. Sign in again. When Xcodes prompts you, approve helper installation.
 

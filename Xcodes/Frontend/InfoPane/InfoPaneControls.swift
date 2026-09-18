@@ -30,6 +30,15 @@ struct InfoPaneControls: View {
                 }
             case .installed(_):
                 InstalledStateButtons(xcode: xcode)
+            case .uninstalling:
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .scaleEffect(0.5)
+                    Text("Uninstalling")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }

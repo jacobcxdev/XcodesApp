@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/mxcl/LegibleError",
         "state": {
           "branch": null,
-          "revision": "909e9bab3ded97350b28a5ab41dd745dd8aa9710",
-          "version": "1.0.4"
+          "revision": "bc596702d7ff618c3f90ba480eeb48b3e83a2fbe",
+          "version": "1.0.6"
         }
       },
       {
@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/kinoroy/LibFido2Swift",
         "state": {
           "branch": null,
-          "revision": "b87a93300c5b35307c9f26ae490963196bd927f1",
-          "version": "0.1.5"
+          "revision": "ac8596a852e2b008c5902a521cf4d9c7f0f05fba",
+          "version": "0.1.6"
         }
       },
       {
@@ -60,17 +60,17 @@
         "repositoryURL": "https://github.com/mxcl/Path.swift",
         "state": {
           "branch": null,
-          "revision": "8e355c28e9393c42e58b18c54cace2c42c98a616",
-          "version": "1.4.1"
+          "revision": "74ec90bbe50a3376e399286fed48b60db9b91bb1",
+          "version": "1.6.0"
         }
       },
       {
         "package": "Sparkle",
-        "repositoryURL": "https://github.com/sparkle-project/Sparkle/",
+        "repositoryURL": "https://github.com/sparkle-project/Sparkle",
         "state": {
           "branch": null,
-          "revision": "0ef1ee0220239b3776f433314515fd849025673f",
-          "version": "2.6.4"
+          "revision": "ac2def288cbff5cfc7df3ffef6abdf45b72bcb0a",
+          "version": "2.9.6"
         }
       },
       {
@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/apple/swift-collections.git",
         "state": {
           "branch": null,
-          "revision": "a902f1823a7ff3c9ab2fba0f992396b948eda307",
-          "version": "1.0.5"
+          "revision": "a0cb0954ecb21e4e31b0070e6ed5674e8556685a",
+          "version": "1.6.0"
         }
       },
       {
@@ -123,8 +123,8 @@
         "repositoryURL": "https://github.com/XcodesOrg/XcodesKit",
         "state": {
           "branch": null,
-          "revision": "a9e5d7d701f20f1385071851319cdaecccc9f1e8",
-          "version": "1.0.4"
+          "revision": "4d3c6093980978b74c3fa42fc1b90cd1c34ac911",
+          "version": "1.1.0"
         }
       },
       {
@@ -132,7 +132,7 @@
         "repositoryURL": "https://github.com/XcodesOrg/XcodesLoginKit",
         "state": {
           "branch": "main",
-          "revision": "9bece1ada36006b18b84caec62d14dc91b47ae2b",
+          "revision": "929f9aac3140caf7b64cbb5385f4f645c5f9913d",
           "version": null
         }
       },
