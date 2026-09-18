@@ -24,6 +24,8 @@ struct XcodeListViewRow: View {
                 HStack {
                     Text(verbatim: "\(xcode.description) \(xcode.version.buildMetadataIdentifiersDisplay)")
                         .font(.body)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     if !xcode.identicalBuildsForCurrentVariant.isEmpty {
                         Image(systemName: "square.fill.on.square.fill")
@@ -47,13 +49,16 @@ struct XcodeListViewRow: View {
                     Text(verbatim: path.string)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(path.string)
                 }
             }
 
             Spacer()
 
             selectControl(for: xcode)
-                .padding(.trailing, 16)
+                .padding(.trailing, 4)
             installControl(for: xcode)
         }
         .padding(.vertical, 4)

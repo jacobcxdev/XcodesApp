@@ -40,32 +40,32 @@ struct XcodeListView: View {
     }
     
     var body: some View {
-        List(selection: $selectedXcodeID) {
-            if appState.enableGroupedXcodeList {
-                GroupedXcodeListContent(
-                    xcodes: visibleXcodes,
-                    allXcodes: appState.allXcodes,
-                    selectedXcodeID: $selectedXcodeID,
-                    appState: appState
-                )
-            } else {
-                ForEach(visibleXcodes) { entry in
-                    XcodeListViewRow(
-                        xcode: entry.xcode,
-                        selected: selectedXcodeID == entry.xcode.id,
-                        appState: appState,
-                        latestReleaseForSelectedPrerelease: latestReleaseForSelectedPrerelease(entry.xcode)
+        VStack(spacing: 0) {
+            List(selection: $selectedXcodeID) {
+                if appState.enableGroupedXcodeList {
+                    GroupedXcodeListContent(
+                        xcodes: visibleXcodes,
+                        allXcodes: appState.allXcodes,
+                        selectedXcodeID: $selectedXcodeID,
+                        appState: appState
                     )
-                        .tag(entry.xcode.id)
+                } else {
+                    ForEach(visibleXcodes) { entry in
+                        XcodeListViewRow(
+                            xcode: entry.xcode,
+                            selected: selectedXcodeID == entry.xcode.id,
+                            appState: appState,
+                            latestReleaseForSelectedPrerelease: latestReleaseForSelectedPrerelease(entry.xcode)
+                        )
+                            .tag(entry.xcode.id)
+                    }
                 }
             }
-        }
-        .listStyle(.sidebar)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            .listStyle(.sidebar)
+
+            Divider()
             PlatformsPocket()
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-           
+                .padding(10)
         }
     }
 }
@@ -385,34 +385,14 @@ struct PlatformsPocket: View {
     @SwiftUI.Environment(\.openWindow) private var openWindow
    
     var body: some View {
-        Button(action: {
+        Button {
             openWindow(id: "platforms")
+        } label: {
+            Label("PlatformsDescription", systemImage: "square.3.layers.3d")
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        ) {
-            if #available(macOS 26.0, *) {
-                platformsLabel
-                    .glassEffect(in: .rect(cornerRadius: 8, style: .continuous))
-            } else {
-                platformsLabel
-                .background(.quaternary.opacity(0.75))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-           
-        }
-        .buttonStyle(.plain)
-    }
-    
-    var platformsLabel: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "square.3.layers.3d")
-                .font(.title3.weight(.medium))
-            Text("PlatformsDescription")
-                            Spacer()
-        }
-        .font(.body.weight(.medium))
-        .padding(.horizontal)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
+        .buttonStyle(.borderless)
+        .controlSize(.regular)
     }
 }
 
