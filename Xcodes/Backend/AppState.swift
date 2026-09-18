@@ -114,6 +114,10 @@ struct AuthenticationRequestPolicy: Sendable {
             return [502, 503, 504].contains(statusCode) ? statusCode : nil
         }
         if let authenticationError = error as? AuthenticationError,
+           case let .badStatusCode(statusCode, _, _) = authenticationError {
+            return [502, 503, 504].contains(statusCode) ? statusCode : nil
+        }
+        if let authenticationError = error as? AuthenticationError,
            case let .serviceKeyResolutionFailed(attempts) = authenticationError {
             return attempts.compactMap { attempt in
                 guard case let .httpStatus(code, _) = attempt.failure,

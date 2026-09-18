@@ -222,6 +222,36 @@ class AppStateTests: XCTestCase {
         }
     }
 
+    func test_AuthenticationPolicy_HandlesAuthenticationHTTPStatusCodes() async throws {
+        for statusCode in [502, 503, 504, 401] {
+            let attempts = TestLockedBox(0)
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: URL(string: "https://idmsa.apple.com/appleauth/auth")!,
+                statusCode: statusCode,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            let failure = AuthenticationError.badStatusCode(statusCode: statusCode, data: nil, response: response)
+
+            do {
+                let _: String = try await AuthenticationRequestPolicy(delayBeforeRetry: .zero).perform {
+                    attempts.withValue { $0 += 1 }
+                    throw failure
+                }
+                XCTFail("Expected authentication HTTP error")
+            } catch {
+                if statusCode == 401 {
+                    XCTAssertEqual(error as? AuthenticationError, failure)
+                    XCTAssertEqual(attempts.read { $0 }, 1)
+                } else {
+                    XCTAssertEqual(error as? AuthenticationRequestError, .serviceTemporarilyUnavailable(statusCode: statusCode))
+                    XCTAssertEqual(attempts.read { $0 }, 3)
+                }
+                XCTAssertFalse(AuthenticationRequestPolicy.shouldClearCredentials(after: error))
+            }
+        }
+    }
+
     func test_AuthenticationPolicy_RetriesTransientServiceKeyFailureUntilSuccess() async throws {
         let attempts = TestLockedBox(0)
         let failure = AuthenticationError.serviceKeyResolutionFailed(attempts: [
