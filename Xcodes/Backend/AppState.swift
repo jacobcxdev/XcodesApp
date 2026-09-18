@@ -119,7 +119,7 @@ struct AuthenticationRequestPolicy: Sendable {
         }
         if let authenticationError = error as? AuthenticationError,
            case let .serviceKeyResolutionFailed(attempts) = authenticationError {
-            return attempts.compactMap { attempt in
+            return attempts.compactMap { attempt -> Int? in
                 guard case let .httpStatus(code, _) = attempt.failure,
                       [502, 503, 504].contains(code) else { return nil }
                 return code
