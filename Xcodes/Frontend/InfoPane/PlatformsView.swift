@@ -55,6 +55,16 @@ struct PlatformsView: View {
                 }
             }
             
+            if runtimes.isEmpty {
+                Text("NoRuntimesToShow")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if appState.downloadableRuntimes.isEmpty {
+                    Button("Refresh") { appState.updateDownloadableRuntimes() }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+
             ForEach(runtimes, id: \.identifier) { runtime in
                 runtimeView(runtime: runtime)
                     .frame(minWidth: 200)
