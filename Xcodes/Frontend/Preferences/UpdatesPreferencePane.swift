@@ -2,6 +2,7 @@ import Sparkle
 import SwiftUI
 
 struct UpdatesPreferencePane: View {
+    @EnvironmentObject var appState: AppState
     @EnvironmentObject var updater: ObservableUpdater
     
     @AppStorage("autoInstallation") var autoInstallationType: AutoInstallationType = .none
@@ -56,6 +57,9 @@ struct UpdatesPreferencePane: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .groupBoxStyle(PreferencesGroupBoxStyle())
+        }
+        .onChange(of: autoInstallationType) {
+            appState.setupAutoInstallTimer()
         }
     }
     

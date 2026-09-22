@@ -1,6 +1,1306 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "SignInFailure" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to Sign In"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر تسجيل الدخول"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No s’ha pogut iniciar la sessió"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anmeldung nicht möglich"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η σύνδεση"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido iniciar sesión"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kirjautuminen ei onnistu"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de se connecter"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साइन इन नहीं हो सका"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile accedere"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインインできません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인할 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inloggen niet mogelijk"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można się zalogować"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível iniciar sessão"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось войти"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่สามารถลงชื่อเข้าใช้ได้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giriş Yapılamadı"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося ввійти"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法登录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法登入"
+          }
+        }
+      }
+    },
+    "FederatedSignInInstructions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the browser and sign in with your organisation. Then copy the redirected URL into the field below."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح المتصفح وسجّل الدخول باستخدام حساب مؤسستك. ثم انسخ عنوان URL الذي أُعيد توجيهك إليه إلى الحقل أدناه."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obre el navegador i inicia la sessió amb la teva organització. Després copia l’URL de redirecció al camp següent."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne den Browser und melde dich bei deiner Organisation an. Kopiere dann die URL nach der Weiterleitung in das Feld unten."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ανοίξτε το πρόγραμμα περιήγησης και συνδεθείτε μέσω του οργανισμού σας. Έπειτα αντιγράψτε τη διεύθυνση URL μετά την ανακατεύθυνση στο παρακάτω πεδίο."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre el navegador e inicia sesión con tu organización. Después copia la URL de redirección en el campo siguiente."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avaa selain ja kirjaudu organisaatiosi kautta. Kopioi sitten uudelleenohjauksen jälkeinen URL-osoite alla olevaan kenttään."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrez le navigateur et connectez-vous avec votre organisation. Copiez ensuite l’URL de redirection dans le champ ci-dessous."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ब्राउज़र खोलें और अपने संगठन के खाते से साइन इन करें। फिर रीडायरेक्ट होने के बाद का URL नीचे दिए गए फ़ील्ड में कॉपी करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri il browser e accedi tramite la tua organizzazione. Poi copia l’URL di reindirizzamento nel campo qui sotto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラウザを開き、組織のアカウントでサインインしてください。その後、リダイレクト先のURLを下のフィールドにコピーしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "브라우저를 열고 조직 계정으로 로그인하세요. 그런 다음 리디렉션된 URL을 아래 필드에 복사하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open de browser en log in via je organisatie. Kopieer daarna de URL na de omleiding naar het onderstaande veld."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otwórz przeglądarkę i zaloguj się przez swoją organizację. Następnie skopiuj adres URL po przekierowaniu do pola poniżej."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abra o navegador e inicie sessão com sua organização. Depois copie a URL de redirecionamento para o campo abaixo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Откройте браузер и войдите через свою организацию. Затем скопируйте URL после перенаправления в поле ниже."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เปิดเบราว์เซอร์และลงชื่อเข้าใช้ด้วยบัญชีองค์กรของคุณ จากนั้นคัดลอก URL หลังการเปลี่ยนเส้นทางลงในช่องด้านล่าง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarayıcıyı açın ve kuruluşunuz üzerinden giriş yapın. Ardından yönlendirildiğiniz URL’yi aşağıdaki alana kopyalayın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Відкрийте браузер і ввійдіть через свою організацію. Потім скопіюйте URL після перенаправлення в поле нижче."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开浏览器并使用组织账户登录。然后将重定向后的 URL 复制到下方的输入框中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟瀏覽器並使用組織帳號登入。然後將重新導向後的 URL 複製到下方的輸入欄位中。"
+          }
+        }
+      }
+    },
+    "YourOrganisation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your organisation"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مؤسستك"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la teva organització"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "deine Organisation"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "τον οργανισμό σας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu organización"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "organisaatiosi"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "votre organisation"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपका संगठन"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la tua organizzazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所属組織"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "소속 조직"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "je organisatie"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twoją organizację"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sua organização"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "вашу организацию"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "องค์กรของคุณ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kuruluşunuz"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "вашу організацію"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的组织"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的組織"
+          }
+        }
+      }
+    },
+    "RuntimeNeedsActiveXcode" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make an installed Xcode version active before you install this simulator runtime."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعل إصدارًا مثبّتًا من Xcode نشطًا قبل تثبيت بيئة تشغيل المحاكي هذه."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activa una versió instal·lada de l’Xcode abans d’instal·lar aquest entorn d’execució del simulador."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktiviere eine installierte Xcode-Version, bevor du diese Simulator-Laufzeitumgebung installierst."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ενεργοποιήστε μια εγκατεστημένη έκδοση του Xcode πριν εγκαταστήσετε αυτό το περιβάλλον εκτέλεσης του προσομοιωτή."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activa una versión instalada de Xcode antes de instalar este entorno de ejecución del simulador."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktivoi asennettu Xcode-versio ennen tämän simulaattorin suoritusympäristön asentamista."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activez une version installée de Xcode avant d’installer cet environnement d’exécution du simulateur."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इस सिम्युलेटर रनटाइम को इंस्टॉल करने से पहले Xcode के किसी इंस्टॉल किए गए संस्करण को सक्रिय करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attiva una versione installata di Xcode prima di installare questo ambiente di esecuzione del simulatore."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このシミュレータランタイムをインストールする前に、インストール済みのXcodeバージョンをアクティブにしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 시뮬레이터 런타임을 설치하기 전에 설치된 Xcode 버전을 활성 버전으로 설정하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maak een geïnstalleerde Xcode-versie actief voordat je deze simulatorruntime-omgeving installeert."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przed zainstalowaniem tego środowiska uruchomieniowego symulatora ustaw zainstalowaną wersję Xcode jako aktywną."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ative uma versão instalada do Xcode antes de instalar este ambiente de execução do simulador."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перед установкой этой среды выполнения симулятора сделайте установленную версию Xcode активной."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ตั้งค่า Xcode เวอร์ชันที่ติดตั้งแล้วให้เป็นเวอร์ชันที่ใช้งานก่อนติดตั้งรันไทม์ของตัวจำลองนี้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu simülatör çalışma zamanını kurmadan önce kurulu bir Xcode sürümünü etkinleştirin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перш ніж установити це середовище виконання симулятора, зробіть установлену версію Xcode активною."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安装此模拟器运行时之前，请将已安装的 Xcode 版本设为当前使用的版本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安裝此模擬器執行階段之前，請將已安裝的 Xcode 版本設為目前使用的版本。"
+          }
+        }
+      }
+    },
+    "LatestReleaseDescription" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latest: %@"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأحدث: %@"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Més recent: %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neueste Version: %@"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Νεότερη έκδοση: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más reciente: %@"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uusin: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dernière version : %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "नवीनतम: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Più recente: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最新: %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최신: %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nieuwste: %@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Najnowsza: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mais recente: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Последняя версия: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ล่าสุด: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En Yeni: %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Найновіша версія: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最新版本：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最新版本：%@"
+          }
+        }
+      }
+    },
+    "NoMatchingXcodes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Matching Xcode Versions"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا توجد إصدارات Xcode مطابقة"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hi ha versions de l’Xcode coincidents"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine passenden Xcode-Versionen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν υπάρχουν αντίστοιχες εκδόσεις Xcode"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay versiones de Xcode coincidentes"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ei vastaavia Xcode-versioita"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune version de Xcode correspondante"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode का कोई मेल खाता संस्करण नहीं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna versione di Xcode corrispondente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "条件に一致するXcodeバージョンがありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일치하는 Xcode 버전 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geen overeenkomende Xcode-versies"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brak pasujących wersji Xcode"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma versão correspondente do Xcode"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет подходящих версий Xcode"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่มี Xcode เวอร์ชันที่ตรงกัน"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşleşen Xcode Sürümü Yok"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Немає відповідних версій Xcode"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有匹配的 Xcode 版本"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有符合條件的 Xcode 版本"
+          }
+        }
+      }
+    },
+    "NoMatchingXcodesDescription" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change your search or filters to show more versions."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غيّر البحث أو عوامل التصفية لعرض المزيد من الإصدارات."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canvia la cerca o els filtres per mostrar més versions."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere die Suche oder die Filter, um weitere Versionen anzuzeigen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αλλάξτε την αναζήτηση ή τα φίλτρα για να εμφανιστούν περισσότερες εκδόσεις."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambia la búsqueda o los filtros para mostrar más versiones."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Näytä lisää versioita muuttamalla hakua tai suodattimia."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifiez la recherche ou les filtres pour afficher plus de versions."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ज़्यादा संस्करण दिखाने के लिए अपनी खोज या फ़िल्टर बदलें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica la ricerca o i filtri per mostrare altre versioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検索条件やフィルタを変更すると、ほかのバージョンが表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 많은 버전을 표시하려면 검색어나 필터를 변경하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wijzig je zoekopdracht of filters om meer versies te tonen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zmień wyszukiwanie lub filtry, aby wyświetlić więcej wersji."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altere a pesquisa ou os filtros para mostrar mais versões."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Измените поисковый запрос или фильтры, чтобы увидеть больше версий."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เปลี่ยนคำค้นหาหรือตัวกรองเพื่อแสดงเวอร์ชันเพิ่มเติม"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daha fazla sürüm göstermek için aramanızı veya filtreleri değiştirin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Змініть пошуковий запит або фільтри, щоб побачити більше версій."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改搜索条件或筛选条件以显示更多版本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改搜尋條件或篩選條件以顯示更多版本。"
+          }
+        }
+      }
+    },
+    "NoRuntimesToShow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Simulator Runtimes to Show"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا توجد بيئات تشغيل محاكي لعرضها"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hi ha entorns d’execució del simulador per mostrar"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Simulator-Laufzeitumgebungen zum Anzeigen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν υπάρχουν περιβάλλοντα εκτέλεσης προσομοιωτή για εμφάνιση"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay entornos de ejecución del simulador para mostrar"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ei näytettäviä simulaattorin suoritusympäristöjä"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun environnement d’exécution du simulateur à afficher"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "दिखाने के लिए कोई सिम्युलेटर रनटाइम नहीं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun ambiente di esecuzione del simulatore da mostrare"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表示するシミュレータランタイムがありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "표시할 시뮬레이터 런타임 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geen simulatorruntime-omgevingen om te tonen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brak środowisk uruchomieniowych symulatora do wyświetlenia"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum ambiente de execução do simulador para mostrar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет сред выполнения симулятора для отображения"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่มีรันไทม์ของตัวจำลองที่จะแสดง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gösterilecek Simülatör Çalışma Zamanı Yok"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Немає середовищ виконання симулятора для відображення"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有可显示的模拟器运行时"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有可顯示的模擬器執行階段"
+          }
+        }
+      }
+    },
+    "RuntimeLoadError" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to Load Simulator Runtimes"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر تحميل بيئات تشغيل المحاكي"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No s’han pogut carregar els entorns d’execució del simulador"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulator-Laufzeitumgebungen konnten nicht geladen werden"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η φόρτωση των περιβαλλόντων εκτέλεσης του προσομοιωτή"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se han podido cargar los entornos de ejecución del simulador"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulaattorin suoritusympäristöjä ei voitu ladata"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de charger les environnements d’exécution du simulateur"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सिम्युलेटर रनटाइम लोड नहीं हो सके"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare gli ambienti di esecuzione del simulatore"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレータランタイムを読み込めません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시뮬레이터 런타임을 불러올 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulatorruntime-omgevingen kunnen niet worden geladen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można wczytać środowisk uruchomieniowych symulatora"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível carregar os ambientes de execução do simulador"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось загрузить среды выполнения симулятора"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่สามารถโหลดรันไทม์ของตัวจำลองได้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simülatör Çalışma Zamanları Yüklenemedi"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося завантажити середовища виконання симулятора"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法加载模拟器运行时"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法載入模擬器執行階段"
+          }
+        }
+      }
+    },
+    "RuntimeInstallError" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to Install Simulator Runtime"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر تثبيت بيئة تشغيل المحاكي"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No s’ha pogut instal·lar l’entorn d’execució del simulador"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulator-Laufzeitumgebung konnte nicht installiert werden"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η εγκατάσταση του περιβάλλοντος εκτέλεσης του προσομοιωτή"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido instalar el entorno de ejecución del simulador"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulaattorin suoritusympäristöä ei voitu asentaa"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’installer l’environnement d’exécution du simulateur"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सिम्युलेटर रनटाइम इंस्टॉल नहीं हो सका"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile installare l’ambiente di esecuzione del simulatore"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレータランタイムをインストールできません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시뮬레이터 런타임을 설치할 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulatorruntime-omgeving kan niet worden geïnstalleerd"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można zainstalować środowiska uruchomieniowego symulatora"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível instalar o ambiente de execução do simulador"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось установить среду выполнения симулятора"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่สามารถติดตั้งรันไทม์ของตัวจำลองได้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simülatör Çalışma Zamanı Kurulamadı"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося встановити середовище виконання симулятора"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法安装模拟器运行时"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法安裝模擬器執行階段"
+          }
+        }
+      }
+    },
     "" : {
       "localizations" : {
         "ar" : {
@@ -1545,6 +2845,12 @@
     },
     "Active/Select" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active Xcode"
+          }
+        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2214,7 +3520,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Are you sure you want to stop the installation of Xcode %@?"
+            "value" : "Stop installing %@?"
           }
         },
         "es" : {
@@ -2869,7 +4175,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple only supports downloading runtimes iOS 16.0+, watchOS 9.0+, tvOS 16+, visionOS 1.0+ with Xcode 16.1+. Please download, make active and try again."
+            "value" : "This simulator runtime requires Xcode 16.1 or later. Install a compatible version of Xcode and make it active. Then try again."
           }
         },
         "es" : {
@@ -3000,7 +4306,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple supports downloading Apple Silicon runtimes only when Xcode 26+ is selected. Please Select and try downloading again or download the universal build."
+            "value" : "This Apple silicon runtime requires Xcode 26 or later. Make a compatible Xcode version active, then try again. Alternatively, install the universal runtime."
           }
         },
         "es" : {
@@ -3394,7 +4700,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Xcode %@ requires macOS %@, but you are running macOS %@, do you still want to install it?"
+            "value" : "Xcode %@ requires macOS %@. This Mac runs macOS %@. Install it anyway?"
           }
         },
         "es" : {
@@ -4444,7 +5750,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unable to create symbolic Link"
+            "value" : "Unable to create symbolic link"
           }
         },
         "es" : {
@@ -4836,7 +6142,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "It will be moved to the Trash, but won't be emptied."
+            "value" : "Xcodes will move this Xcode installation to the Trash. The Trash will not be emptied."
           }
         },
         "es" : {
@@ -5850,7 +7156,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Xcodes.app Updates"
+            "value" : "Xcodes Updates"
           }
         },
         "es" : {
@@ -6353,7 +7659,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When making an Xcode version Active/Selected, try and create a symbolic link named Xcode.app in the installation directory"
+            "value" : "When you make an Xcode version active, create or update Xcode.app in the installation directory to link to that version."
           }
         },
         "es" : {
@@ -6469,7 +7775,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When making a prerelease Xcode version Active/Selected, try and create a symbolic link named Xcode-Beta.app in the installation directory"
+            "value" : "When you make a prerelease Xcode version active, create or update Xcode-Beta.app in the installation directory to link to that version."
           }
         }
       }
@@ -8792,7 +10098,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The Apple data source scrapes the Apple Developer website. It will always show the latest releases that are available, but is more fragile.\n\n[Xcode Releases](https://xcodereleases.com) is an unofficial list of [Xcode Releases](https://xcodereleases.com). It's provided as well-formed data, contains extra information that is not readily available from Apple, and is less likely to break if Apple redesigns their developer website."
+            "value" : "The Apple data source reads releases from the Apple Developer website. Changes to the website can interrupt updates.\n\n[Xcode Releases](https://xcodereleases.com) provides an unofficial release list with additional version details."
           }
         },
         "es" : {
@@ -8924,7 +10230,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enter the %d digit code from one of your trusted devices:"
+            "value" : "Enter the %d-digit code from one of your trusted devices:"
           }
         },
         "es" : {
@@ -9291,7 +10597,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "[aria2](https://github.com/aria2/aria2) uses up to 16 connections to download Xcode 3-5x faster than URLSession. It's bundled as an executable along with its source code within Xcodes to comply with its GPLv2 license.\n\nURLSession is the default Apple API for making URL requests."
+            "value" : "[aria2](https://github.com/aria2/aria2) uses multiple connections to download Xcode. Download speed depends on your connection and the server. It's bundled as an executable along with its source code within Xcodes to comply with its GPLv2 license.\n\nURLSession is the default Apple API for making URL requests."
           }
         },
         "es" : {
@@ -9685,7 +10991,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Downloading  : %d%% complete"
+            "value" : "Downloading: %d%% complete"
           }
         },
         "es" : {
@@ -10201,7 +11507,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enter the %1$d digit code sent to %2$@  : "
+            "value" : "Enter the %1$d-digit code sent to %2$@:"
           }
         },
         "es" : {
@@ -10587,7 +11893,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Faster Unxip"
+            "value" : "Xcode Extraction"
           }
         },
         "es" : {
@@ -10718,7 +12024,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Thanks to [@_saagarjha](https://twitter.com/_saagarjha), this experiment can increase unxipping speed by up to 70% for some systems.\n\nMore information on how this is accomplished can be seen on the unxip repo - https://github.com/saagarjha/unxip"
+            "value" : "Use the experimental unxip tool to extract Xcode archives faster. Performance varies by Mac. [Learn about unxip](https://github.com/saagarjha/unxip)."
           }
         },
         "es" : {
@@ -10961,6 +12267,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Φιλτράρισμα εκδόσεων Xcode κατά αρχιτεκτονική."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter Xcode versions by architecture"
           }
         },
         "es" : {
@@ -13285,7 +14597,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Xcode %@ failed its security assessment with the following output:\n%@\nIt remains installed at %@ if you wish to use it anyways."
+            "value" : "Xcode %@ failed its security assessment:\n%@\nThe installation remains at %@."
           }
         },
         "es" : {
@@ -13809,7 +15121,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Missing username or a password. Please try again."
+            "value" : "Enter your Apple Account and password, then try again."
           }
         },
         "es" : {
@@ -13940,7 +15252,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No non-prerelease versions available."
+            "value" : "No release versions are available."
           }
         },
         "es" : {
@@ -15251,7 +16563,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Step %1$d of %2$d  : %3$@"
+            "value" : "Step %1$d of %2$d: %3$@"
           }
         },
         "es" : {
@@ -15883,7 +17195,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Xcodes searches and installs to a single directory. By default (and recommended) is to keep this /Applications. Any changes to where Xcode is stored may result in other apps/services to stop working. "
+            "value" : "Choose where Xcodes finds and installs Xcode. /Applications is recommended. Changing this directory does not move existing installations; other tools may depend on their current paths."
           }
         },
         "es" : {
@@ -16014,7 +17326,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Last checked  : %@"
+            "value" : "Last checked: %@"
           }
         },
         "es" : {
@@ -16398,7 +17710,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Xcodes caches available Xcode versions and temporary downloads new versions to a directory"
+            "value" : "Xcodes stores its version list and temporary downloads in this directory."
           }
         },
         "es" : {
@@ -19644,7 +20956,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keep name as Xcode-X.X.X.app"
+            "value" : "Keep the version number in the app name"
           }
         },
         "es" : {
@@ -19775,7 +21087,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On select, will keep the name as the version eg. Xcode-13.4.1.app"
+            "value" : "Keep the app’s existing name when making it active, for example Xcode-27.0.app."
           }
         },
         "es" : {
@@ -20037,7 +21349,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On select, will automatically try and rename the active Xcode to Xcode.app, renaming the previous Xcode.app to the version name."
+            "value" : "When you make an Xcode version active, rename it to Xcode.app. Rename the previous Xcode.app to include its version number."
           }
         },
         "es" : {
@@ -21154,7 +22466,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PIN not set"
+            "value" : "Continue Without a PIN"
           }
         },
         "es" : {
@@ -21545,7 +22857,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Below are a list of platforms that are installed on this machine. "
+            "value" : "Simulator runtimes installed on this Mac."
           }
         },
         "es" : {
@@ -23865,7 +25177,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Select a trusted phone number to receive a %d digit code via SMS:"
+            "value" : "Select a trusted phone number to receive a %d-digit code by SMS:"
           }
         },
         "es" : {
@@ -24125,7 +25437,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show Open In Rosetta option"
+            "value" : "Show Open in Rosetta"
           }
         },
         "es" : {
@@ -24255,7 +25567,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open in Rosetta option will show where other \"Open\" functions are available. Note  : This will only show for Apple Silicon machines."
+            "value" : "Show an option to open Xcode using Rosetta on Macs with Apple silicon."
           }
         },
         "es" : {
@@ -26697,7 +28009,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When unxipping, use experiment"
+            "value" : "Use faster archive extraction"
           }
         },
         "es" : {

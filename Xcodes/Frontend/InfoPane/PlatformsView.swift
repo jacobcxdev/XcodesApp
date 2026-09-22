@@ -118,8 +118,9 @@ struct PlatformsView: View {
     func pathIfAvailable(xcode: Xcode, runtime: DownloadableRuntime) -> some View {
         if let path = appState.runtimeInstallPath(xcode: xcode, runtime: runtime) {
             Button(action: { appState.reveal(path: path.string) }) {
-                Image(systemName: "arrow.right.circle.fill")
+                Label("RevealInFinder", systemImage: "arrow.right.circle.fill")
             }
+            .labelStyle(.iconOnly)
             .buttonStyle(PlainButtonStyle())
             .help("RevealInFinder")
         } else {

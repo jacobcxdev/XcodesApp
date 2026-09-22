@@ -11,6 +11,7 @@ struct SignInSMSView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(String(format: localizeString("EnterDigitCodeDescription"), authOptions.securityCode!.length, trustedPhoneNumber.numberWithDialCode))
+                .fixedSize(horizontal: false, vertical: true)
             
             HStack {
                 Spacer()
@@ -43,7 +44,9 @@ struct SignInSMSView: View {
             .frame(height: 25)
         }
         .padding()
+        .frame(width: 452)
         .emittingError($appState.authError, recoveryHandler: { _ in })
+        .handlingErrors(using: AlertErrorHandler(title: "SignInFailure"))
     }
 }
 

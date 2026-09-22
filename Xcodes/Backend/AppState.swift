@@ -362,6 +362,8 @@ class AppState: ObservableObject {
         }
     }
 
+    var showOpenInRosettaOptionDisabled: Bool { PreferenceKey.showOpenInRosettaOption.isManaged() }
+
     @Published var terminateAfterLastWindowClosed = false {
         didSet {
             Current.defaults.set(terminateAfterLastWindowClosed, forKey: "terminateAfterLastWindowClosed")
@@ -378,6 +380,8 @@ class AppState: ObservableObject {
 
     @Published var downloadableRuntimes: [DownloadableRuntime] = []
     @Published var installedRuntimes: [CoreSimulatorImage] = []
+    @Published var isRefreshingInstalledRuntimes = false
+    @Published var installedRuntimesError: Error?
 
     // MARK: - Operation State
 
@@ -483,6 +487,9 @@ class AppState: ObservableObject {
     // MARK: Timer
     /// Runs a timer every 6 hours when app is open to check if it needs to auto install any xcodes
     func setupAutoInstallTimer() {
+        autoInstallTimer?.invalidate()
+        autoInstallTimer = nil
+
         guard let storageValue = Current.defaults.get(forKey: "autoInstallation") as? Int, let autoInstallType = AutoInstallationType(rawValue: storageValue) else { return }
 
         if autoInstallType == .none { return }

@@ -16,11 +16,12 @@ struct SignInSecurityKeyTouchView: View {
         VStack(alignment: .center) {
             Image(systemName: "key.radiowaves.forward")
                 .font(.system(size: 32)).bold()
+                .accessibilityHidden(true)
                 .padding(.bottom)
             HStack {
                 Spacer()
                 Text(localizeString("SecurityKeyTouchDescription"))
-                    .fixedSize(horizontal: true, vertical: false)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer()
             }
             HStack {
@@ -33,12 +34,13 @@ struct SignInSecurityKeyTouchView: View {
                     .scaleEffect(x: 0.5, y: 0.5, anchor: .center)
                     .isHidden(!appState.isProcessingAuthRequest)
                 
-                .keyboardShortcut(.defaultAction)
             }
             .frame(height: 25)
         }
         .padding()
+        .frame(width: 452)
         .emittingError($appState.authError, recoveryHandler: { _ in })
+        .handlingErrors(using: AlertErrorHandler(title: "SignInFailure"))
     }
     
     func cancel() {

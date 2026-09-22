@@ -10,7 +10,7 @@ struct SignIn2FAView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(String(format: localizeString("DigitCodeDescription"), authOptions.securityCode!.length))
-                .fixedSize(horizontal: true, vertical: false)
+                .fixedSize(horizontal: false, vertical: true)
             
             HStack {
                 Spacer()
@@ -43,7 +43,9 @@ struct SignIn2FAView: View {
             .frame(height: 25)
         }
         .padding()
+        .frame(width: 452)
         .emittingError($appState.authError, recoveryHandler: { _ in })
+        .handlingErrors(using: AlertErrorHandler(title: "SignInFailure"))
     }
 }
 

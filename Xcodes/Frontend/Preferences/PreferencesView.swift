@@ -2,7 +2,7 @@ import SwiftUI
 
 struct PreferencesView: View {
     private enum Tabs: Hashable {
-        case general, updates, advanced, experiment
+        case general, updates, downloads, advanced, experiment
     }
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var updater: ObservableUpdater
@@ -26,8 +26,13 @@ struct PreferencesView: View {
                 .tabItem {
                     Label("Downloads", systemImage: "icloud.and.arrow.down")
                 }
-            AdvancedPreferencePane()
-                .environmentObject(appState)
+                .tag(Tabs.downloads)
+            ScrollView {
+                AdvancedPreferencePane()
+                    .environmentObject(appState)
+                    .padding(.trailing, 8)
+            }
+                .frame(height: 560)
                 .tabItem {
                     Label("Advanced", systemImage: "gearshape.2")
                 }

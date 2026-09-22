@@ -19,7 +19,7 @@ struct InstallationStepDetailView: View {
 
                 case .authenticating, .unarchiving, .moving, .trashingArchive, .checkingSecurity, .finishing:
                     ProgressView()
-                        .scaleEffect(0.5)
+                        .progressViewStyle(.linear)
             }
         }
     }

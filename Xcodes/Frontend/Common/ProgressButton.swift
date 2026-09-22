@@ -34,5 +34,9 @@ struct ProgressButton<Label: View>: View {
                 )
         }
         .disabled(isInProgress)
+        .accessibilityRepresentation {
+            Button(action: action, label: label)
+                .disabled(isInProgress)
+        }
     }
 }

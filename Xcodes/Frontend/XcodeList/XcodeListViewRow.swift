@@ -19,13 +19,15 @@ struct XcodeListViewRow: View {
     var body: some View {
         HStack {
             appIconView(for: xcode)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading) {
                 HStack {
-                    Text(verbatim: "\(xcode.description) \(xcode.version.buildMetadataIdentifiersDisplay)")
+                    Text(verbatim: xcode.description)
                         .font(.body)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
+                        .help("\(xcode.description) \(xcode.version.buildMetadataIdentifiersDisplay)")
 
                     if !xcode.identicalBuildsForCurrentVariant.isEmpty {
                         Image(systemName: "square.fill.on.square.fill")
@@ -37,7 +39,7 @@ struct XcodeListViewRow: View {
                     }
                     
                     if xcode.architectures?.isAppleSilicon ?? false {
-                        Image(systemName: "m4.button.horizontal")
+                        Image(systemName: "cpu")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibility(label: Text("Apple Silicon"))
@@ -117,14 +119,16 @@ struct XcodeListViewRow: View {
                 switch latestReleaseForSelectedPrerelease.installState {
                 case .installed:
                     Button(action: { appState.select(xcode: latestReleaseForSelectedPrerelease) }) {
-                        Image(systemName: "checkmark.circle.fill")
+                        Label("MakeActive", systemImage: "arrow.up.circle.fill")
                             .foregroundColor(.yellow)
                     }
+                    .labelStyle(.iconOnly)
                     .buttonStyle(PlainButtonStyle())
                     .help(staleSelectedHelpText)
                 case .notInstalled:
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: "arrow.up.circle.fill")
                         .foregroundColor(.yellow)
+                        .accessibilityLabel(staleSelectedHelpText)
                         .help(staleSelectedHelpText)
                 case .installing, .uninstalling:
                     EmptyView()
@@ -132,12 +136,14 @@ struct XcodeListViewRow: View {
             } else if xcode.selected {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.green)
+                    .accessibilityLabel(Text("ActiveVersionDescription"))
                     .help("ActiveVersionDescription")
             } else {
                 Button(action: { appState.select(xcode: xcode) }) {
-                    Image(systemName: "checkmark.circle")
+                    Label("MakeActive", systemImage: "checkmark.circle")
                         .foregroundColor(.secondary)
                 }
+                .labelStyle(.iconOnly)
                 .buttonStyle(PlainButtonStyle())
                 .help("MakeActiveVersionDescription")
             }
@@ -152,8 +158,7 @@ struct XcodeListViewRow: View {
            xcode.selected,
            latestReleaseForSelectedPrerelease.installState == .notInstalled {
             InstallButton(xcode: latestReleaseForSelectedPrerelease)
-                .textCase(.uppercase)
-                .buttonStyle(AppStoreButtonStyle(primary: false, highlighted: false))
+                .buttonStyle(.bordered)
         } else {
             installStateControl(for: xcode)
         }
@@ -164,11 +169,11 @@ struct XcodeListViewRow: View {
         switch xcode.installState {
         case .installed:
             Button("Open") { appState.open(xcode: xcode) }
-                .buttonStyle(AppStoreButtonStyle(primary: true, highlighted: selected))
+                .buttonStyle(.bordered)
                 .help("OpenDescription")
         case .notInstalled:
             InstallButton(xcode: xcode)
-                .buttonStyle(AppStoreButtonStyle(primary: false, highlighted: false))
+                .buttonStyle(.bordered)
         case let .installing(installationStep):
             InstallationStepRowView(
                 installationStep: installationStep,

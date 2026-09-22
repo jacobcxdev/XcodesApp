@@ -11,10 +11,12 @@ struct SignInPhoneListView: View {
         VStack(alignment: .leading) {
             if let phoneNumbers = authOptions.trustedPhoneNumbers, !phoneNumbers.isEmpty {
                 Text(String(format: localizeString("SelectTrustedPhone"), authOptions.securityCode!.length))
+                    .fixedSize(horizontal: false, vertical: true)
 
                 List(phoneNumbers, selection: $selectedPhoneNumberID) {
                     Text($0.numberWithDialCode)
                 }
+                .frame(minHeight: 100)
                 .onAppear {
                     if phoneNumbers.count == 1 {
                         selectedPhoneNumberID = phoneNumbers.first?.id
@@ -23,6 +25,7 @@ struct SignInPhoneListView: View {
             } else {
                 Text("NoTrustedPhones")
                     .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer()
             }
 
@@ -41,8 +44,10 @@ struct SignInPhoneListView: View {
             .frame(height: 25)
         }
         .padding()
-        .frame(width: 400, height: 200)
+        .frame(width: 452)
+        .frame(minHeight: 200)
         .emittingError($appState.authError, recoveryHandler: { _ in })
+        .handlingErrors(using: AlertErrorHandler(title: "SignInFailure"))
     }
 }
 

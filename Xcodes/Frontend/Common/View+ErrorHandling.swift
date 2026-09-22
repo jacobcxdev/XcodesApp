@@ -45,7 +45,12 @@ protocol ErrorHandler: Sendable {
 }
 
 struct AlertErrorHandler: ErrorHandler {
+    private let title: String
     private let id = UUID()
+
+    nonisolated init(title: String = "An error occurred") {
+        self.title = title
+    }
 
     func handle<T: View>(
         _ error: Binding<Error?>,
@@ -96,8 +101,8 @@ private extension AlertErrorHandler {
         switch error.resolveCategory() {
         case let .recoverable(recoveryOption):
             return Alert(
-                title: Text("An error occurred"),
-                message: Text(error.localizedDescription),
+                title: Text(LocalizedStringKey(title)),
+                message: Text(error.legibleLocalizedDescription),
                 primaryButton: .default(Text("Dismiss")),
                 secondaryButton: .default(
                     Text(recoveryOption.description),
@@ -106,8 +111,8 @@ private extension AlertErrorHandler {
             )
         case .nonRecoverable:
             return Alert(
-                title: Text("An error occurred"),
-                message: Text(error.localizedDescription),
+                title: Text(LocalizedStringKey(title)),
+                message: Text(error.legibleLocalizedDescription),
                 dismissButton: .default(Text("Dismiss"))
             )
         case .requiresSignout:
