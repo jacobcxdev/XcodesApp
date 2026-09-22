@@ -21,8 +21,9 @@ struct InstalledStateButtons: View {
             HStack {
                 Text(xcode.installedPath?.string ?? "")
                 Button(action: { appState.reveal(xcode.installedPath) }) {
-                    Image(systemName: "arrow.right.circle.fill")
+                    Label("RevealInFinder", systemImage: "arrow.right.circle.fill")
                 }
+                .labelStyle(.iconOnly)
                 .buttonStyle(PlainButtonStyle())
                 .help("RevealInFinder")
             }

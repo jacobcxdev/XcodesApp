@@ -178,6 +178,60 @@ class AppStateTests: XCTestCase {
         XCTAssertTrue(subject.installationTasks.isEmpty)
     }
 
+    func test_AutoInstallTimer_DisablingInvalidatesScheduledTimer() throws {
+        Current.defaults.get = { _ in AutoInstallationType.newestBeta.rawValue }
+        subject.setupAutoInstallTimer()
+        let timer = try XCTUnwrap(autoInstallTimer())
+        defer { timer.invalidate() }
+
+        Current.defaults.get = { _ in AutoInstallationType.none.rawValue }
+        subject.setupAutoInstallTimer()
+
+        XCTAssertFalse(timer.isValid)
+        XCTAssertNil(autoInstallTimer())
+    }
+
+    func test_AutoInstallTimer_ReconfiguringReplacesScheduledTimer() throws {
+        Current.defaults.get = { _ in AutoInstallationType.newestBeta.rawValue }
+        subject.setupAutoInstallTimer()
+        let original = try XCTUnwrap(autoInstallTimer())
+        defer { original.invalidate() }
+
+        subject.setupAutoInstallTimer()
+        let replacement = try XCTUnwrap(autoInstallTimer())
+        defer { replacement.invalidate() }
+
+        XCTAssertFalse(original.isValid)
+        XCTAssertTrue(replacement.isValid)
+        XCTAssertFalse(original === replacement)
+        XCTAssertGreaterThan(replacement.fireDate.timeIntervalSinceNow, 60 * 60 * 5)
+        XCTAssertTrue(subject.installationTasks.isEmpty)
+    }
+
+    func test_AutoInstallTimer_MissingPreferenceInvalidatesScheduledTimer() throws {
+        Current.defaults.get = { _ in AutoInstallationType.newestBeta.rawValue }
+        subject.setupAutoInstallTimer()
+        let timer = try XCTUnwrap(autoInstallTimer())
+        defer { timer.invalidate() }
+
+        Current.defaults.get = { _ in nil }
+        subject.setupAutoInstallTimer()
+
+        XCTAssertFalse(timer.isValid)
+        XCTAssertNil(autoInstallTimer())
+    }
+
+    private func autoInstallTimer() -> Timer? {
+        Mirror(reflecting: subject!).children.first { $0.label == "autoInstallTimer" }?.value as? Timer
+    }
+
+    func test_RosettaPreference_RemainsEnabledWhenSelectionRenamesXcode() throws {
+        try XCTSkipIf(PreferenceKey.showOpenInRosettaOption.isManaged(), "Rosetta preference is managed on this host")
+        subject.onSelectActionType = .rename
+
+        XCTAssertFalse(subject.showOpenInRosettaOptionDisabled)
+    }
+
     func test_AuthenticationPolicy_MapsSession401ToNotAuthorized() {
         let error = AuthenticationRequestPolicy.mapSessionValidationError(
             NetworkError.non200StatusCode(statusCode: 401, data: Data())
@@ -1510,6 +1564,76 @@ class AppStateTests: XCTestCase {
         XCTAssertTrue(Current.network.loginClient.urlSession === replacementSession)
     }
 
+    func test_UpdateInstalledRuntimes_PreservesInventoryAndPublishesFailure() async throws {
+        subject.installedRuntimes = [CoreSimulatorImage(
+            uuid: "previous-runtime", path: ["relative": "/tmp/previous-runtime.dmg"],
+            runtimeInfo: CoreSimulatorRuntimeInfo(build: "23A123")
+        )]
+        subject.runtimeService = Self.runtimeService(installedRuntimesOutput: {
+            throw URLError(.cannotLoadFromNetwork)
+        })
+
+        subject.updateInstalledRuntimes()
+        await subject.installedRuntimesTask?.value
+
+        XCTAssertEqual(subject.installedRuntimes.map(\.uuid), ["previous-runtime"])
+        XCTAssertEqual((subject.installedRuntimesError as? URLError)?.code, .cannotLoadFromNetwork)
+        XCTAssertFalse(subject.isRefreshingInstalledRuntimes)
+    }
+
+    func test_RefreshInstalledRuntimes_RetryClearsErrorAndPublishesLoading() async throws {
+        subject.installedRuntimesError = URLError(.cannotLoadFromNetwork)
+        let pending = TestLockedBox<CheckedContinuation<ProcessOutput, Error>?>(nil)
+        subject.runtimeService = Self.runtimeService(installedRuntimesOutput: {
+            try await withCheckedThrowingContinuation { continuation in
+                pending.withValue { $0 = continuation }
+            }
+        })
+        let task = Task { @MainActor in try await self.subject.refreshInstalledRuntimes() }
+        for _ in 0..<100 where pending.read({ $0 == nil }) { await Task.yield() }
+        let continuation = try XCTUnwrap(pending.read { $0 })
+        XCTAssertTrue(subject.isRefreshingInstalledRuntimes)
+        XCTAssertNil(subject.installedRuntimesError)
+
+        continuation.resume(returning: ProcessOutput(status: 0, out: "{}", err: ""))
+        try await task.value
+
+        XCTAssertFalse(subject.isRefreshingInstalledRuntimes)
+        XCTAssertNil(subject.installedRuntimesError)
+        XCTAssertTrue(subject.installedRuntimes.isEmpty)
+    }
+
+    func test_UpdateInstalledRuntimes_CancelledFailureCannotOverwriteReplacementState() async throws {
+        let pending = TestLockedBox<[CheckedContinuation<ProcessOutput, Error>]>([])
+        subject.runtimeService = Self.runtimeService(installedRuntimesOutput: {
+            try await withCheckedThrowingContinuation { continuation in
+                pending.withValue { $0.append(continuation) }
+            }
+        })
+        subject.updateInstalledRuntimes()
+        let original = try XCTUnwrap(subject.installedRuntimesTask)
+        for _ in 0..<100 where pending.read({ $0.count }) < 1 { await Task.yield() }
+        subject.updateInstalledRuntimes()
+        let replacement = try XCTUnwrap(subject.installedRuntimesTask)
+        for _ in 0..<100 where pending.read({ $0.count }) < 2 { await Task.yield() }
+        let continuations = pending.read { $0 }
+        guard continuations.count == 2 else {
+            XCTFail("Both mock runtime requests must begin")
+            continuations.forEach { $0.resume(throwing: CancellationError()) }
+            return
+        }
+
+        continuations[0].resume(throwing: URLError(.cannotLoadFromNetwork))
+        await original.value
+        XCTAssertTrue(subject.isRefreshingInstalledRuntimes)
+        XCTAssertNil(subject.installedRuntimesError)
+
+        continuations[1].resume(returning: ProcessOutput(status: 0, out: "{}", err: ""))
+        await replacement.value
+        XCTAssertFalse(subject.isRefreshingInstalledRuntimes)
+        XCTAssertNil(subject.installedRuntimesError)
+    }
+
     func test_RefreshInstalledRuntimes_UsesLiveSimctlOutput() async throws {
         let identifier = "97772E90-7BD1-4882-9C51-782E62E0AF4F"
         let json = """
@@ -1597,6 +1721,27 @@ class AppStateTests: XCTestCase {
         try await staleRefresh.value
 
         XCTAssertTrue(subject.installedRuntimes.isEmpty)
+    }
+
+    func test_InstalledPlatformRuntimes_AppearsWhenCatalogueLoads() throws {
+        let runtime = try Self.downloadableRuntime(architectures: [.arm64])
+        subject.installedRuntimes = [
+            CoreSimulatorImage(
+                uuid: "runtime-uuid",
+                path: ["relative": "/Library/Developer/CoreSimulator/Images/runtime.dmg"],
+                runtimeInfo: CoreSimulatorRuntimeInfo(
+                    build: runtime.simulatorVersion.buildUpdate,
+                    supportedArchitectures: [.arm64]
+                )
+            )
+        ]
+        subject.downloadableRuntimes = []
+        XCTAssertTrue(subject.installedPlatformRuntimes().isEmpty)
+
+        subject.downloadableRuntimes = [runtime]
+
+        XCTAssertEqual(subject.installedPlatformRuntimes().map(\.installedRuntimeUUID), ["runtime-uuid"])
+        XCTAssertEqual(subject.installedRuntimes.count, 1)
     }
 
     func test_InstalledPlatformRuntimes_RejectsArchitectureMismatch() throws {

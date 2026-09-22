@@ -13,13 +13,37 @@ import OrderedCollections
 
 struct PlatformsListView: View {
     @EnvironmentObject var appState: AppState
-    @State private var runtimes: OrderedDictionary<DownloadableRuntime.Platform, [InstalledPlatformRuntime]> = [:]
     @State private var selectedRuntime: InstalledPlatformRuntime?
+
+    private var runtimes: OrderedDictionary<DownloadableRuntime.Platform, [InstalledPlatformRuntime]> {
+        OrderedDictionary(grouping: appState.installedPlatformRuntimes(), by: { $0.runtime.platform })
+    }
     
     var body: some View {
         List(selection: $selectedRuntime) {
             Text("PlatformsList.Title")
                 .font(.body)
+            if appState.isRefreshingInstalledRuntimes {
+                ProgressView("RefreshDescription")
+                    .controlSize(.small)
+            } else if let error = appState.installedRuntimesError {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("RuntimeLoadError", systemImage: "exclamationmark.triangle")
+                    Text(error.legibleLocalizedDescription)
+                        .font(.callout)
+                        .textSelection(.enabled)
+                    Button("Refresh") { appState.updateInstalledRuntimes() }
+                }
+            } else if runtimes.isEmpty {
+                ContentUnavailableView {
+                    Label("NoRuntimesToShow", systemImage: "iphone")
+                } actions: {
+                    Button("Refresh") {
+                        appState.updateDownloadableRuntimes()
+                        appState.updateInstalledRuntimes()
+                    }
+                }
+            }
             ForEach(runtimes.elements.sorted(\.key.order), id: \.key) { platform, runtimeList in
                 Section {
                     ForEach(runtimeList) { installedRuntime in
@@ -31,10 +55,13 @@ struct PlatformsListView: View {
                             Button {
                                 deleteRuntime(runtime: installedRuntime)
                             } label: {
-                                Image(systemName: "trash")
+                                Label("Alert.DeletePlatform.PrimaryButton", systemImage: "trash")
                             }
+                            .labelStyle(.iconOnly)
+                            .accessibilityValue(runtime.name)
                             .foregroundStyle(.red)
                             .buttonStyle(.plain)
+                            .disabled(appState.isRefreshingInstalledRuntimes)
                         }
                         .frame(height: 30)
                     }
@@ -44,6 +71,7 @@ struct PlatformsListView: View {
                         runtimeList.first!.runtime.icon()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 20)
+                            .accessibilityHidden(true)
                         Text(platform.shortName)
                             .font(.headline)
                     }
@@ -53,17 +81,6 @@ struct PlatformsListView: View {
             }
         }
         .listStyle(.inset(alternatesRowBackgrounds: true))
-        .task {
-            loadRuntimes()
-        }
-        .onChange(of: appState.installedRuntimes) { _ in
-            loadRuntimes()
-        }
-    }
-    
-    func loadRuntimes() {
-        let filteredRuntimes = appState.installedPlatformRuntimes()
-        runtimes = OrderedDictionary(grouping: filteredRuntimes, by: { $0.runtime.platform })
     }
     
     func deleteRuntime(runtime: InstalledPlatformRuntime) {

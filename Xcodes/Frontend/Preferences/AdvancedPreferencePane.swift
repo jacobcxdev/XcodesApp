@@ -15,8 +15,9 @@ struct AdvancedPreferencePane: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .lineLimit(2)
                         Button(action: { appState.reveal(path: appState.installPath) }) {
-                            Image(systemName: "arrow.right.circle.fill")
+                            Label("RevealInFinder", systemImage: "arrow.right.circle.fill")
                         }
+                        .labelStyle(.iconOnly)
                         .buttonStyle(PlainButtonStyle())
                         .help("RevealInFinder")
                         .fixedSize()
@@ -52,8 +53,9 @@ struct AdvancedPreferencePane: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .lineLimit(2)
                         Button(action: { appState.reveal(path: appState.localPath) }) {
-                            Image(systemName: "arrow.right.circle.fill")
+                            Label("RevealInFinder", systemImage: "arrow.right.circle.fill")
                         }
+                        .labelStyle(.iconOnly)
                         .buttonStyle(PlainButtonStyle())
                         .help("RevealInFinder")
                         .fixedSize()
@@ -91,7 +93,7 @@ struct AdvancedPreferencePane: View {
                         Text(SelectedActionType.rename.description)
                             .tag(SelectedActionType.rename)
                     } label: {
-                        Text(verbatim: "OnSelect")
+                        Text("Active/Select")
                     }
                     .labelsHidden()
                     .pickerStyle(.inline)
@@ -124,7 +126,7 @@ struct AdvancedPreferencePane: View {
             if HostHardware.isAppleSilicon() {
                 GroupBox(label: Text("Apple Silicon")) {
                     Toggle("ShowOpenInRosetta", isOn: $appState.showOpenInRosettaOption)
-                        .disabled(appState.createSymLinkOnSelectDisabled)
+                        .disabled(appState.showOpenInRosettaOptionDisabled)
                     Text("ShowOpenInRosettaDescription")
                         .font(.footnote)
                         .foregroundStyle(.secondary)

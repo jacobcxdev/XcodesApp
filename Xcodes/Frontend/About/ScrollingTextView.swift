@@ -9,6 +9,7 @@ struct ScrollingTextView: NSViewRepresentable {
         let view = NSTextView.scrollableTextView()
         let textView = view.documentView as? NSTextView
         textView?.isEditable = false
+        textView?.textContainerInset = NSSize(width: 16, height: 16)
         return view
     }
     

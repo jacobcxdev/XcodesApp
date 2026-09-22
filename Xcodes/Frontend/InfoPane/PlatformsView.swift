@@ -55,6 +55,16 @@ struct PlatformsView: View {
                 }
             }
             
+            if runtimes.isEmpty {
+                Text("NoRuntimesToShow")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if appState.downloadableRuntimes.isEmpty {
+                    Button("Refresh") { appState.updateDownloadableRuntimes() }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+
             ForEach(runtimes, id: \.identifier) { runtime in
                 runtimeView(runtime: runtime)
                     .frame(minWidth: 200)
@@ -118,8 +128,9 @@ struct PlatformsView: View {
     func pathIfAvailable(xcode: Xcode, runtime: DownloadableRuntime) -> some View {
         if let path = appState.runtimeInstallPath(xcode: xcode, runtime: runtime) {
             Button(action: { appState.reveal(path: path.string) }) {
-                Image(systemName: "arrow.right.circle.fill")
+                Label("RevealInFinder", systemImage: "arrow.right.circle.fill")
             }
+            .labelStyle(.iconOnly)
             .buttonStyle(PlainButtonStyle())
             .help("RevealInFinder")
         } else {

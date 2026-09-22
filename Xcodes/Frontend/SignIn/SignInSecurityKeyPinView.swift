@@ -18,7 +18,7 @@ struct SignInSecurityKeyPinView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(localizeString("SecurityKeyPinDescription"))
-                .fixedSize(horizontal: true, vertical: false)
+                .fixedSize(horizontal: false, vertical: true)
             
             HStack {
                 Spacer()
@@ -46,7 +46,9 @@ struct SignInSecurityKeyPinView: View {
             .frame(height: 25)
         }
         .padding()
+        .frame(width: 452)
         .emittingError($appState.authError, recoveryHandler: { _ in })
+        .handlingErrors(using: AlertErrorHandler(title: "SignInFailure"))
     }
     
     func submitPinCode() {

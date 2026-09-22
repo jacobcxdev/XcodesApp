@@ -15,6 +15,9 @@ struct SignInFederatedView: View {
             Text("This Apple Account uses federated authentication via \(organizationName).")
                 .fixedSize(horizontal: false, vertical: true)
 
+            Text("FederatedSignInInstructions")
+                .fixedSize(horizontal: false, vertical: true)
+
             Button("Open Browser") {
                 if let idpURL = federationResponse.idpURL {
                     NSWorkspace.shared.open(idpURL)
@@ -53,7 +56,7 @@ struct SignInFederatedView: View {
     }
 
     private var organizationName: String {
-        let orgName = federationResponse.federatedAuthIntro?.orgName ?? "your organization"
+        let orgName = federationResponse.federatedAuthIntro?.orgName ?? localizeString("YourOrganisation")
         if let idpName = federationResponse.federatedAuthIntro?.idpName {
             return "\(orgName) (\(idpName))"
         }

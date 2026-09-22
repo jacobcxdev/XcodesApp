@@ -60,18 +60,31 @@ extension AppState {
     }
 
     func refreshInstalledRuntimes() async throws {
+        try Task.checkCancellation()
         let refreshID = UUID()
         installedRuntimesRefreshID = refreshID
+        isRefreshingInstalledRuntimes = true
+        installedRuntimesError = nil
         defer {
             if installedRuntimesRefreshID == refreshID {
                 installedRuntimesRefreshID = nil
+                isRefreshingInstalledRuntimes = false
             }
         }
 
-        let runtimes = try await runtimeService.installedRuntimes()
-        try Task.checkCancellation()
-        guard installedRuntimesRefreshID == refreshID else { return }
-        installedRuntimes = runtimes.map(CoreSimulatorImage.init)
+        do {
+            let runtimes = try await runtimeService.installedRuntimes()
+            try Task.checkCancellation()
+            guard installedRuntimesRefreshID == refreshID else { return }
+            installedRuntimes = runtimes.map(CoreSimulatorImage.init)
+        } catch {
+            if installedRuntimesRefreshID == refreshID,
+               !Task.isCancelled,
+               !(error is CancellationError) {
+                installedRuntimesError = error
+            }
+            throw error
+        }
     }
 
     func downloadRuntime(runtime: DownloadableRuntime) {
@@ -98,14 +111,14 @@ extension AppState {
         if let error = error as? RuntimeInstallPolicyError {
             switch error {
             case .noSelectedXcode:
-                presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: "No selected Xcode. Please make an Xcode active")
+                presentedAlert = .generic(title: localizeString("RuntimeInstallError"), message: localizeString("RuntimeNeedsActiveXcode"))
             case .xcode16_1OrGreaterRequired:
-                presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: localizeString("Alert.Install.Error.Need.Xcode16.1"))
+                presentedAlert = .generic(title: localizeString("RuntimeInstallError"), message: localizeString("Alert.Install.Error.Need.Xcode16.1"))
             case .xcode26OrGreaterRequired:
-                presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: localizeString("Alert.Install.Error.Need.Xcode26"))
+                presentedAlert = .generic(title: localizeString("RuntimeInstallError"), message: localizeString("Alert.Install.Error.Need.Xcode26"))
             }
         } else {
-            presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: error.legibleLocalizedDescription)
+            presentedAlert = .generic(title: localizeString("RuntimeInstallError"), message: error.legibleLocalizedDescription)
         }
     }
 
@@ -151,9 +164,9 @@ extension AppState {
                 Logger.appState.error("Error downloading runtime: \(error.localizedDescription)")
                 self.error = error
                 if let error = error as? XcodesKitError {
-                    self.presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: error.message)
+                    self.presentedAlert = .generic(title: localizeString("RuntimeInstallError"), message: error.message)
                 } else {
-                    self.presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: error.legibleLocalizedDescription)
+                    self.presentedAlert = .generic(title: localizeString("RuntimeInstallError"), message: error.legibleLocalizedDescription)
                 }
             }
         }
@@ -191,9 +204,9 @@ extension AppState {
                 Logger.appState.error("Error downloading runtime: \(error.localizedDescription)")
                 self.error = error
                 if let error = error as? XcodesKitError {
-                    self.presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: error.message)
+                    self.presentedAlert = .generic(title: localizeString("RuntimeInstallError"), message: error.message)
                 } else {
-                    self.presentedAlert = .generic(title: localizeString("Alert.Install.Error.Title"), message: error.legibleLocalizedDescription)
+                    self.presentedAlert = .generic(title: localizeString("RuntimeInstallError"), message: error.legibleLocalizedDescription)
                 }
             }
         }

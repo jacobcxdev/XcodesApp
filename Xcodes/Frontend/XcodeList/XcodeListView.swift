@@ -62,6 +62,30 @@ struct XcodeListView: View {
                 }
             }
             .listStyle(.sidebar)
+            .overlay {
+                if visibleXcodes.isEmpty {
+                    if appState.isUpdating {
+                        ProgressView()
+                            .accessibilityLabel(Text("RefreshDescription"))
+                    } else if !searchText.isEmpty {
+                        ContentUnavailableView.search(text: searchText)
+                    } else if !appState.allXcodes.isEmpty {
+                        ContentUnavailableView {
+                            Label("NoMatchingXcodes", systemImage: "line.3.horizontal.decrease")
+                        } description: {
+                            Text("NoMatchingXcodesDescription")
+                        }
+                    } else {
+                        ContentUnavailableView {
+                            Label("Xcodes", systemImage: "hammer")
+                        } description: {
+                            Text("RefreshDescription")
+                        } actions: {
+                            Button("Refresh") { appState.update() }
+                        }
+                    }
+                }
+            }
 
             Divider()
             PlatformsPocket()
@@ -152,7 +176,7 @@ private struct GroupedXcodeListContent: View {
                     self.expandedMinorVersions = updatedExpandedMinorVersions
                 }
             )
-            .tag(majorVersions.first { $0.selected }?.id)
+            .selectionDisabled()
 
             if isMajorExpanded {
                 ForEach(majorVersionGroup.minorVersionGroups) { minorVersionGroup in
@@ -182,7 +206,7 @@ private struct GroupedXcodeListContent: View {
                             self.expandedMinorVersions = updatedExpandedMinorVersions
                         }
                     )
-                    .tag(minorVersions.first { $0.selected }?.id)
+                    .selectionDisabled()
 
                     if isMinorExpanded {
                         ForEach(minorVersionGroup.versions) { entry in
@@ -224,6 +248,7 @@ private struct XcodeVersionGroupRow: View {
                         .frame(width: 12, height: 12)
 
                     icon
+                        .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(verbatim: "Xcode \(displayName)")
@@ -231,7 +256,7 @@ private struct XcodeVersionGroupRow: View {
                             .fixedSize(horizontal: false, vertical: true)
 
                         if let latestRelease {
-                            Text(verbatim: "Latest: \(latestRelease.description)")
+                            Text(String(format: localizeString("LatestReleaseDescription"), latestRelease.description))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -275,19 +300,22 @@ private struct XcodeVersionGroupRow: View {
             case .installed:
                 if let latestSelectionTarget, latestSelectionTarget.id != selectedVersion.id {
                     Button(action: { appState.select(xcode: latestSelectionTarget) }) {
-                        Image(systemName: "checkmark.circle.fill")
+                        Image(systemName: "arrow.up.circle.fill")
                             .foregroundColor(.yellow)
                     }
+                    .accessibilityLabel(Text("MakeActiveVersionDescription"))
                     .buttonStyle(PlainButtonStyle())
                     .help(staleSelectedHelpText(selectedVersion: selectedVersion, latestRelease: latestSelectableRelease, selectionTarget: latestSelectionTarget))
                 } else {
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: "arrow.up.circle.fill")
                         .foregroundColor(.yellow)
+                        .accessibilityLabel(Text("ActiveVersionDescription"))
                         .help(staleSelectedHelpText(selectedVersion: selectedVersion, latestRelease: latestSelectableRelease, selectionTarget: latestSelectionTarget))
                 }
             case .notInstalled:
-                Image(systemName: "checkmark.circle.fill")
+                Image(systemName: "arrow.up.circle.fill")
                     .foregroundColor(.yellow)
+                    .accessibilityLabel(Text("ActiveVersionDescription"))
                     .help(staleSelectedHelpText(selectedVersion: selectedVersion, latestRelease: latestSelectableRelease, selectionTarget: latestSelectionTarget))
             case .installing, .uninstalling, .none:
                 EmptyView()
@@ -295,12 +323,14 @@ private struct XcodeVersionGroupRow: View {
         } else if selectedVersion?.selected == true {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundColor(.green)
+                .accessibilityLabel(Text("ActiveVersionDescription"))
                 .help("ActiveVersionDescription")
         } else if let latestSelectionTarget {
             Button(action: { appState.select(xcode: latestSelectionTarget) }) {
                 Image(systemName: "checkmark.circle")
                     .foregroundColor(.secondary)
             }
+            .accessibilityLabel(Text("MakeActiveVersionDescription"))
             .buttonStyle(PlainButtonStyle())
             .help("MakeActiveVersionDescription")
         }
@@ -338,15 +368,13 @@ private struct XcodeVersionGroupRow: View {
             switch latestRelease.installState {
             case .installed:
                 Button("Open") { appState.open(xcode: latestRelease) }
-                    .textCase(.uppercase)
-                    .buttonStyle(AppStoreButtonStyle(primary: true, highlighted: false))
+                    .buttonStyle(.bordered)
                     .help("OpenDescription")
             case .notInstalled:
                 Button("Install") {
                     appState.checkMinVersionAndInstall(id: latestRelease.id)
                 }
-                .textCase(.uppercase)
-                .buttonStyle(AppStoreButtonStyle(primary: false, highlighted: false))
+                .buttonStyle(.bordered)
                 .help("InstallDescription")
             case .installing, .uninstalling:
                 EmptyView()

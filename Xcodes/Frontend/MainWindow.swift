@@ -61,19 +61,6 @@ struct MainWindow: View {
                     })
                     .help("ManageAppleAccount")
                     .disabled(appState.isRestoringAuthenticationState)
-                    if #available(macOS 14, *) {
-                        SettingsLink(label: {
-                            Label("Preferences", systemImage: "gearshape")
-                        })
-                        .help("PreferencesDescription")
-                    } else {
-                        Button(action: {
-                            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-                        }, label: {
-                            Label("Preferences", systemImage: "gearshape")
-                        })
-                        .help("PreferencesDescription")
-                    }
                 }
             }
         }
@@ -151,10 +138,10 @@ struct MainWindow: View {
         } else if case let .waitingForFederatedAuthentication(federationResponse) = appState.authenticationState {
             SignInFederatedView(federationResponse: federationResponse)
                 .environmentObject(appState)
-                .frame(width: 400)
+                .frame(width: 452)
         } else {
             SignInCredentialsView()
-                .frame(width: 400)
+                .frame(width: 452)
         }
     }
 

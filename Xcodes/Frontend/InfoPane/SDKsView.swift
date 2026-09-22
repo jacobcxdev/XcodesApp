@@ -39,7 +39,8 @@ struct SDKsView: View {
             ("macOS", sdks.macOS),
             ("iOS", sdks.iOS),
             ("watchOS", sdks.watchOS),
-            ("tvOS", sdks.tvOS)
+            ("tvOS", sdks.tvOS),
+            ("visionOS", sdks.visionOS)
         ].compactMap {             // remove nil compiler
             guard $0.1 != nil,     // has version array
                   !$0.1!.isEmpty   // has at least 1 version
