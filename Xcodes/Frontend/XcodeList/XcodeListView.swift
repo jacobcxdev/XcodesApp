@@ -267,6 +267,7 @@ private struct XcodeVersionGroupRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityValue(isExpanded ? Text("Expanded") : Text("Collapsed"))
 
             selectControl
                 .padding(.trailing, 4)
