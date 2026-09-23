@@ -16,6 +16,8 @@ struct AdvancedPreferencePane: View {
                             .lineLimit(2)
                         Button(action: { appState.reveal(path: appState.installPath) }) {
                             Label("RevealInFinder", systemImage: "arrow.right.circle.fill")
+                                .frame(minWidth: 20, minHeight: 20)
+                                .contentShape(Rectangle())
                         }
                         .labelStyle(.iconOnly)
                         .buttonStyle(PlainButtonStyle())
@@ -54,6 +56,8 @@ struct AdvancedPreferencePane: View {
                             .lineLimit(2)
                         Button(action: { appState.reveal(path: appState.localPath) }) {
                             Label("RevealInFinder", systemImage: "arrow.right.circle.fill")
+                                .frame(minWidth: 20, minHeight: 20)
+                                .contentShape(Rectangle())
                         }
                         .labelStyle(.iconOnly)
                         .buttonStyle(PlainButtonStyle())

@@ -6894,6 +6894,18 @@
     },
     "An error occurred" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حدث خطأ"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เกิดข้อผิดพลาด"
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7390,6 +7402,18 @@
     },
     "Architecture" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البنية"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สถาปัตยกรรม"
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7893,6 +7917,126 @@
     },
     "AutomaticallyCreateBetaSymbolicLink" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنشاء رابط رمزي إلى Xcode-Beta.app تلقائيًا"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea automàticament un enllaç simbòlic a Xcode-Beta.app"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Symbolischen Link zu Xcode-Beta.app automatisch erstellen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αυτόματη δημιουργία συμβολικού συνδέσμου προς το Xcode-Beta.app"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear automáticamente un enlace simbólico a Xcode-Beta.app"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Luo symbolinen linkki Xcode-Beta.appiin automaattisesti"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créer automatiquement un lien symbolique vers Xcode-Beta.app"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode-Beta.app के लिए सिम्बॉलिक लिंक अपने आप बनाएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea automaticamente un link simbolico a Xcode-Beta.app"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode-Beta.appへのシンボリックリンクを自動作成"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode-Beta.app 심볼릭 링크 자동 생성"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatisch een symbolische koppeling naar Xcode-Beta.app maken"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatycznie twórz dowiązanie symboliczne do Xcode-Beta.app"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Criar automaticamente um link simbólico para Xcode-Beta.app"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Автоматически создавать символическую ссылку Xcode-Beta.app"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สร้างลิงก์สัญลักษณ์ไปยัง Xcode-Beta.app โดยอัตโนมัติ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode-Beta.app için otomatik sembolik bağlantı oluştur"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Автоматично створювати символічне посилання Xcode-Beta.app"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动创建指向 Xcode-Beta.app 的符号链接"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動建立指向 Xcode-Beta.app 的符號連結"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7903,6 +8047,126 @@
     },
     "AutomaticallyCreateBetaSymbolicLinkDescription" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند تعيين إصدار تجريبي من Xcode كإصدار نشط، يتم إنشاء Xcode-Beta.app أو تحديثه في دليل التثبيت ليرتبط بذلك الإصدار."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quan activis una versió preliminar d’Xcode, crea o actualitza Xcode-Beta.app al directori d’instal·lació perquè enllaci amb aquesta versió."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn du eine Vorabversion von Xcode aktivierst, wird Xcode-Beta.app im Installationsverzeichnis erstellt oder aktualisiert und mit dieser Version verknüpft."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Όταν ενεργοποιείτε μια προέκδοση του Xcode, δημιουργείται ή ενημερώνεται το Xcode-Beta.app στον φάκελο εγκατάστασης ώστε να παραπέμπει σε αυτήν την έκδοση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al activar una versión preliminar de Xcode, se crea o actualiza Xcode-Beta.app en el directorio de instalación para enlazar con esa versión."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kun aktivoit Xcoden ennakkoversion, asennushakemistoon luodaan tai päivitetään Xcode-Beta.app-linkki, joka osoittaa kyseiseen versioon."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lorsque vous activez une préversion de Xcode, Xcode-Beta.app est créé ou mis à jour dans le répertoire d’installation pour pointer vers cette version."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode के किसी पूर्व-रिलीज़ संस्करण को सक्रिय करने पर, इंस्टॉलेशन फ़ोल्डर में Xcode-Beta.app बनाएँ या अपडेट करें ताकि वह उस संस्करण से जुड़ सके।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando attivi una versione preliminare di Xcode, crea o aggiorna Xcode-Beta.app nella cartella di installazione per collegarlo a quella versione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcodeのプレリリース版をアクティブにすると、インストール先にXcode-Beta.appを作成または更新して、そのバージョンへのリンクにします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode 사전 출시 버전을 활성화하면 설치 디렉터리에 해당 버전을 가리키는 Xcode-Beta.app 링크를 생성하거나 업데이트합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als je een voorlopige Xcode-versie actief maakt, wordt Xcode-Beta.app in de installatiemap aangemaakt of bijgewerkt om naar die versie te verwijzen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Po aktywowaniu przedpremierowej wersji Xcode w katalogu instalacyjnym zostanie utworzone lub zaktualizowane dowiązanie Xcode-Beta.app wskazujące tę wersję."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ao ativar uma versão de pré-lançamento do Xcode, crie ou atualize Xcode-Beta.app no diretório de instalação para apontar para essa versão."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "При активации предварительной версии Xcode в каталоге установки создаётся или обновляется ссылка Xcode-Beta.app на эту версию."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เมื่อกำหนดให้ Xcode รุ่นก่อนเผยแพร่เป็นรุ่นที่ใช้งานอยู่ ให้สร้างหรืออัปเดต Xcode-Beta.app ในไดเรกทอรีติดตั้งเพื่อเชื่อมโยงไปยังรุ่นนั้น"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir Xcode ön sürümünü etkinleştirdiğinizde, o sürüme bağlantı vermek için yükleme klasöründe Xcode-Beta.app oluşturulur veya güncellenir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Коли ви активуєте попередню версію Xcode, у каталозі встановлення створюється або оновлюється посилання Xcode-Beta.app на цю версію."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将 Xcode 预发布版本设为活跃版本时，在安装目录中创建或更新 Xcode-Beta.app，使其链接到该版本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將 Xcode 預先發行版本設為使用中版本時，在安裝目錄中建立或更新 Xcode-Beta.app，使其連結至該版本。"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8428,6 +8692,18 @@
     },
     "Category" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الفئة"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "หมวดหมู่"
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10464,6 +10740,18 @@
     },
     "Dismiss" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إغلاق"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ปิด"
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12382,6 +12670,18 @@
     },
     "FilterArchitecturesDescription" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصفية إصدارات Xcode حسب البنية"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กรองเวอร์ชัน Xcode ตามสถาปัตยกรรม"
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
@@ -17057,6 +17357,18 @@
     },
     "Installed Only" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المثبتة فقط"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ที่ติดตั้งแล้วเท่านั้น"
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
@@ -17302,7 +17614,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يقوم Xcodes بالبحث والتثبيت في دليل واحد. بشكل افتراضي (والموصى به) هو الاحتفاظ بهذا /Applications.online. قد تؤدي أي تغييرات في مكان تخزين Xcode إلى توقف التطبيقات/الخدمات الأخرى عن العمل."
+            "value" : "الدليل الافتراضي والموصى به هو \u2066/Applications\u2069. يبحث Xcodes عن التطبيقات ويثبّتها في دليل واحد. قد يؤدي تغيير مكان تخزين Xcode إلى توقف التطبيقات والخدمات الأخرى عن العمل."
           }
         },
         "ca" : {
@@ -17314,13 +17626,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Xcodes sucht and installiert in ein einzelnes Verzeichnis. Standard (und empfohlen beizubehalten) ist /Programme. Änderungen am Speicherort von Xcode können dazu führen, dass andere Apps/Dienste aufhören zu funktionieren. "
+            "value" : "Xcodes sucht und installiert in einem einzelnen Verzeichnis. Standard (und empfohlen beizubehalten) ist /Applications. Änderungen am Speicherort von Xcode können dazu führen, dass andere Apps/Dienste aufhören zu funktionieren."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Το Xcodes αναζητά και εγκαθιστά σε ένα και μόνο φάκελο. Κατά προεπιλογή (όπως και συνίσταται) αυτός είναι ο «Εφαρμογές». Όποιες αλλαγές στην τοποθεσία του Xcode μπορεί να έχει ως αποτέλεσμα την προβληματική λειτουργία άλλων εφαρμογών/υπηρεσιών."
+            "value" : "Το Xcodes αναζητά και εγκαθιστά σε έναν φάκελο. Ο προεπιλεγμένος και συνιστώμενος φάκελος είναι ο /Applications. Οι αλλαγές στην τοποθεσία του Xcode μπορεί να προκαλέσουν προβλήματα στη λειτουργία άλλων εφαρμογών ή υπηρεσιών."
           }
         },
         "en" : {
@@ -17404,7 +17716,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Xcodes bir klasörü arayıp oraya yükler. Varsayılan(ve önerilen) yöntem /Uygulamalar klasöründe tutmaktır. Xcode'un bulunduğu ortamdaki herhangi bir değişiklik başka bir uygulamanın/servisin çalışmasını durdurabilir."
+            "value" : "Xcodes bir klasörü arayıp oraya yükler. Varsayılan (ve önerilen) yöntem /Applications klasöründe tutmaktır. Xcode'un bulunduğu ortamdaki herhangi bir değişiklik başka bir uygulamanın/servisin çalışmasını durdurabilir."
           }
         },
         "uk" : {
@@ -21194,7 +21506,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On select, will keep the name as the version eg. Xcode-13.4.1.app"
+            "value" : "الاحتفاظ باسم التطبيق الحالي عند تعيينه كإصدار نشط، مثل \u2066Xcode-27.0.app\u2069."
           }
         },
         "ca" : {
@@ -21707,6 +22019,18 @@
     },
     "Open Browser" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح المتصفح"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เปิดเบราว์เซอร์"
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
@@ -22203,6 +22527,18 @@
     },
     "Paste redirected URL" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لصق عنوان URL بعد إعادة التوجيه"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "วาง URL หลังเปลี่ยนเส้นทาง"
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
@@ -25556,7 +25892,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show Open In Rosetta option"
+            "value" : "„Mit Rosetta öffnen“ anzeigen"
           }
         },
         "el" : {
@@ -25686,7 +26022,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open in Rosetta option will show where other \"Open\" functions are available. Note  : This will only show for Apple Silicon machines."
+            "value" : "Zeigt auf Macs mit Apple-Chip eine Option an, um Xcode mit Rosetta zu öffnen."
           }
         },
         "el" : {
@@ -25931,6 +26267,18 @@
     },
     "Signing out..." : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ تسجيل الخروج…"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กำลังออกจากระบบ…"
+          }
+        },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
@@ -27114,7 +27462,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unarchiving (This can take a while)"
+            "value" : "Extracting archive (this may take a while)"
           }
         },
         "es" : {

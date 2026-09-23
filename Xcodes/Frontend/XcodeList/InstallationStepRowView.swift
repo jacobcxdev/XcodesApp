@@ -29,6 +29,8 @@ struct InstallationStepRowView: View {
             Button(action: cancel) {
                 Label("Cancel", systemImage: "xmark.circle.fill")
                     .labelStyle(IconOnlyLabelStyle())
+                    .frame(minWidth: 20, minHeight: 20)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
             .foregroundColor(highlighted ? .white : .secondary)

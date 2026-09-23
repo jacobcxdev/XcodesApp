@@ -132,6 +132,7 @@ final class PinCodeTextView: NSControl, NSTextFieldDelegate {
         inputField.delegate = self
         inputField.setAccessibilityLabel(accessibilityLabel)
         addSubview(inputField)
+        setAccessibilityChildren([inputField.cell].compactMap { $0 })
 
         NSLayoutConstraint.activate([
             stackView.topAnchor.constraint(equalTo: topAnchor),

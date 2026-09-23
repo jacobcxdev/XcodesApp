@@ -423,7 +423,8 @@ struct PlatformsPocket: View {
             openWindow(id: "platforms")
         } label: {
             Label("PlatformsDescription", systemImage: "square.3.layers.3d")
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
         .controlSize(.regular)

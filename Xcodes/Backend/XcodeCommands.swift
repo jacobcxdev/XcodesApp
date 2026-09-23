@@ -61,6 +61,8 @@ struct CancelInstallButton: View {
     var body: some View {
         Button(action: cancelInstall) {
             Label("Cancel", systemImage: "xmark")
+                .frame(minWidth: 20, minHeight: 20)
+                .contentShape(Rectangle())
         }
         .help(localizeString("StopInstallation"))
         .buttonStyle(.plain)
@@ -80,6 +82,8 @@ struct CancelRuntimeInstallButton: View {
     var body: some View {
         Button(action: cancelInstall) {
             Label("StopInstallation", systemImage: "xmark.circle.fill")
+                .frame(minWidth: 20, minHeight: 20)
+                .contentShape(Rectangle())
         }
             .labelStyle(.iconOnly)
             .help(localizeString("StopInstallation"))

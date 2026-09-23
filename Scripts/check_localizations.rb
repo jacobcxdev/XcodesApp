@@ -5,25 +5,6 @@ require "json"
 catalog_path = ARGV.fetch(0, File.expand_path("../Xcodes/Resources/Localizable.xcstrings", __dir__))
 catalog = JSON.parse(File.read(catalog_path))
 languages = %w[ar ca de el es fi fr hi it ja ko nl pl pt-BR ru th tr uk zh-Hans zh-Hant].freeze
-established_languages = languages - %w[ar th]
-baseline_keys = %w[AutomaticallyCreateBetaSymbolicLink AutomaticallyCreateBetaSymbolicLinkDescription].freeze
-arabic_thai_baseline_keys = [
-  "An error occurred",
-  "Architecture",
-  "AutomaticallyCreateBetaSymbolicLink",
-  "AutomaticallyCreateBetaSymbolicLinkDescription",
-  "Category",
-  "Dismiss",
-  "FilterArchitecturesDescription",
-  "Installed Only",
-  "Open Browser",
-  "Paste redirected URL",
-  "Signing out...",
-].freeze
-allowed_missing = (
-  baseline_keys.product(established_languages) +
-  arabic_thai_baseline_keys.product(%w[ar th])
-).map { |key, language| "#{key}:#{language}" }.sort.freeze
 
 translated = lambda do |localization|
   if localization.key?("stringUnit")
@@ -118,11 +99,9 @@ incorrect_grouping_values = required_grouping_values.filter_map do |language, ex
   "GroupXcodeVersionsInList:#{language} expected #{expected_value.inspect}, got #{actual_value.inspect}" unless actual_value == expected_value
 end
 
-unexpected = missing - allowed_missing
-resolved = allowed_missing - missing
 errors = []
-errors << "New missing or unreviewed translations:\n  #{unexpected.join("\n  ")}" unless unexpected.empty?
-errors << "Localization baseline is stale; remove resolved entries:\n  #{resolved.join("\n  ")}" unless resolved.empty?
+errors << "Supported localization languages do not match the grouping contract" unless languages.sort == (required_grouping_values.keys - ["en"]).sort
+errors << "Missing or unreviewed translations:\n  #{missing.join("\n  ")}" unless missing.empty?
 errors << "Legacy Apple ID terminology remains:\n  #{legacy_terminology.join("\n  ")}" unless legacy_terminology.empty?
 errors << "Legacy localization keys remain:\n  #{forbidden_keys.join("\n  ")}" unless forbidden_keys.empty?
 errors << "Required localization keys are missing:\n  #{required_keys.join("\n  ")}" unless required_keys.empty?
@@ -133,4 +112,4 @@ unless errors.empty?
   exit 1
 end
 
-puts "Localization contract passed with #{allowed_missing.length} explicitly tracked gaps"
+puts "Localization contract passed with no missing translations"
