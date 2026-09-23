@@ -121,6 +121,8 @@ struct XcodeListViewRow: View {
                     Button(action: { appState.select(xcode: latestReleaseForSelectedPrerelease) }) {
                         Label("MakeActive", systemImage: "arrow.up.circle.fill")
                             .foregroundColor(.yellow)
+                            .frame(minWidth: 20, minHeight: 20)
+                            .contentShape(Rectangle())
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(PlainButtonStyle())
@@ -142,6 +144,8 @@ struct XcodeListViewRow: View {
                 Button(action: { appState.select(xcode: xcode) }) {
                     Label("MakeActive", systemImage: "checkmark.circle")
                         .foregroundColor(.secondary)
+                        .frame(minWidth: 20, minHeight: 20)
+                        .contentShape(Rectangle())
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(PlainButtonStyle())

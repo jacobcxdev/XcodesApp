@@ -302,6 +302,8 @@ private struct XcodeVersionGroupRow: View {
                     Button(action: { appState.select(xcode: latestSelectionTarget) }) {
                         Image(systemName: "arrow.up.circle.fill")
                             .foregroundColor(.yellow)
+                            .frame(minWidth: 20, minHeight: 20)
+                            .contentShape(Rectangle())
                     }
                     .accessibilityLabel(Text("MakeActiveVersionDescription"))
                     .buttonStyle(PlainButtonStyle())
@@ -329,6 +331,8 @@ private struct XcodeVersionGroupRow: View {
             Button(action: { appState.select(xcode: latestSelectionTarget) }) {
                 Image(systemName: "checkmark.circle")
                     .foregroundColor(.secondary)
+                    .frame(minWidth: 20, minHeight: 20)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel(Text("MakeActiveVersionDescription"))
             .buttonStyle(PlainButtonStyle())

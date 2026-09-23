@@ -3753,6 +3753,137 @@
         }
       }
     },
+    "Alert.DeletePlatform.Message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيؤدي هذا إلى حذف بيئة تشغيل المحاكي نهائيًا. ستتوقف أي محاكيات قيد التشغيل تستخدمها. أعد تثبيت بيئة التشغيل لاستخدام تلك المحاكيات مجددًا."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Això suprimeix permanentment l’entorn d’execució del simulador. Els simuladors en execució que l’utilitzin s’aturaran. Torna a instal·lar l’entorn d’execució per tornar a utilitzar aquests simuladors."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Simulator-Laufzeitumgebung wird dauerhaft gelöscht. Alle laufenden Simulatoren, die sie verwenden, werden heruntergefahren. Installiere die Laufzeitumgebung erneut, um diese Simulatoren wieder zu verwenden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αυτό διαγράφει οριστικά το περιβάλλον εκτέλεσης του προσομοιωτή. Όλοι οι ενεργοί προσομοιωτές που το χρησιμοποιούν θα τερματιστούν. Εγκαταστήστε ξανά το περιβάλλον εκτέλεσης για να χρησιμοποιήσετε ξανά αυτούς τους προσομοιωτές."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This permanently deletes the simulator runtime. Any running simulators that use it will shut down. Reinstall the runtime to use those simulators again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esto elimina permanentemente el entorno de ejecución del simulador. Los simuladores en ejecución que lo utilicen se apagarán. Vuelve a instalar el entorno de ejecución para usar esos simuladores de nuevo."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tämä poistaa simulaattorin ajonaikaisen ympäristön pysyvästi. Kaikki sitä käyttävät käynnissä olevat simulaattorit sammutetaan. Asenna ajonaikainen ympäristö uudelleen, jotta voit käyttää näitä simulaattoreita uudelleen."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette action supprime définitivement l’environnement d’exécution du simulateur. Les simulateurs en cours d’exécution qui l’utilisent s’arrêteront. Réinstallez l’environnement d’exécution pour utiliser à nouveau ces simulateurs."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इससे सिम्युलेटर का रनटाइम स्थायी रूप से मिट जाएगा। इसका उपयोग कर रहे सभी चालू सिम्युलेटर बंद हो जाएँगे। उन सिम्युलेटरों का दोबारा उपयोग करने के लिए रनटाइम फिर से इंस्टॉल करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa operazione elimina definitivamente l’ambiente di esecuzione del simulatore. Tutti i simulatori in esecuzione che lo utilizzano verranno arrestati. Reinstalla l’ambiente di esecuzione per usare nuovamente quei simulatori."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレータのランタイムが完全に削除されます。このランタイムを使用して実行中のシミュレータはすべてシャットダウンされます。これらのシミュレータを再び使用するには、ランタイムを再インストールしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시뮬레이터 런타임이 영구적으로 삭제됩니다. 이 런타임을 사용하는 실행 중인 시뮬레이터가 모두 종료됩니다. 해당 시뮬레이터를 다시 사용하려면 런타임을 다시 설치하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiermee wordt de simulatorruntime permanent verwijderd. Alle actieve simulators die deze gebruiken, worden afgesloten. Installeer de runtime opnieuw om die simulators weer te gebruiken."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spowoduje to trwałe usunięcie środowiska uruchomieniowego symulatora. Wszystkie działające symulatory, które z niego korzystają, zostaną wyłączone. Zainstaluj ponownie środowisko uruchomieniowe, aby znów korzystać z tych symulatorów."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isso exclui permanentemente o ambiente de execução do simulador. Todos os simuladores em execução que o utilizam serão desligados. Reinstale o ambiente de execução para usar esses simuladores novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Среда выполнения симулятора будет удалена безвозвратно. Все запущенные симуляторы, которые её используют, будут выключены. Установите среду выполнения заново, чтобы снова использовать эти симуляторы."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "การดำเนินการนี้จะลบรันไทม์ของตัวจำลองอย่างถาวร ตัวจำลองที่กำลังทำงานและใช้รันไทม์นี้จะปิดลง ติดตั้งรันไทม์อีกครั้งเพื่อใช้ตัวจำลองเหล่านั้นอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu işlem simülatör çalışma zamanını kalıcı olarak siler. Bu çalışma zamanını kullanan tüm açık simülatörler kapatılır. Bu simülatörleri tekrar kullanmak için çalışma zamanını yeniden yükleyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Середовище виконання симулятора буде видалено назавжди. Усі запущені симулятори, які його використовують, буде вимкнено. Установіть середовище виконання знову, щоб знову використовувати ці симулятори."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这将永久删除模拟器运行时。所有正在使用此运行时的模拟器都将关闭。请重新安装运行时，以便再次使用这些模拟器。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這會永久刪除模擬器執行階段。所有正在使用此執行階段的模擬器都會關閉。請重新安裝執行階段，以便再次使用這些模擬器。"
+          }
+        }
+      }
+    },
     "Alert.DeletePlatform.PrimaryButton" : {
       "extractionState" : "manual",
       "localizations" : {
