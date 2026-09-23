@@ -24,6 +24,7 @@ enum AppleAccountPreferencePresentation: Equatable {
 
 struct GeneralPreferencePane: View {
     @EnvironmentObject var appState: AppState
+    @SwiftUI.Environment(\.openWindow) private var openWindow
    
     var body: some View {
         VStack(alignment: .leading) {
@@ -38,7 +39,10 @@ struct GeneralPreferencePane: View {
                 case .signedIn:
                     SignedInView()
                 case .signedOut:
-                    Button("SignIn", action: { self.appState.presentedSheet = .signIn })
+                    Button("SignIn") {
+                        openWindow(id: "main")
+                        appState.presentedSheet = .signIn
+                    }
                 }
             }
             .groupBoxStyle(PreferencesGroupBoxStyle())

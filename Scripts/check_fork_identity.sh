@@ -43,8 +43,8 @@ readonly app_id="dev.jacobcx.Xcodes"
 readonly tests_id="dev.jacobcx.Xcodes.Tests"
 readonly helper_id="dev.jacobcx.Xcodes.Helper"
 readonly team_id="K2648T24P4"
-readonly marketing_version="4.1.3"
-readonly build_number="51"
+readonly marketing_version="4.1.4"
+readonly build_number="52"
 readonly app_copyright="Fork contributions © 2026 JacobCXDev. Upstream contributors retain their copyrights."
 # shellcheck disable=SC2016 # Xcode expands this build-setting literal, not the shell.
 readonly app_requirement='identifier "dev.jacobcx.Xcodes" and info [CFBundleShortVersionString] >= "1.0.0" and anchor apple generic and certificate leaf[subject.OU] = "$(CODE_SIGNING_SUBJECT_ORGANIZATIONAL_UNIT)"'
