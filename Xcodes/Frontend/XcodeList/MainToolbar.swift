@@ -71,6 +71,7 @@ struct MainToolbarModifier: ViewModifier {
             }
             .pickerStyle(.inline)
             .symbolVariant(isFiltering ? .fill : .none)
+            .accessibilityLabel(Text("Filter"))
         }
     }
 

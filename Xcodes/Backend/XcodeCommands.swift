@@ -45,6 +45,7 @@ struct InstallButton: View {
             Text("Install")
                 .help("InstallDescription")
         }
+        .accessibilityValue(xcode?.description ?? "")
     }
 
     private func install() {
@@ -63,6 +64,7 @@ struct CancelInstallButton: View {
         }
         .help(localizeString("StopInstallation"))
         .buttonStyle(.plain)
+        .accessibilityValue(xcode?.description ?? "")
     }
     
     private func cancelInstall() {
@@ -82,6 +84,7 @@ struct CancelRuntimeInstallButton: View {
             .labelStyle(.iconOnly)
             .help(localizeString("StopInstallation"))
             .buttonStyle(.plain)
+            .accessibilityValue(runtime?.visibleIdentifier ?? "")
     }
     
     private func cancelInstall() {
@@ -246,6 +249,7 @@ struct DownloadRuntimeButton: View {
             Text("Install")
                 .help("Install")
         }
+        .accessibilityValue(runtime?.visibleIdentifier ?? "")
     }
     
     private func install() {
