@@ -73,6 +73,9 @@ struct PinCodeInputTests {
         #expect(textFields.filter { !$0.isEditable }.count == 6)
         #expect(inputField.contentType == .oneTimeCode)
         #expect(inputField.accessibilityLabel() == "Verification code")
+        let accessibleChildren = try #require(view.accessibilityChildren())
+        #expect(accessibleChildren.count == 1)
+        #expect(accessibleChildren.first as? NSTextFieldCell === inputField.cell)
         #expect(textFields.filter { !$0.isEditable }.allSatisfy { !$0.isAccessibilityElement() })
     }
 

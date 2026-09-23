@@ -45,6 +45,7 @@ struct InstallButton: View {
             Text("Install")
                 .help("InstallDescription")
         }
+        .accessibilityValue(xcode?.description ?? "")
     }
 
     private func install() {
@@ -60,9 +61,12 @@ struct CancelInstallButton: View {
     var body: some View {
         Button(action: cancelInstall) {
             Label("Cancel", systemImage: "xmark")
+                .frame(minWidth: 20, minHeight: 20)
+                .contentShape(Rectangle())
         }
         .help(localizeString("StopInstallation"))
         .buttonStyle(.plain)
+        .accessibilityValue(xcode?.description ?? "")
     }
     
     private func cancelInstall() {
@@ -78,10 +82,13 @@ struct CancelRuntimeInstallButton: View {
     var body: some View {
         Button(action: cancelInstall) {
             Label("StopInstallation", systemImage: "xmark.circle.fill")
+                .frame(minWidth: 20, minHeight: 20)
+                .contentShape(Rectangle())
         }
             .labelStyle(.iconOnly)
             .help(localizeString("StopInstallation"))
             .buttonStyle(.plain)
+            .accessibilityValue(runtime?.visibleIdentifier ?? "")
     }
     
     private func cancelInstall() {
@@ -103,7 +110,8 @@ struct SelectButton: View {
             }
         }
         .disabled(xcode?.selected != false)
-        .help("Select")
+        .accessibilityValue(xcode?.description ?? "")
+        .help(xcode?.selected == true ? Text("ActiveVersionDescription") : Text("MakeActiveVersionDescription"))
     }
     
     private func select() {
@@ -246,6 +254,7 @@ struct DownloadRuntimeButton: View {
             Text("Install")
                 .help("Install")
         }
+        .accessibilityValue(runtime?.visibleIdentifier ?? "")
     }
     
     private func install() {

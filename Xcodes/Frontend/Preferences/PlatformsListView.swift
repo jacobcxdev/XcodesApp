@@ -56,6 +56,8 @@ struct PlatformsListView: View {
                                 deleteRuntime(runtime: installedRuntime)
                             } label: {
                                 Label("Alert.DeletePlatform.PrimaryButton", systemImage: "trash")
+                                    .frame(minWidth: 20, minHeight: 20)
+                                    .contentShape(Rectangle())
                             }
                             .labelStyle(.iconOnly)
                             .accessibilityValue(runtime.name)

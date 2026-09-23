@@ -22,6 +22,8 @@ struct InstalledStateButtons: View {
                 Text(xcode.installedPath?.string ?? "")
                 Button(action: { appState.reveal(xcode.installedPath) }) {
                     Label("RevealInFinder", systemImage: "arrow.right.circle.fill")
+                        .frame(minWidth: 20, minHeight: 20)
+                        .contentShape(Rectangle())
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(PlainButtonStyle())
@@ -31,7 +33,6 @@ struct InstalledStateButtons: View {
             HStack {
                 SelectButton(xcode: xcode)
                     .disabled(xcode.selected)
-                    .help("Selected")
 
                 OpenButton(xcode: xcode)
                     .help("Open")

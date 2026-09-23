@@ -129,6 +129,8 @@ struct PlatformsView: View {
         if let path = appState.runtimeInstallPath(xcode: xcode, runtime: runtime) {
             Button(action: { appState.reveal(path: path.string) }) {
                 Label("RevealInFinder", systemImage: "arrow.right.circle.fill")
+                    .frame(minWidth: 20, minHeight: 20)
+                    .contentShape(Rectangle())
             }
             .labelStyle(.iconOnly)
             .buttonStyle(PlainButtonStyle())

@@ -108,11 +108,15 @@ if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then
     exit 1
 fi
 
+cp "$repo_root/Xcodes/Resources/Info.plist" "$fixture_root/Xcodes/Resources/Info.plist"
+cp "$repo_root/Xcodes/Frontend/Preferences/UpdatesPreferencePane.swift" "$fixture_root/Xcodes/Frontend/Preferences/"
+"$fixture_root/Scripts/check_fork_identity.sh" >/dev/null
+
 cp \
     "$repo_root/Xcodes.xcodeproj/project.pbxproj" \
     "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
 perl -0pi -e \
-    's/MARKETING_VERSION = 4\.0\.5;/MARKETING_VERSION = 4.0.4;/g' \
+    's/MARKETING_VERSION = [^;]+;/MARKETING_VERSION = 0.0.0;/g or die "No marketing version found to mutate\n"' \
     "$fixture_root/Xcodes.xcodeproj/project.pbxproj"
 
 if "$fixture_root/Scripts/check_fork_identity.sh" >/dev/null 2>&1; then

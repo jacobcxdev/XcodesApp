@@ -3,7 +3,6 @@ import XcodesKit
 
 struct InstallationStepRowView: View {
     let installationStep: XcodeInstallationStep
-    let highlighted: Bool
     let cancel: () -> Void
     
     var body: some View {
@@ -29,9 +28,11 @@ struct InstallationStepRowView: View {
             Button(action: cancel) {
                 Label("Cancel", systemImage: "xmark.circle.fill")
                     .labelStyle(IconOnlyLabelStyle())
+                    .frame(minWidth: 20, minHeight: 20)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
-            .foregroundColor(highlighted ? .white : .secondary)
+            .foregroundStyle(.primary)
             .help("StopInstallation")
         }
         .frame(minWidth: 80)
@@ -47,37 +48,31 @@ struct InstallView_Previews: PreviewProvider {
                         installationStep: .downloading(
                             progress: configure(Progress(totalUnitCount: 100)) { $0.completedUnitCount = 40 }
                         ),
-                        highlighted: false,
                         cancel: {}
                     )
                     
                     InstallationStepRowView(
                         installationStep: .unarchiving,
-                        highlighted: false,
                         cancel: {}
                     )
                     
                     InstallationStepRowView(
                         installationStep: .moving(destination: "/Applications"),
-                        highlighted: false,
                         cancel: {}
                     )
                     
                     InstallationStepRowView(
                         installationStep: .trashingArchive,
-                        highlighted: false,
                         cancel: {}
                     )
                     
                     InstallationStepRowView(
                         installationStep: .checkingSecurity,
-                        highlighted: false,
                         cancel: {}
                     )
                     
                     InstallationStepRowView(
                         installationStep: .finishing,
-                        highlighted: false,
                         cancel: {}
                     )
                 }
@@ -92,7 +87,6 @@ struct InstallView_Previews: PreviewProvider {
                         installationStep: .downloading(
                             progress: configure(Progress(totalUnitCount: 100)) { $0.completedUnitCount = 40 }
                         ),
-                        highlighted: true,
                         cancel: {}
                     )
                 }
