@@ -53,7 +53,6 @@ struct XcodeListView: View {
                     ForEach(visibleXcodes) { entry in
                         XcodeListViewRow(
                             xcode: entry.xcode,
-                            selected: selectedXcodeID == entry.xcode.id,
                             appState: appState,
                             latestReleaseForSelectedPrerelease: latestReleaseForSelectedPrerelease(entry.xcode)
                         )
@@ -212,7 +211,6 @@ private struct GroupedXcodeListContent: View {
                         ForEach(minorVersionGroup.versions) { entry in
                             XcodeListViewRow(
                                 xcode: entry.xcode,
-                                selected: selectedXcodeID == entry.xcode.id,
                                 appState: appState,
                                 latestReleaseForSelectedPrerelease: latestReleaseForSelectedPrerelease(entry.xcode)
                             )
@@ -306,6 +304,7 @@ private struct XcodeVersionGroupRow: View {
                             .contentShape(Rectangle())
                     }
                     .accessibilityLabel(Text("MakeActiveVersionDescription"))
+                    .accessibilityValue(latestSelectionTarget.description)
                     .buttonStyle(PlainButtonStyle())
                     .help(staleSelectedHelpText(selectedVersion: selectedVersion, latestRelease: latestSelectableRelease, selectionTarget: latestSelectionTarget))
                 } else {
@@ -335,27 +334,30 @@ private struct XcodeVersionGroupRow: View {
                     .contentShape(Rectangle())
             }
             .accessibilityLabel(Text("MakeActiveVersionDescription"))
+            .accessibilityValue(latestSelectionTarget.description)
             .buttonStyle(PlainButtonStyle())
             .help("MakeActiveVersionDescription")
         }
     }
 
     private func staleSelectedHelpText(selectedVersion: Xcode, latestRelease: Xcode, selectionTarget: Xcode?) -> Text {
+        let status = Text("Active") + Text(verbatim: ": \(selectedVersion.description)\n")
+            + Text(verbatim: String(format: localizeString("LatestReleaseDescription"), latestRelease.description))
         switch selectionTarget?.installState {
         case .installed:
             if let selectionTarget, selectionTarget.id != selectedVersion.id {
-                return Text(verbatim: "\(selectedVersion.description) selected, \(latestRelease.description) available. Click to select \(selectionTarget.description).")
+                return status + Text(verbatim: "\n") + Text("MakeActive") + Text(verbatim: ": \(selectionTarget.description)")
             } else {
-                return Text(verbatim: "\(selectedVersion.description) selected, \(latestRelease.description) available.")
+                return status
             }
         case .notInstalled:
             if let selectionTarget {
-                return Text(verbatim: "\(selectedVersion.description) selected, \(latestRelease.description) available. Install \(selectionTarget.description) to select it.")
+                return status + Text(verbatim: "\n") + Text("Install") + Text(verbatim: ": \(selectionTarget.description)")
             } else {
-                return Text(verbatim: "\(selectedVersion.description) selected, \(latestRelease.description) available.")
+                return status
             }
         case .installing, .uninstalling, .none:
-            return Text(verbatim: "\(selectedVersion.description) selected, \(latestRelease.description) available.")
+            return status
         }
     }
 
@@ -365,7 +367,6 @@ private struct XcodeVersionGroupRow: View {
            case let .installing(installationStep) = installingVersion.installState {
             InstallationStepRowView(
                 installationStep: installationStep,
-                highlighted: false,
                 cancel: { appState.presentedAlert = .cancelInstall(xcode: installingVersion) }
             )
         } else if let latestRelease {

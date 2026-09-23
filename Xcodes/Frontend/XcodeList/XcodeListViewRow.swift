@@ -5,13 +5,11 @@ import XcodesKit
 
 struct XcodeListViewRow: View {
     let xcode: Xcode
-    let selected: Bool
     let appState: AppState
     let latestReleaseForSelectedPrerelease: Xcode?
 
-    init(xcode: Xcode, selected: Bool, appState: AppState, latestReleaseForSelectedPrerelease: Xcode? = nil) {
+    init(xcode: Xcode, appState: AppState, latestReleaseForSelectedPrerelease: Xcode? = nil) {
         self.xcode = xcode
-        self.selected = selected
         self.appState = appState
         self.latestReleaseForSelectedPrerelease = latestReleaseForSelectedPrerelease
     }
@@ -125,6 +123,7 @@ struct XcodeListViewRow: View {
                             .contentShape(Rectangle())
                     }
                     .labelStyle(.iconOnly)
+                    .accessibilityValue(latestReleaseForSelectedPrerelease.description)
                     .buttonStyle(PlainButtonStyle())
                     .help(staleSelectedHelpText)
                 case .notInstalled:
@@ -148,6 +147,7 @@ struct XcodeListViewRow: View {
                         .contentShape(Rectangle())
                 }
                 .labelStyle(.iconOnly)
+                .accessibilityValue(xcode.description)
                 .buttonStyle(PlainButtonStyle())
                 .help("MakeActiveVersionDescription")
             }
@@ -181,7 +181,6 @@ struct XcodeListViewRow: View {
         case let .installing(installationStep):
             InstallationStepRowView(
                 installationStep: installationStep,
-                highlighted: selected,
                 cancel: { appState.presentedAlert = .cancelInstall(xcode: xcode) }
             )
         case .uninstalling:
@@ -196,14 +195,15 @@ struct XcodeListViewRow: View {
     }
 
     private var staleSelectedHelpText: Text {
-        let selectedVersion = xcode.version.appleDescription
-        let latestVersion = latestReleaseForSelectedPrerelease?.version.appleDescription ?? ""
+        let latestVersion = latestReleaseForSelectedPrerelease?.description ?? ""
+        let status = Text("Active") + Text(verbatim: ": \(xcode.description)\n")
+            + Text(verbatim: String(format: localizeString("LatestReleaseDescription"), latestVersion))
 
         switch latestReleaseForSelectedPrerelease?.installState {
         case .installed:
-            return Text(verbatim: "\(selectedVersion) selected, \(latestVersion) available. Click to select \(latestVersion).")
+            return status + Text(verbatim: "\n") + Text("MakeActive") + Text(verbatim: ": \(latestVersion)")
         case .notInstalled:
-            return Text(verbatim: "\(selectedVersion) selected, \(latestVersion) available. Install \(latestVersion) to select it.")
+            return status + Text(verbatim: "\n") + Text("Install") + Text(verbatim: ": \(latestVersion)")
         case .installing, .uninstalling, .none:
             return Text("ActiveVersionDescription")
         }
@@ -215,37 +215,31 @@ struct XcodeListViewRow_Previews: PreviewProvider {
         Group {
             XcodeListViewRow(
                 xcode: Xcode(version: Version("12.3.0")!, installState: .installed(Path("/Applications/Xcode-12.3.0.app")!), selected: true, icon: nil),
-                selected: false,
                 appState: AppState()
             )
 
             XcodeListViewRow(
                 xcode: Xcode(version: Version("12.2.0")!, installState: .notInstalled, selected: false, icon: nil),
-                selected: false,
                 appState: AppState()
             )
 
             XcodeListViewRow(
                 xcode: Xcode(version: Version("12.1.0")!, installState: .installing(.downloading(progress: configure(Progress(totalUnitCount: 100)) { $0.completedUnitCount = 40 })), selected: false, icon: nil),
-                selected: false,
                 appState: AppState()
             )
 
             XcodeListViewRow(
                 xcode: Xcode(version: Version("12.0.0")!, installState: .installed(Path("/Applications/Xcode-12.3.0.app")!), selected: false, icon: nil),
-                selected: false,
                 appState: AppState()
             )
 
             XcodeListViewRow(
                 xcode: Xcode(version: Version("12.0.0+1234A")!, installState: .installed(Path("/Applications/Xcode-12.3.0.app")!), selected: false, icon: nil),
-                selected: false,
                 appState: AppState()
             )
 
             XcodeListViewRow(
                 xcode: Xcode(version: Version("12.0.0+1234A")!, identicalBuilds: [XcodeID(version: Version("12.0.0-RC+1234A")!)], installState: .installed(Path("/Applications/Xcode-12.3.0.app")!), selected: false, icon: nil),
-                selected: false,
                 appState: AppState()
             )
         }

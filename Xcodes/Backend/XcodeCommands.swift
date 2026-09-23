@@ -110,7 +110,8 @@ struct SelectButton: View {
             }
         }
         .disabled(xcode?.selected != false)
-        .help("Select")
+        .accessibilityValue(xcode?.description ?? "")
+        .help(xcode?.selected == true ? Text("ActiveVersionDescription") : Text("MakeActiveVersionDescription"))
     }
     
     private func select() {

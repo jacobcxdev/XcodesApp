@@ -33,7 +33,6 @@ struct InstalledStateButtons: View {
             HStack {
                 SelectButton(xcode: xcode)
                     .disabled(xcode.selected)
-                    .help("Selected")
 
                 OpenButton(xcode: xcode)
                     .help("Open")
